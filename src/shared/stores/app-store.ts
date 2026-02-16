@@ -53,6 +53,30 @@ export interface Toast {
     id: string; msg: string; cls: ToastType
 }
 
+export interface MedDraft {
+    name?: string
+    dose?: string
+    freq?: number
+    time?: string
+    sup?: number
+    inst?: string
+    warn?: string
+}
+
+export interface ApptDraft {
+    title?: string
+    date?: string
+    time?: string
+    loc?: string
+    notes?: string
+}
+
+export interface AssistantState {
+    pendingIntent: string | null
+    missing: string[]
+    prompt: string | null
+}
+
 interface AppState {
     loggedIn: boolean
     tab: Tab
@@ -65,6 +89,11 @@ interface AppState {
     voice: boolean
     toasts: Toast[]
     showProfile: boolean
+    showAddMedModal: boolean
+    showAddApptModal: boolean
+    draftMed: MedDraft | null
+    draftAppt: ApptDraft | null
+    assistantState: AssistantState
     // actions
     login: () => void
     logout: () => void
@@ -79,12 +108,31 @@ interface AppState {
     toast: (msg: string, cls?: ToastType) => void
     removeToast: (id: string) => void
     setVoice: (v: boolean) => void
+    openAddMedModal: (draft?: MedDraft | null) => void
+    closeAddMedModal: () => void
+    openAddApptModal: (draft?: ApptDraft | null) => void
+    closeAddApptModal: () => void
+    setDraftMed: (draft: MedDraft | null) => void
+    clearDraftMed: () => void
+    setDraftAppt: (draft: ApptDraft | null) => void
+    clearDraftAppt: () => void
+    setAssistantPendingIntent: (input: { intent: string; missing?: string[]; prompt?: string | null }) => void
+    clearAssistantState: () => void
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
     loggedIn: false,
     tab: 'timeline',
     showProfile: false,
+    showAddMedModal: false,
+    showAddApptModal: false,
+    draftMed: null,
+    draftAppt: null,
+    assistantState: {
+        pendingIntent: null,
+        missing: [],
+        prompt: null,
+    },
     voice: true,
     toasts: [],
     log: {},
@@ -111,10 +159,41 @@ export const useAppStore = create<AppState>((set, get) => ({
     sched: [],
 
     login: () => set({ loggedIn: true }),
-    logout: () => set({ loggedIn: false, tab: 'timeline', showProfile: false }),
+    logout: () => set({
+        loggedIn: false,
+        tab: 'timeline',
+        showProfile: false,
+        showAddMedModal: false,
+        showAddApptModal: false,
+        draftMed: null,
+        draftAppt: null,
+        assistantState: { pendingIntent: null, missing: [], prompt: null },
+    }),
     setTab: (t) => set({ tab: t, showProfile: false }),
     setShowProfile: (v) => set({ showProfile: v }),
     setVoice: (v) => set({ voice: v }),
+    openAddMedModal: (draft = null) => set({ showAddMedModal: true, draftMed: draft }),
+    closeAddMedModal: () => set({ showAddMedModal: false, draftMed: null }),
+    openAddApptModal: (draft = null) => set({ showAddApptModal: true, draftAppt: draft }),
+    closeAddApptModal: () => set({ showAddApptModal: false, draftAppt: null }),
+    setDraftMed: (draft) => set({ draftMed: draft }),
+    clearDraftMed: () => set({ draftMed: null }),
+    setDraftAppt: (draft) => set({ draftAppt: draft }),
+    clearDraftAppt: () => set({ draftAppt: null }),
+    setAssistantPendingIntent: (input) => set({
+        assistantState: {
+            pendingIntent: input.intent,
+            missing: input.missing ?? [],
+            prompt: input.prompt ?? null,
+        },
+    }),
+    clearAssistantState: () => set({
+        assistantState: {
+            pendingIntent: null,
+            missing: [],
+            prompt: null,
+        },
+    }),
 
     buildSched: () => {
         const { meds, appts, log } = get()

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAppStore, fT } from '@/shared/stores/app-store'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { useMedications } from '@/shared/hooks/useMedications'
@@ -10,6 +10,15 @@ import { lookupByBarcode } from '@/shared/services/openfda'
 type AddMedModalProps = {
   onClose: () => void
   isDemo: boolean
+  initialDraft: {
+    name?: string
+    dose?: string
+    freq?: number
+    time?: string
+    sup?: number
+    inst?: string
+    warn?: string
+  } | null
   createBundle: (input: {
     medication: { name: string; dosage: string; freq: number; instructions: string; warnings: string; color: string; icon: string }
     schedules: Array<{ time: string; days: number[]; food_context_minutes: number; active: boolean }>
@@ -18,12 +27,18 @@ type AddMedModalProps = {
 }
 
 export function MedsView() {
-  const { meds: demoMeds, toast } = useAppStore()
+  const {
+    meds: demoMeds,
+    toast,
+    showAddMedModal,
+    draftMed,
+    openAddMedModal,
+    closeAddMedModal,
+  } = useAppStore()
   const { isDemo } = useAuthStore()
   const { meds: realMeds, addMedBundle } = useMedications()
   const { scheds } = useSchedules()
   const { refills } = useRefills()
-  const [showAdd, setShowAdd] = useState(false)
 
   const displayMeds = isDemo
     ? demoMeds
@@ -104,7 +119,7 @@ export function MedsView() {
         })}
       </div>
 
-      <button onClick={() => setShowAdd(true)} style={{
+      <button onClick={() => openAddMedModal(null)} style={{
         width: '100%', padding: 14, background: 'transparent', border: '2px dashed var(--color-border-primary)',
         borderRadius: 14, fontSize: 14, fontWeight: 700, color: 'var(--color-text-tertiary)',
         cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10,
@@ -113,12 +128,19 @@ export function MedsView() {
         Add Medication
       </button>
 
-      {showAdd && <AddMedModal onClose={() => setShowAdd(false)} createBundle={addMedBundle} isDemo={isDemo} />}
+      {showAddMedModal && (
+        <AddMedModal
+          onClose={closeAddMedModal}
+          createBundle={addMedBundle}
+          isDemo={isDemo}
+          initialDraft={draftMed}
+        />
+      )}
     </div>
   )
 }
 
-function AddMedModal({ onClose, createBundle, isDemo }: AddMedModalProps) {
+function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModalProps) {
   const { addMed: addMedDemo, toast } = useAppStore()
   const [name, setName] = useState('')
   const [dose, setDose] = useState('')
@@ -129,6 +151,17 @@ function AddMedModal({ onClose, createBundle, isDemo }: AddMedModalProps) {
   const [warn, setWarn] = useState('')
   const [showScanner, setShowScanner] = useState(false)
   const [isLooking, setIsLooking] = useState(false)
+
+  useEffect(() => {
+    if (!initialDraft) return
+    if (initialDraft.name) setName(initialDraft.name)
+    if (initialDraft.dose) setDose(initialDraft.dose)
+    if (typeof initialDraft.freq === 'number') setFreq(String(initialDraft.freq))
+    if (initialDraft.time) setTime(initialDraft.time)
+    if (typeof initialDraft.sup === 'number') setSup(String(initialDraft.sup))
+    if (initialDraft.inst) setInst(initialDraft.inst)
+    if (initialDraft.warn) setWarn(initialDraft.warn)
+  }, [initialDraft])
 
   const handleScan = async (code: string) => {
     setShowScanner(false)

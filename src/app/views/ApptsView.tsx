@@ -1,10 +1,17 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAppStore, fD, fT } from '@/shared/stores/app-store'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { useAppointments } from '@/shared/hooks/useAppointments'
 
 export function ApptsView() {
-  const { appts: demoAppts, toast } = useAppStore()
+  const {
+    appts: demoAppts,
+    toast,
+    showAddApptModal,
+    draftAppt,
+    openAddApptModal,
+    closeAddApptModal,
+  } = useAppStore()
   const { isDemo } = useAuthStore()
   const { appts: realAppts, addAppt } = useAppointments()
 
@@ -20,7 +27,6 @@ export function ApptsView() {
     }))
 
   const sorted = [...displayAppts].sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime())
-  const [showAdd, setShowAdd] = useState(false)
 
   return (
     <div className="animate-view-in">
@@ -58,7 +64,7 @@ export function ApptsView() {
         })}
       </div>
 
-      <button onClick={() => setShowAdd(true)} style={{
+      <button onClick={() => openAddApptModal(null)} style={{
         width: '100%', padding: 14, background: 'transparent', border: '2px dashed var(--color-border-primary)',
         borderRadius: 14, fontSize: 14, fontWeight: 700, color: 'var(--color-text-tertiary)',
         cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10,
@@ -67,12 +73,29 @@ export function ApptsView() {
         Add Appointment
       </button>
 
-      {showAdd && <AddApptModal onClose={() => setShowAdd(false)} isDemo={isDemo} createRealAppt={addAppt} />}
+      {showAddApptModal && (
+        <AddApptModal
+          onClose={closeAddApptModal}
+          isDemo={isDemo}
+          createRealAppt={addAppt}
+          initialDraft={draftAppt}
+        />
+      )}
     </div>
   )
 }
 
-function AddApptModal({ onClose, createRealAppt, isDemo }: { onClose: () => void; createRealAppt: (input: { title: string; start_time: string; location: string; notes: string; commute_minutes: number; doctor: string | null }) => void; isDemo: boolean }) {
+function AddApptModal({
+  onClose,
+  createRealAppt,
+  isDemo,
+  initialDraft,
+}: {
+  onClose: () => void
+  createRealAppt: (input: { title: string; start_time: string; location: string; notes: string; commute_minutes: number; doctor: string | null }) => void
+  isDemo: boolean
+  initialDraft: { title?: string; date?: string; time?: string; loc?: string; notes?: string } | null
+}) {
   const { addAppt: addApptDemo } = useAppStore()
   const today = new Date().toISOString().split('T')[0]
   const [title, setTitle] = useState('')
@@ -80,6 +103,15 @@ function AddApptModal({ onClose, createRealAppt, isDemo }: { onClose: () => void
   const [time, setTime] = useState('14:00')
   const [loc, setLoc] = useState('')
   const [notes, setNotes] = useState('')
+
+  useEffect(() => {
+    if (!initialDraft) return
+    if (initialDraft.title) setTitle(initialDraft.title)
+    if (initialDraft.date) setDate(initialDraft.date)
+    if (initialDraft.time) setTime(initialDraft.time)
+    if (initialDraft.loc) setLoc(initialDraft.loc)
+    if (initialDraft.notes) setNotes(initialDraft.notes)
+  }, [initialDraft])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

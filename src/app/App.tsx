@@ -5,6 +5,11 @@ import { useThemeStore } from '@/shared/stores/theme-store'
 import { useAppStore, type Tab } from '@/shared/stores/app-store'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { useNotifications } from '@/shared/hooks/useNotifications'
+import { useTimeline } from '@/shared/hooks/useTimeline'
+import { useDoseLogs } from '@/shared/hooks/useDoseLogs'
+import { VoiceIntentService } from '@/shared/services/voice-intent'
+import { NotificationsService } from '@/shared/services/notifications'
+import type { VoiceIntentResult } from '@/shared/types/contracts'
 import { LoginScreen } from '@/app/LoginScreen'
 import { TimelineView } from '@/app/views/TimelineView'
 import { MedsView } from '@/app/views/MedsView'
@@ -41,6 +46,11 @@ type NotificationItem = {
   sub: string
   time: string
   read?: boolean
+}
+
+type VoiceConfirmation = {
+  message: string
+  onConfirm: () => void
 }
 
 const tabs: { id: Tab; label: string; icon: (active: boolean) => React.ReactNode }[] = [
@@ -83,12 +93,26 @@ export function App() {
 }
 
 function AppInner() {
-  const { tab, setTab, toasts, showProfile, setShowProfile } = useAppStore()
+  const {
+    tab,
+    setTab,
+    toasts,
+    showProfile,
+    setShowProfile,
+    openAddMedModal,
+    openAddApptModal,
+    assistantState,
+    setAssistantPendingIntent,
+    clearAssistantState,
+  } = useAppStore()
   const { session, isDemo, isLoading, initialize } = useAuthStore()
   const { resolvedTheme, toggleTheme } = useThemeStore()
+  const { timeline } = useTimeline()
+  const { logDose } = useDoseLogs()
   const [notifOpen, setNotifOpen] = useState(false)
   const [voiceActive, setVoiceActive] = useState(false)
   const [voiceBubble, setVoiceBubble] = useState('')
+  const [voiceConfirmation, setVoiceConfirmation] = useState<VoiceConfirmation | null>(null)
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
 
   useEffect(() => {
@@ -171,7 +195,7 @@ function AppInner() {
       const transcript = Array.from(event.results).map((r) => r[0].transcript).join('')
       setVoiceBubble(transcript || 'Listening...')
       if (event.results[0]?.isFinal) {
-        processVoice(transcript)
+        void processVoice(transcript)
         setTimeout(() => {
           setVoiceActive(false)
           setVoiceBubble('')
@@ -192,34 +216,211 @@ function AppInner() {
     rec.start()
   }
 
-  const processVoice = (text: string) => {
+  const fallbackKeywordRoute = (text: string) => {
     const store = useAppStore.getState()
     const normalized = text.toLowerCase()
     if (normalized.includes('medication') || normalized.includes('meds')) {
       store.setTab('meds')
       store.toast('Showing medications', 'ts')
-      return
+      return true
     }
 
     if (normalized.includes('appointment') || normalized.includes('appt')) {
       store.setTab('appts')
       store.toast('Showing appointments', 'ts')
-      return
+      return true
     }
 
     if (normalized.includes('summary')) {
       store.setTab('summary')
       store.toast('Showing summary', 'ts')
-      return
+      return true
     }
 
     if (normalized.includes('timeline') || normalized.includes('schedule')) {
       store.setTab('timeline')
       store.toast('Showing timeline', 'ts')
+      return true
+    }
+
+    return false
+  }
+
+  const applyNavigation = (target?: string) => {
+    const store = useAppStore.getState()
+    if (target === 'meds' || target === 'appts' || target === 'summary' || target === 'timeline') {
+      store.setTab(target)
+      store.toast(`Showing ${target === 'appts' ? 'appointments' : target}`, 'ts')
+      return true
+    }
+    return false
+  }
+
+  const findDoseTarget = (intent: VoiceIntentResult) => {
+    const name = intent.entities.dose?.medication_name?.toLowerCase()
+    const pendingMeds = timeline.filter((item) => item.tp === 'med' && item.st === 'pending')
+    if (pendingMeds.length === 0) return null
+    if (name) {
+      const match = pendingMeds.find((item) => item.name.toLowerCase().includes(name))
+      if (match) return match
+    }
+    return pendingMeds.find((item) => item.nx) ?? pendingMeds[0]
+  }
+
+  const scheduleReminder = async (intent: VoiceIntentResult) => {
+    const draft = intent.entities.reminder
+    const inMinutes = draft?.in_minutes
+    if (!inMinutes || inMinutes <= 0) {
+      useAppStore.getState().toast('Please provide a reminder time (for example, "in 60 minutes").', 'tw')
       return
     }
 
-    store.toast(`"${text}" - command not recognized`, 'tw')
+    const title = draft?.title || 'Medication reminder'
+    const message = draft?.message || `Reminder set for ${inMinutes} minutes from now.`
+
+    try {
+      await NotificationsService.create({
+        title,
+        message: `Scheduled for ${inMinutes} minutes from now.`,
+        type: 'info',
+      })
+    } catch {
+      // keep local reminder scheduling even if persistence fails
+    }
+
+    window.setTimeout(async () => {
+      useAppStore.getState().toast(title, 'tw')
+      if (session?.user?.id) {
+        try {
+          await NotificationsService.sendPush(session.user.id, {
+            title,
+            body: message,
+            url: '/',
+            tag: 'medflow-reminder',
+          })
+        } catch {
+          // optional push path may fail if user is unsubscribed
+        }
+      }
+    }, inMinutes * 60 * 1000)
+
+    useAppStore.getState().toast(`Reminder set for ${inMinutes} minute${inMinutes === 1 ? '' : 's'}.`, 'ts')
+  }
+
+  const processVoice = async (text: string) => {
+    const store = useAppStore.getState()
+    const transcript = text.trim()
+    if (!transcript) {
+      store.toast('I did not catch that.', 'tw')
+      return
+    }
+
+    const contextualTranscript = assistantState.pendingIntent
+      ? `Pending intent: ${assistantState.pendingIntent}. Missing: ${assistantState.missing.join(', ')}. User follow-up: ${transcript}`
+      : transcript
+    const intent = await VoiceIntentService.parseTranscript(contextualTranscript)
+
+    if (intent.missing.length > 0) {
+      const prompt = intent.assistant_message || `I need ${intent.missing.join(', ')} to continue.`
+      setVoiceBubble(prompt)
+      setAssistantPendingIntent({ intent: intent.intent, missing: intent.missing, prompt })
+      store.toast(prompt, 'tw')
+      return
+    }
+
+    clearAssistantState()
+
+    if (intent.confidence < 0.45 && !fallbackKeywordRoute(transcript)) {
+      store.toast(`"${text}" - command not recognized`, 'tw')
+      return
+    }
+
+    switch (intent.intent) {
+      case 'navigate':
+        if (!applyNavigation(intent.entities.navigate?.target) && !fallbackKeywordRoute(transcript)) {
+          store.toast(`"${text}" - command not recognized`, 'tw')
+        }
+        return
+      case 'open_add_med':
+        setTab('meds')
+        openAddMedModal({
+          name: intent.entities.medication?.name,
+          dose: intent.entities.medication?.dosage,
+          freq: intent.entities.medication?.freq,
+          time: intent.entities.medication?.time,
+          inst: intent.entities.medication?.instructions,
+          warn: intent.entities.medication?.warnings,
+          sup: intent.entities.medication?.supply,
+        })
+        store.toast('Opening add medication form', 'ts')
+        return
+      case 'open_add_appt':
+        setTab('appts')
+        openAddApptModal({
+          title: intent.entities.appointment?.title,
+          date: intent.entities.appointment?.date,
+          time: intent.entities.appointment?.time,
+          loc: intent.entities.appointment?.location,
+          notes: intent.entities.appointment?.notes,
+        })
+        store.toast('Opening add appointment form', 'ts')
+        return
+      case 'query_next_dose': {
+        const next = timeline.find((item) => item.tp === 'med' && item.st === 'pending')
+        if (!next) {
+          store.toast('No upcoming doses found.', 'tw')
+          return
+        }
+        const response = `Your next dose is ${next.name} at ${next.time}.`
+        setVoiceBubble(response)
+        store.toast(response, 'ts')
+        return
+      }
+      case 'log_dose': {
+        const target = findDoseTarget(intent)
+        if (!target || !target.mid) {
+          store.toast('I could not find a dose to log right now.', 'tw')
+          return
+        }
+        const medicationId = target.mid
+        const status = intent.entities.dose?.status ?? 'taken'
+        const confirmationMessage = status === 'missed'
+          ? `Mark ${target.name} (${target.time}) as missed?`
+          : `Log ${target.name} (${target.time}) as taken?`
+        setVoiceConfirmation({
+          message: confirmationMessage,
+          onConfirm: () => {
+            if (isDemo) {
+              if (status === 'missed') store.markMissed(target.id)
+              else store.markDone(target.id)
+            } else {
+              logDose({
+                medication_id: medicationId,
+                schedule_id: target.id,
+                taken_at: new Date().toISOString(),
+                status: status === 'missed' ? 'missed' : 'taken',
+                notes: null,
+              })
+            }
+            setVoiceConfirmation(null)
+          },
+        })
+        return
+      }
+      case 'create_reminder':
+        setVoiceConfirmation({
+          message: 'Create this reminder?',
+          onConfirm: () => {
+            void scheduleReminder(intent)
+            setVoiceConfirmation(null)
+          },
+        })
+        return
+      default:
+        if (!fallbackKeywordRoute(transcript)) {
+          store.toast(`"${text}" - command not recognized`, 'tw')
+        }
+    }
   }
 
   return (
@@ -303,6 +504,61 @@ function AppInner() {
           boxShadow: '0 4px 12px rgba(0,0,0,0.1)', maxWidth: 220, zIndex: 94, fontSize: 13, fontWeight: 500,
         }}>
           {voiceBubble}
+        </div>
+      )}
+
+      {voiceConfirmation && (
+        <div className="animate-view-in" style={{
+          position: 'fixed',
+          bottom: 220,
+          right: 20,
+          width: 260,
+          background: 'var(--color-bg-secondary)',
+          borderRadius: 14,
+          border: '1px solid var(--color-border-primary)',
+          boxShadow: '0 6px 16px rgba(0,0,0,0.12)',
+          zIndex: 98,
+          padding: 12,
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 10 }}>
+            {voiceConfirmation.message}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => {
+                voiceConfirmation.onConfirm()
+              }}
+              style={{
+                flex: 1,
+                padding: 10,
+                borderRadius: 10,
+                border: 'none',
+                background: 'var(--color-accent)',
+                color: '#fff',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Confirm
+            </button>
+            <button
+              onClick={() => setVoiceConfirmation(null)}
+              style={{
+                flex: 1,
+                padding: 10,
+                borderRadius: 10,
+                border: '1px solid var(--color-border-primary)',
+                background: 'transparent',
+                color: 'var(--color-text-secondary)',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
 

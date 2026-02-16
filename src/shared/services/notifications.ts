@@ -25,4 +25,42 @@ export const NotificationsService = {
     if (error) throw error
     return data
   },
+
+  async create(input: {
+    title: string
+    message: string
+    type?: Database['public']['Enums']['notification_type']
+  }): Promise<Notification> {
+    const { data, error } = await supabase
+      .from('notifications')
+      .insert({
+        title: input.title,
+        message: input.message,
+        type: input.type ?? 'info',
+      })
+      .select('*')
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  async sendPush(userId: string, payload: {
+    title: string
+    body: string
+    url?: string
+    tag?: string
+  }): Promise<void> {
+    const { error } = await supabase.functions.invoke('send-push', {
+      body: {
+        user_id: userId,
+        title: payload.title,
+        body: payload.body,
+        url: payload.url,
+        tag: payload.tag,
+      },
+    })
+
+    if (error) throw error
+  },
 }

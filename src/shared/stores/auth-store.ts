@@ -135,11 +135,11 @@ export const useAuthStore = create<AuthState>((set) => ({
   signInWithGoogle: async () => {
     if (env.isDemoApp) return { error: null }
 
-    // Always redirect to current origin so localhost and production both work
+    const redirectTo = env.oauthRedirectUrl?.trim() || window.location.origin
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo,
       },
     })
 

@@ -45,3 +45,63 @@ export interface MedicationBundleCreateInput {
   schedules: MedicationBundleScheduleInput[]
   refill: MedicationBundleRefillInput
 }
+
+export type VoiceIntentType =
+  | 'navigate'
+  | 'open_add_med'
+  | 'open_add_appt'
+  | 'create_reminder'
+  | 'log_dose'
+  | 'query_next_dose'
+  | 'unknown'
+
+export type VoiceNavigateTarget = 'timeline' | 'meds' | 'appts' | 'summary'
+export type VoiceDoseStatus = 'taken' | 'missed'
+
+export interface VoiceMedicationDraft {
+  name?: string
+  dosage?: string
+  freq?: number
+  time?: string
+  instructions?: string
+  warnings?: string
+  supply?: number
+}
+
+export interface VoiceAppointmentDraft {
+  title?: string
+  date?: string
+  time?: string
+  location?: string
+  notes?: string
+}
+
+export interface VoiceReminderDraft {
+  title?: string
+  message?: string
+  in_minutes?: number
+  at_iso?: string
+}
+
+export interface VoiceDoseDraft {
+  status?: VoiceDoseStatus
+  medication_name?: string
+  when?: 'now' | 'morning' | 'afternoon' | 'evening' | 'night'
+}
+
+export interface VoiceIntentEntities {
+  navigate?: { target?: VoiceNavigateTarget }
+  medication?: VoiceMedicationDraft
+  appointment?: VoiceAppointmentDraft
+  reminder?: VoiceReminderDraft
+  dose?: VoiceDoseDraft
+}
+
+export interface VoiceIntentResult {
+  intent: VoiceIntentType
+  entities: VoiceIntentEntities
+  confidence: number
+  missing: string[]
+  requires_confirmation: boolean
+  assistant_message?: string
+}

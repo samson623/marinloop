@@ -94,7 +94,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       let profile: Profile | null = null
       try {
         profile = await fetchProfile(nextSession.user.id)
-      } catch { }
+      } catch (err) {
+        console.warn('[Auth] failed to fetch profile on auth change:', err)
+      }
 
       set({ session: nextSession, user: nextSession.user, profile, isDemo: false, isLoading: false })
     })
@@ -106,7 +108,11 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       if (data.session) {
         let profile: Profile | null = null
-        try { profile = await fetchProfile(data.session.user.id) } catch { }
+        try {
+          profile = await fetchProfile(data.session.user.id)
+        } catch (err) {
+          console.warn('[Auth] failed to fetch profile during init:', err)
+        }
         set({ session: data.session, user: data.session.user, profile, isDemo: false, isLoading: false })
       } else {
         set({ session: null, user: null, profile: null, isDemo: false, isLoading: false })

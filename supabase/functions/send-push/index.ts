@@ -35,6 +35,32 @@ serve(async (req) => {
         const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')!
         const vapidSubject = Deno.env.get('VAPID_SUBJECT') || 'mailto:admin@medflowcare.app'
 
+        const authHeader = req.headers.get('Authorization')
+        if (!authHeader?.startsWith('Bearer ')) {
+            return new Response(
+                JSON.stringify({ error: 'Missing or invalid Authorization header' }),
+                { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+        }
+
+        const userClient = createClient(
+            supabaseUrl,
+            Deno.env.get('SUPABASE_ANON_KEY')!,
+            { global: { headers: { Authorization: authHeader } } },
+        )
+
+        const {
+            data: { user },
+            error: authError,
+        } = await userClient.auth.getUser()
+
+        if (authError || !user) {
+            return new Response(
+                JSON.stringify({ error: 'Unauthorized' }),
+                { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+        }
+
         const supabase = createClient(supabaseUrl, serviceRoleKey)
 
         const { user_id, title, body, url, tag } = (await req.json()) as PushPayload
@@ -43,6 +69,13 @@ serve(async (req) => {
             return new Response(
                 JSON.stringify({ error: 'user_id, title, and body are required' }),
                 { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+        }
+
+        if (user.id !== user_id) {
+            return new Response(
+                JSON.stringify({ error: 'Forbidden: cannot send push notifications for another user' }),
+                { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
         }
 

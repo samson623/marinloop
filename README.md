@@ -6,9 +6,8 @@ Medication management app built with React, TypeScript, Vite, and Supabase.
 
 ## GPT-5 Nano Setup
 
-1. Add your OpenAI API key to `.env`:
+1. Set the model name in `.env` (no API key in frontend env):
    ```env
-   VITE_OPENAI_API_KEY=sk-your-openai-api-key
    VITE_OPENAI_MODEL=gpt-5-nano
    ```
 

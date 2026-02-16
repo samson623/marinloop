@@ -14,6 +14,5 @@ export const env = {
   supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined,
   oauthRedirectUrl: import.meta.env.VITE_OAUTH_REDIRECT_URL as string | undefined,
   vapidPublicKey: import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined,
-  openaiApiKey: import.meta.env.VITE_OPENAI_API_KEY as string | undefined,
   openaiModel: (import.meta.env.VITE_OPENAI_MODEL as string) || 'gpt-5-nano',
 } as const

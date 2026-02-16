@@ -89,7 +89,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }, 5000)
 
     // Listen for auth changes FIRST — catches OAuth hash fragment
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
+    supabase.auth.onAuthStateChange(async (event, nextSession) => {
       console.log('[Auth] onAuthStateChange:', event)
 
       // If we signed out, clear everything

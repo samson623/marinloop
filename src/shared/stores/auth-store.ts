@@ -79,47 +79,55 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
 
     // Safety net: always clear loading after 5s max
-    const timeout = setTimeout(() => set({ isLoading: false }), 5000)
+    // We do NOT clear this timeout in the callbacks anymore, to ensure it acts as a true failsafe.
+    const timeout = setTimeout(() => {
+      // Only force false if we are still loading
+      if (useAuthStore.getState().isLoading) {
+        console.warn('[Auth] initialization timed out, forcing loading false')
+        set({ isLoading: false })
+      }
+    }, 5000)
 
     // Listen for auth changes FIRST — catches OAuth hash fragment
-    supabase.auth.onAuthStateChange(async (event, nextSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
       console.log('[Auth] onAuthStateChange:', event)
-      clearTimeout(timeout)
 
+      // If we signed out, clear everything
       if (!nextSession) {
         set({ session: null, user: null, profile: null, isDemo: false, isLoading: false })
         return
       }
 
-      let profile: Profile | null = null
+      // If we have a session, try to fetch profile
       try {
-        profile = await fetchProfile(nextSession.user.id)
+        const profile = await fetchProfile(nextSession.user.id)
+        set({ session: nextSession, user: nextSession.user, profile, isDemo: false, isLoading: false })
       } catch (err) {
         console.warn('[Auth] failed to fetch profile on auth change:', err)
+        // Still set session, just with null profile, and stop loading
+        set({ session: nextSession, user: nextSession.user, profile: null, isDemo: false, isLoading: false })
       }
-
-      set({ session: nextSession, user: nextSession.user, profile, isDemo: false, isLoading: false })
     })
 
     // Then check for existing session
     try {
       const { data } = await supabase.auth.getSession()
-      clearTimeout(timeout)
 
       if (data.session) {
-        let profile: Profile | null = null
+        // If we have a session, fetch profile
         try {
-          profile = await fetchProfile(data.session.user.id)
+          const profile = await fetchProfile(data.session.user.id)
+          set({ session: data.session, user: data.session.user, profile, isDemo: false, isLoading: false })
         } catch (err) {
           console.warn('[Auth] failed to fetch profile during init:', err)
+          set({ session: data.session, user: data.session.user, profile: null, isDemo: false, isLoading: false })
         }
-        set({ session: data.session, user: data.session.user, profile, isDemo: false, isLoading: false })
       } else {
+        // No session found, stop loading
         set({ session: null, user: null, profile: null, isDemo: false, isLoading: false })
       }
     } catch (err) {
       console.error('[Auth] init error:', err)
-      clearTimeout(timeout)
       set({ session: null, user: null, profile: null, isDemo: false, isLoading: false })
     }
   },

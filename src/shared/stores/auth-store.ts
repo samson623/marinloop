@@ -80,7 +80,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     // Safety net: always clear loading after 5s max
     // We do NOT clear this timeout in the callbacks anymore, to ensure it acts as a true failsafe.
-    const timeout = setTimeout(() => {
+    setTimeout(() => {
       // Only force false if we are still loading
       if (useAuthStore.getState().isLoading) {
         console.warn('[Auth] initialization timed out, forcing loading false')

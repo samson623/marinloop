@@ -5,9 +5,9 @@ import { env, isDemoApp } from '@/shared/lib/env'
 const supabaseUrl = env.supabaseUrl
 const supabaseAnonKey = env.supabaseAnonKey
 
-if (!isDemoApp && (!supabaseUrl || !supabaseAnonKey)) {
-  throw new Error('Missing required Supabase environment variables in production mode.')
-}
+// if (!isDemoApp && (!supabaseUrl || !supabaseAnonKey)) {
+//   throw new Error('Missing required Supabase environment variables in production mode.')
+// }
 
 export const supabase = createClient<Database>(
   supabaseUrl ?? 'https://demo.local.invalid',

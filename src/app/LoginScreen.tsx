@@ -4,7 +4,11 @@ import { useAppStore } from '@/shared/stores/app-store'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { getErrorMessage } from '@/shared/lib/errors'
 
-export function LoginScreen() {
+type LoginScreenProps = {
+  onBack?: () => void
+}
+
+export function LoginScreen({ onBack }: LoginScreenProps) {
   const [isSignUp, setIsSignUp] = useState(false)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -68,6 +72,28 @@ export function LoginScreen() {
       </button>
 
       <div style={{ width: '100%', maxWidth: 400, padding: '0 24px' }}>
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            style={{
+              position: 'absolute',
+              top: 20,
+              left: 20,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'var(--color-text-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 14,
+            }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+            Back
+          </button>
+        )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
           <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--color-text-primary)' }}>MedFlow</h1>
           <span className="animate-dot-pulse" style={{ width: 8, height: 8, background: 'var(--color-accent)', borderRadius: 2 }} />

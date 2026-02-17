@@ -154,10 +154,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   signInWithGoogle: async () => {
     if (env.isDemoApp) return { error: null }
 
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    const redirectTo = isLocalhost
-      ? window.location.origin
-      : env.oauthRedirectUrl?.trim() || window.location.origin
+    // Always use current origin so the OAuth callback returns to the same context (PWA or tab).
+    // Otherwise on iOS the callback can open in Safari and the home-screen PWA never gets the session.
+    const redirectTo = window.location.origin
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {

@@ -11,6 +11,7 @@ import { VoiceIntentService } from '@/shared/services/voice-intent'
 import { NotificationsService } from '@/shared/services/notifications'
 import type { VoiceIntentResult } from '@/shared/types/contracts'
 import { LoginScreen } from '@/app/LoginScreen'
+import { LandingScreen } from '@/app/LandingScreen'
 import { TimelineView } from '@/app/views/TimelineView'
 import { MedsView } from '@/app/views/MedsView'
 import { ApptsView } from '@/app/views/ApptsView'
@@ -121,6 +122,7 @@ function AppInner() {
   const [voiceTestInput, setVoiceTestInput] = useState('')
   const [showVoiceTest, setShowVoiceTest] = useState(false)
   const [showAddToHomeScreenOnboarding, setShowAddToHomeScreenOnboarding] = useState(false)
+  const [showLoginScreen, setShowLoginScreen] = useState(false)
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
   const installPrompt = useInstallPrompt()
 
@@ -164,7 +166,11 @@ function AppInner() {
   if (!session && !isDemo) {
     return (
       <>
-        <LoginScreen />
+        {showLoginScreen ? (
+          <LoginScreen onBack={() => setShowLoginScreen(false)} />
+        ) : (
+          <LandingScreen onGetStarted={() => setShowLoginScreen(true)} />
+        )}
         <Toasts toasts={toasts} />
       </>
     )

@@ -36,9 +36,12 @@ Or with Supabase CLI: `supabase db push`
 
 1. In Supabase Dashboard → **Authentication** → **URL Configuration**:
    - **Site URL**: Your app URL (e.g. `https://your-app.vercel.app` or `http://localhost:5173` for dev)
-   - **Redirect URLs**: Add **both** your production URL and local dev URL, e.g. `https://your-app.vercel.app`, `http://localhost:5173`
+   - **Redirect URLs**: Add every URL where users can open the app (so the OAuth callback returns to the same tab/PWA). Include:
+     - Your production URL, e.g. `https://your-app.vercel.app`
+     - Any Vercel deployment URL if users open the app from there (e.g. `https://medflow-care-xxxx.vercel.app`)
+     - Local dev: `http://localhost:5173`
 
-2. In `.env`, set `VITE_OAUTH_REDIRECT_URL` to match your app URL (must be in the Redirect URLs list above). For local dev you can use `http://localhost:5173` or omit it (the app uses `window.location.origin` on localhost).
+2. The app uses the **current window origin** for the Google sign-in redirect (so the home-screen PWA on iOS gets the callback). You do not need `VITE_OAUTH_REDIRECT_URL` in production; optional for local dev.
 
 3. In Google Cloud Console, ensure the OAuth redirect URI is `https://<your-supabase-project>.supabase.co/auth/v1/callback`.
 

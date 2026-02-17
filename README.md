@@ -32,6 +32,37 @@ In Supabase Dashboard → SQL Editor, run in order:
 
 Or with Supabase CLI: `supabase db push`
 
+### Google OAuth (Sign in with Google)
+
+1. In Supabase Dashboard → **Authentication** → **URL Configuration**:
+   - **Site URL**: Your app URL (e.g. `https://your-app.vercel.app` or `http://localhost:5173` for dev)
+   - **Redirect URLs**: Add **both** your production URL and local dev URL, e.g. `https://your-app.vercel.app`, `http://localhost:5173`
+
+2. In `.env`, set `VITE_OAUTH_REDIRECT_URL` to match your app URL (must be in the Redirect URLs list above). For local dev you can use `http://localhost:5173` or omit it (the app uses `window.location.origin` on localhost).
+
+3. In Google Cloud Console, ensure the OAuth redirect URI is `https://<your-supabase-project>.supabase.co/auth/v1/callback`.
+
+---
+
+## Works on Vercel but not locally
+
+If the app works in production (Vercel) but fails when running locally (`npm run dev`):
+
+1. **Create a local `.env`**  
+   Vercel uses env vars from the project dashboard; locally you must have a `.env` file in the project root. Copy from `.env.example` and fill in:
+   - `VITE_APP_MODE=prod`
+   - `VITE_SUPABASE_URL=` your Supabase project URL (same as in Vercel)
+   - `VITE_SUPABASE_ANON_KEY=` your Supabase anon key (same as in Vercel)
+   - Optional for Google sign-in: `VITE_OAUTH_REDIRECT_URL=http://localhost:5173`
+
+2. **Allow localhost in Supabase**  
+   In Supabase Dashboard → **Authentication** → **URL Configuration** → **Redirect URLs**, add:
+   - `http://localhost:5173`  
+   If this is missing, OAuth sign-in will work on Vercel but redirect back to localhost will be rejected.
+
+3. **Restart the dev server**  
+   After changing `.env`, stop the dev server (Ctrl+C) and run `npm run dev` again so Vite picks up the new variables.
+
 ### Tables
 
 | Table | Purpose |

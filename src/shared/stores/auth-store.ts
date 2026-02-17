@@ -19,6 +19,10 @@ type MfaEnrollResult = {
   secret: string
 } | null
 
+type AuthSubscription = {
+  unsubscribe: () => void
+}
+
 interface AuthState {
   session: Session | null
   user: User | null
@@ -48,6 +52,8 @@ const DEMO_PROFILE: Profile = {
   plan: 'free',
 }
 
+let authSubscription: AuthSubscription | null = null
+
 async function fetchProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase
     .from('profiles')
@@ -57,6 +63,21 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
 
   if (error) return null
   return data
+}
+
+function cleanupOAuthUrl() {
+  const url = new URL(window.location.href)
+  const hadCode = url.searchParams.has('code')
+  const hadState = url.searchParams.has('state')
+
+  if (!hadCode && !hadState) return
+
+  url.searchParams.delete('code')
+  url.searchParams.delete('state')
+
+  const query = url.searchParams.toString()
+  const nextUrl = query ? `${url.pathname}?${query}${url.hash}` : `${url.pathname}${url.hash}`
+  window.history.replaceState({}, document.title, nextUrl)
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -78,54 +99,52 @@ export const useAuthStore = create<AuthState>((set) => ({
       return
     }
 
-    // Safety net: always clear loading after 5s max
-    // We do NOT clear this timeout in the callbacks anymore, to ensure it acts as a true failsafe.
+    const applySession = async (nextSession: Session | null) => {
+      if (!nextSession) {
+        set({ session: null, user: null, profile: null, isDemo: false, isLoading: false })
+        return
+      }
+
+      try {
+        const profile = await fetchProfile(nextSession.user.id)
+        set({ session: nextSession, user: nextSession.user, profile, isDemo: false, isLoading: false })
+      } catch (err) {
+        console.warn('[Auth] failed to fetch profile:', err)
+        set({ session: nextSession, user: nextSession.user, profile: null, isDemo: false, isLoading: false })
+      }
+    }
+
+    // Safety net: clear loading after 5s max.
     setTimeout(() => {
-      // Only force false if we are still loading
       if (useAuthStore.getState().isLoading) {
         console.warn('[Auth] initialization timed out, forcing loading false')
         set({ isLoading: false })
       }
     }, 5000)
 
-    // Listen for auth changes FIRST — catches OAuth hash fragment
-    supabase.auth.onAuthStateChange(async (event, nextSession) => {
-      console.log('[Auth] onAuthStateChange:', event)
+    // Register exactly once to avoid duplicate listeners on repeated init calls.
+    if (!authSubscription) {
+      const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+        void applySession(nextSession)
+      })
+      authSubscription = data.subscription as AuthSubscription
+    }
 
-      // If we signed out, clear everything
-      if (!nextSession) {
-        set({ session: null, user: null, profile: null, isDemo: false, isLoading: false })
-        return
-      }
-
-      // If we have a session, try to fetch profile
-      try {
-        const profile = await fetchProfile(nextSession.user.id)
-        set({ session: nextSession, user: nextSession.user, profile, isDemo: false, isLoading: false })
-      } catch (err) {
-        console.warn('[Auth] failed to fetch profile on auth change:', err)
-        // Still set session, just with null profile, and stop loading
-        set({ session: nextSession, user: nextSession.user, profile: null, isDemo: false, isLoading: false })
-      }
-    })
-
-    // Then check for existing session
     try {
-      const { data } = await supabase.auth.getSession()
+      const url = new URL(window.location.href)
+      const code = url.searchParams.get('code')
 
-      if (data.session) {
-        // If we have a session, fetch profile
-        try {
-          const profile = await fetchProfile(data.session.user.id)
-          set({ session: data.session, user: data.session.user, profile, isDemo: false, isLoading: false })
-        } catch (err) {
-          console.warn('[Auth] failed to fetch profile during init:', err)
-          set({ session: data.session, user: data.session.user, profile: null, isDemo: false, isLoading: false })
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        if (error) {
+          console.error('[Auth] OAuth code exchange failed:', error.message)
         }
-      } else {
-        // No session found, stop loading
-        set({ session: null, user: null, profile: null, isDemo: false, isLoading: false })
       }
+
+      cleanupOAuthUrl()
+
+      const { data } = await supabase.auth.getSession()
+      await applySession(data.session)
     } catch (err) {
       console.error('[Auth] init error:', err)
       set({ session: null, user: null, profile: null, isDemo: false, isLoading: false })
@@ -135,7 +154,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   signInWithGoogle: async () => {
     if (env.isDemoApp) return { error: null }
 
-    const redirectTo = env.oauthRedirectUrl?.trim() || window.location.origin
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    const redirectTo = isLocalhost
+      ? window.location.origin
+      : env.oauthRedirectUrl?.trim() || window.location.origin
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {

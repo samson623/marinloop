@@ -3,11 +3,14 @@ import { useAppStore } from '@/shared/stores/app-store'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { getErrorMessage } from '@/shared/lib/errors'
 import { usePushNotifications } from '@/shared/hooks/usePushNotifications'
+import { useInstallPrompt } from '@/shared/hooks/useInstallPrompt'
+import { AddToHomeScreenPrompt, setAddToHomeScreenSeen } from '@/shared/components/AddToHomeScreenPrompt'
 
 export function ProfileView() {
   const { setShowProfile, toast } = useAppStore()
   const { user, profile, isDemo, signOut, enrollMfa, verifyMfa } = useAuthStore()
   const push = usePushNotifications()
+  const installPrompt = useInstallPrompt()
 
   const [factorId, setFactorId] = useState<string | null>(null)
   const [qrCode, setQrCode] = useState<string | null>(null)
@@ -102,6 +105,26 @@ export function ProfileView() {
         </div>
       )}
 
+      {!isDemo && installPrompt.canInstall && (
+        <div style={{ padding: 16, background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-primary)', borderRadius: 12, marginBottom: 20 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-secondary)', marginBottom: 8 }}>Add to your phone</div>
+          <p style={{ fontSize: 13, color: 'var(--color-text-tertiary)', marginBottom: 12 }}>Get MedFlow on your home screen for reminders.</p>
+          <button
+            type="button"
+            onClick={async () => {
+              const accepted = await installPrompt.promptInstall()
+              if (accepted) toast('MedFlow added to your phone', 'ts')
+            }}
+            style={{
+              width: '100%', padding: 12, background: 'var(--color-accent)', color: '#fff', border: 'none', borderRadius: 10,
+              fontSize: 14, fontWeight: 600, cursor: 'pointer',
+            }}
+          >
+            Add MedFlow to your phone
+          </button>
+        </div>
+      )}
+
       {!isDemo && (
         <div style={{ padding: 16, background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-primary)', borderRadius: 12, marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -138,6 +161,16 @@ export function ProfileView() {
             </button>
           </div>
         </div>
+      )}
+
+      {push.showAddToHomeScreenHelp && (
+        <AddToHomeScreenPrompt
+          variant="push-failed"
+          onDismiss={() => {
+            push.setShowAddToHomeScreenHelp(false)
+            setAddToHomeScreenSeen()
+          }}
+        />
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

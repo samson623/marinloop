@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { PushService } from '@/shared/services/push'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { useAppStore } from '@/shared/stores/app-store'
+import { needsAddToHomeScreenForPush } from '@/shared/lib/device'
 
 export function usePushNotifications() {
     const { isDemo } = useAuthStore()
@@ -13,6 +14,7 @@ export function usePushNotifications() {
     )
     const [isSubscribed, setIsSubscribed] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
+    const [showAddToHomeScreenHelp, setShowAddToHomeScreenHelp] = useState(false)
 
     useEffect(() => {
         if (!isSupported || isDemo) return
@@ -36,6 +38,9 @@ export function usePushNotifications() {
                 setPermission(Notification.permission)
                 if (Notification.permission === 'denied') {
                     toast('Notifications blocked — check browser settings', 'tw')
+                } else if (needsAddToHomeScreenForPush()) {
+                    setShowAddToHomeScreenHelp(true)
+                    toast('Add MedFlow to your home screen first', 'tw')
                 } else {
                     toast('Failed to enable push notifications', 'te')
                 }
@@ -69,5 +74,7 @@ export function usePushNotifications() {
         isLoading,
         subscribe,
         unsubscribe,
+        showAddToHomeScreenHelp,
+        setShowAddToHomeScreenHelp,
     }
 }

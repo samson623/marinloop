@@ -16,6 +16,9 @@ import { MedsView } from '@/app/views/MedsView'
 import { ApptsView } from '@/app/views/ApptsView'
 import { SummaryView } from '@/app/views/SummaryView'
 import { ProfileView } from '@/app/views/ProfileView'
+import { isMobile, isStandalone } from '@/shared/lib/device'
+import { AddToHomeScreenPrompt, getAddToHomeScreenSeen, setAddToHomeScreenSeen } from '@/shared/components/AddToHomeScreenPrompt'
+import { useInstallPrompt } from '@/shared/hooks/useInstallPrompt'
 
 type SpeechRecognitionResultLike = {
   isFinal: boolean
@@ -117,7 +120,9 @@ function AppInner() {
   const [voiceConfirmation, setVoiceConfirmation] = useState<VoiceConfirmation | null>(null)
   const [voiceTestInput, setVoiceTestInput] = useState('')
   const [showVoiceTest, setShowVoiceTest] = useState(false)
+  const [showAddToHomeScreenOnboarding, setShowAddToHomeScreenOnboarding] = useState(false)
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
+  const installPrompt = useInstallPrompt()
 
   useEffect(() => {
     try {
@@ -145,6 +150,13 @@ function AppInner() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!session || isDemo) return
+    if (!isMobile() || isStandalone() || getAddToHomeScreenSeen()) return
+    const t = setTimeout(() => setShowAddToHomeScreenOnboarding(true), 1500)
+    return () => clearTimeout(t)
+  }, [session, isDemo])
+
   if (isLoading) {
     return <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg-primary)' }}>Loading...</div>
   }
@@ -167,6 +179,11 @@ function AppInner() {
         : tab === 'appts'
           ? <ApptsView />
           : <SummaryView />
+
+  const handleAddToHomeScreenDismiss = () => {
+    setAddToHomeScreenSeen()
+    setShowAddToHomeScreenOnboarding(false)
+  }
 
   const handleVoice = () => {
     const SpeechRecognitionCtor = (
@@ -459,6 +476,14 @@ function AppInner() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--color-bg-primary)' }}>
+      {showAddToHomeScreenOnboarding && (
+        <AddToHomeScreenPrompt
+          variant="onboarding"
+          onDismiss={handleAddToHomeScreenDismiss}
+          canInstall={installPrompt.canInstall}
+          onInstall={installPrompt.promptInstall}
+        />
+      )}
       <header style={{
         padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         position: 'sticky', top: 0, zIndex: 100, backdropFilter: 'blur(12px)',

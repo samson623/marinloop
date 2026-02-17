@@ -53,6 +53,7 @@ export type VoiceIntentType =
   | 'create_reminder'
   | 'log_dose'
   | 'query_next_dose'
+  | 'add_note'
   | 'unknown'
 
 export type VoiceNavigateTarget = 'timeline' | 'meds' | 'appts' | 'summary'
@@ -89,12 +90,18 @@ export interface VoiceDoseDraft {
   when?: 'now' | 'morning' | 'afternoon' | 'evening' | 'night'
 }
 
+export interface VoiceNoteDraft {
+  medication_name?: string
+  text: string
+}
+
 export interface VoiceIntentEntities {
   navigate?: { target?: VoiceNavigateTarget }
   medication?: VoiceMedicationDraft
   appointment?: VoiceAppointmentDraft
   reminder?: VoiceReminderDraft
   dose?: VoiceDoseDraft
+  note?: VoiceNoteDraft
 }
 
 export interface VoiceIntentResult {

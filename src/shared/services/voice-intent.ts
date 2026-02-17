@@ -17,7 +17,8 @@ const VOICE_INTENT_SYSTEM_PROMPT = [
   'You convert a voice command into strict JSON.',
   'Return only JSON with keys:',
   'intent, entities, confidence, missing, requires_confirmation, assistant_message.',
-  'intent must be one of: navigate, open_add_med, open_add_appt, create_reminder, log_dose, query_next_dose, unknown.',
+  'intent must be one of: navigate, open_add_med, open_add_appt, create_reminder, log_dose, query_next_dose, add_note, unknown.',
+  'For add_note, entities.note must have "text" (the note content) and optionally "medication_name".',
   'confidence must be a number in [0,1].',
   'missing must be an array of field names that are required to complete the intent.',
   'requires_confirmation should be true for write actions (create_reminder, log_dose).',
@@ -40,7 +41,7 @@ function clampConfidence(v: unknown): number {
 
 function isIntent(value: unknown): value is VoiceIntentType {
   return typeof value === 'string'
-    && ['navigate', 'open_add_med', 'open_add_appt', 'create_reminder', 'log_dose', 'query_next_dose', 'unknown'].includes(value)
+    && ['navigate', 'open_add_med', 'open_add_appt', 'create_reminder', 'log_dose', 'query_next_dose', 'add_note', 'unknown'].includes(value)
 }
 
 function coerceResult(raw: unknown): VoiceIntentResult {
@@ -160,6 +161,20 @@ function heuristicParse(text: string): VoiceIntentResult {
       },
       confidence: 0.76,
       missing: parseTimeFromText(lowered) ? [] : ['appointment.time'],
+      requires_confirmation: false,
+    }
+  }
+
+  if (lowered.includes('add') && (lowered.includes('note') || lowered.includes('note for'))) {
+    const forMedMatch = lowered.match(/note\s+for\s+([^:]+):?\s*(.*)/)
+    const simpleMatch = !forMedMatch ? lowered.match(/add\s+note:?\s*(.*)/) : null
+    const medication_name = forMedMatch?.[1]?.trim()
+    const noteText = (forMedMatch?.[2] ?? simpleMatch?.[1] ?? '').trim()
+    return {
+      intent: 'add_note',
+      entities: { note: { medication_name: medication_name || undefined, text: noteText } },
+      confidence: 0.7,
+      missing: !noteText ? ['note.text'] : [],
       requires_confirmation: false,
     }
   }

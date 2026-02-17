@@ -101,6 +101,8 @@ function AppInner() {
     setShowProfile,
     openAddMedModal,
     openAddApptModal,
+    addNote,
+    meds,
     assistantState,
     setAssistantPendingIntent,
     clearAssistantState,
@@ -113,7 +115,17 @@ function AppInner() {
   const [voiceActive, setVoiceActive] = useState(false)
   const [voiceBubble, setVoiceBubble] = useState('')
   const [voiceConfirmation, setVoiceConfirmation] = useState<VoiceConfirmation | null>(null)
+  const [voiceTestInput, setVoiceTestInput] = useState('')
+  const [showVoiceTest, setShowVoiceTest] = useState(false)
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
+
+  useEffect(() => {
+    try {
+      setShowVoiceTest(new URLSearchParams(window.location.search).get('voiceTest') === '1')
+    } catch {
+      setShowVoiceTest(false)
+    }
+  }, [])
 
   useEffect(() => {
     void initialize()
@@ -192,9 +204,12 @@ function AppInner() {
     setVoiceBubble('Listening...')
 
     rec.onresult = (event) => {
-      const transcript = Array.from(event.results).map((r) => r[0].transcript).join('')
+      const results = Array.from(event.results)
+      const transcript = results.map((r) => r[0].transcript).join('').trim()
       setVoiceBubble(transcript || 'Listening...')
-      if (event.results[0]?.isFinal) {
+      // Only process when the last segment is final (full utterance complete)
+      const lastResult = results[results.length - 1]
+      if (lastResult?.isFinal && transcript) {
         void processVoice(transcript)
         setTimeout(() => {
           setVoiceActive(false)
@@ -416,6 +431,25 @@ function AppInner() {
           },
         })
         return
+      case 'add_note': {
+        const noteText = intent.entities.note?.text?.trim()
+        if (!noteText) {
+          store.toast('What should the note say? Say "add note" then your note.', 'tw')
+          return
+        }
+        const medList = meds ?? []
+        const medName = intent.entities.note?.medication_name?.trim()
+        const med = medName
+          ? medList.find((m) => m.name.toLowerCase().includes(medName.toLowerCase()))
+          : medList[0]
+        if (!med) {
+          store.toast(medName ? `No medication named "${medName}" found.` : 'Add a medication first, then add a note.', 'tw')
+          return
+        }
+        addNote(med.id, noteText)
+        setVoiceBubble(`Note added for ${med.name}.`)
+        return
+      }
       default:
         if (!fallbackKeywordRoute(transcript)) {
           store.toast(`"${text}" - command not recognized`, 'tw')
@@ -483,6 +517,39 @@ function AppInner() {
           )
         })}
       </nav>
+
+      {showVoiceTest && (
+        <div style={{
+          position: 'fixed', top: 56, left: 16, right: 16, zIndex: 99,
+          display: 'flex', gap: 8, alignItems: 'center', background: 'var(--color-bg-secondary)',
+          padding: 8, borderRadius: 12, border: '1px solid var(--color-border-primary)', boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+        }}>
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-tertiary)', whiteSpace: 'nowrap' }}>Test voice:</span>
+          <input
+            type="text"
+            value={voiceTestInput}
+            onChange={(e) => setVoiceTestInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && voiceTestInput.trim()) {
+                void processVoice(voiceTestInput.trim())
+                setVoiceTestInput('')
+              }
+            }}
+            placeholder="e.g. go to meds / add note felt dizzy"
+            style={{
+              flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--color-border-primary)',
+              background: 'var(--color-input-bg)', color: 'var(--color-text-primary)', fontSize: 13, outline: 'none',
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => { if (voiceTestInput.trim()) void processVoice(voiceTestInput.trim()); setVoiceTestInput('') }}
+            style={{ padding: '8px 12px', borderRadius: 8, border: 'none', background: 'var(--color-accent)', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+          >
+            Run
+          </button>
+        </div>
+      )}
 
       <button
         onClick={handleVoice}

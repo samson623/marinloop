@@ -3,6 +3,7 @@ import { useAppStore, fD, fT } from '@/shared/stores/app-store'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { useAppointments } from '@/shared/hooks/useAppointments'
 import { Modal } from '@/shared/components/Modal'
+import { Button, Input } from '@/shared/components/ui'
 
 export function ApptsView() {
   const {
@@ -31,13 +32,13 @@ export function ApptsView() {
 
   return (
     <div className="animate-view-in">
-      <h2 style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 16, paddingBottom: 10, borderBottom: '2px solid var(--color-text-primary)' }}>
+      <h2 className="text-xl font-extrabold tracking-[-0.02em] mb-4 pb-2.5 border-b-2 border-[var(--color-text-primary)] text-[var(--color-text-primary)]">
         Appointments
       </h2>
 
       <div className="stagger-children">
         {sorted.length === 0 && !isDemo && (
-          <div style={{ padding: 20, textAlign: 'center', color: 'var(--color-text-secondary)', border: '1px dashed var(--color-border-secondary)', borderRadius: 12 }}>
+          <div className="py-5 text-center text-[var(--color-text-secondary)] border border-dashed border-[var(--color-border-secondary)] rounded-xl">
             No upcoming appointments.
           </div>
         )}
@@ -45,34 +46,33 @@ export function ApptsView() {
         {sorted.map((a, i) => {
           const past = new Date(`${a.date}T${a.time}`) < new Date()
           return (
-            <div
+            <button
               key={a.id}
-              className="animate-slide-r card-interactive"
+              type="button"
+              className="animate-slide-r card-interactive w-full text-left bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] border-l-[3px] border-l-[var(--color-text-primary)] rounded-[14px] p-3.5 mb-2 cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+              style={{ animationDelay: `${i * 0.04}s`, opacity: past ? 0.45 : 1 }}
               onClick={() => toast(`${a.title} - ${fD(a.date)}`, 'ts')}
-              style={{
-                background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-secondary)',
-                borderLeft: '3px solid var(--color-text-primary)', borderRadius: 14, padding: 14,
-                marginBottom: 8, cursor: 'pointer', opacity: past ? 0.45 : 1, animationDelay: `${i * 0.04}s`,
-              }}
             >
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--color-text-tertiary)', marginBottom: 3 }}>
+              <div className="text-[11px] text-[var(--color-text-tertiary)] mb-0.5 [font-family:var(--font-mono)]">
                 {fD(a.date)} at {fT(a.time)}
               </div>
-              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 3 }}>{a.title}</div>
-              <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>{a.loc}</div>
-            </div>
+              <div className="text-[15px] font-bold mb-0.5 text-[var(--color-text-primary)]">{a.title}</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">{a.loc}</div>
+            </button>
           )
         })}
       </div>
 
-      <button onClick={() => openAddApptModal(null)} style={{
-        width: '100%', padding: 14, background: 'transparent', border: '2px dashed var(--color-border-primary)',
-        borderRadius: 14, fontSize: 14, fontWeight: 700, color: 'var(--color-text-tertiary)',
-        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10,
-      }}>
+      <Button
+        type="button"
+        variant="ghost"
+        size="md"
+        onClick={() => openAddApptModal(null)}
+        className="mt-2.5 border-2 border-dashed border-[var(--color-border-primary)] text-[var(--color-text-tertiary)] flex items-center justify-center gap-1.5"
+      >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
         Add Appointment
-      </button>
+      </Button>
 
       {showAddApptModal && (
         <AddApptModal
@@ -142,18 +142,32 @@ function AddApptModal({
   return (
     <Modal open onOpenChange={(o) => !o && onClose()} title="Add Appointment" variant="bottom">
       <form onSubmit={handleSubmit}>
-        <FG label="Title" id="appt-title"><input className="fi" id="appt-title" value={title} onChange={(e) => setTitle(e.target.value)} required /></FG>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <FG label="Date" id="appt-date"><input className="fi" id="appt-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required /></FG>
-          <FG label="Time" id="appt-time"><input className="fi" id="appt-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} required /></FG>
-        </div>
-        <FG label="Location" id="appt-loc"><input className="fi" id="appt-loc" value={loc} onChange={(e) => setLoc(e.target.value)} /></FG>
-        <FG label="Notes" id="appt-notes">
-          <textarea id="appt-notes" value={notes} onChange={(e) => setNotes(e.target.value)} style={{ width: '100%', height: 80, padding: 12, background: 'var(--color-input-bg)', border: '1.5px solid var(--color-border-primary)', borderRadius: 10, fontSize: 13, color: 'var(--color-text-primary)', resize: 'none', outline: 'none' }} />
+        <FG label="Title" id="appt-title">
+          <Input id="appt-title" value={title} onChange={(e) => setTitle(e.target.value)} required />
         </FG>
-        <button type="submit" style={{ width: '100%', padding: 14, background: 'var(--color-accent)', color: '#fff', border: 'none', fontSize: 14, fontWeight: 700, cursor: 'pointer', borderRadius: 12, marginTop: 6 }}>
+        <div className="flex gap-2.5">
+          <FG label="Date" id="appt-date">
+            <Input id="appt-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+          </FG>
+          <FG label="Time" id="appt-time">
+            <Input id="appt-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} required />
+          </FG>
+        </div>
+        <FG label="Location" id="appt-loc">
+          <Input id="appt-loc" value={loc} onChange={(e) => setLoc(e.target.value)} />
+        </FG>
+        <FG label="Notes" id="appt-notes">
+          <textarea
+            id="appt-notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="fi w-full h-20 py-3 px-3.5 resize-none"
+            rows={3}
+          />
+        </FG>
+        <Button type="submit" variant="primary" size="md" className="mt-1.5">
           Add Appointment
-        </button>
+        </Button>
       </form>
     </Modal>
   )
@@ -161,8 +175,10 @@ function AddApptModal({
 
 function FG({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
   return (
-    <div style={{ marginBottom: 14, flex: 1 }}>
-      <label htmlFor={id} style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</label>
+    <div className="mb-3.5 flex-1">
+      <label htmlFor={id} className="block text-[11px] font-bold text-[var(--color-text-secondary)] mb-1 uppercase tracking-[0.08em]">
+        {label}
+      </label>
       {children}
     </div>
   )

@@ -7,6 +7,7 @@ import { useRefills } from '@/shared/hooks/useRefillsList'
 import { BarcodeScanner } from '@/shared/components/BarcodeScanner'
 import { Modal } from '@/shared/components/Modal'
 import { lookupByBarcode } from '@/shared/services/openfda'
+import { Button, Input } from '@/shared/components/ui'
 
 type AddMedModalProps = {
   onClose: () => void
@@ -68,13 +69,13 @@ export function MedsView() {
 
   return (
     <div className="animate-view-in">
-      <h2 style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 16, paddingBottom: 10, borderBottom: '2px solid var(--color-text-primary)' }}>
+      <h2 className="text-xl font-extrabold tracking-[-0.02em] mb-4 pb-2.5 border-b-2 border-[var(--color-text-primary)] text-[var(--color-text-primary)]">
         Medications
       </h2>
 
       <div className="stagger-children">
         {displayMeds.length === 0 && !isDemo && (
-          <div style={{ padding: 20, textAlign: 'center', color: 'var(--color-text-secondary)', border: '1px dashed var(--color-border-secondary)', borderRadius: 12 }}>
+          <div className="py-5 text-center text-[var(--color-text-secondary)] border border-dashed border-[var(--color-border-secondary)] rounded-xl">
             No medications found. Add one below.
           </div>
         )}
@@ -85,49 +86,52 @@ export function MedsView() {
           const sc = p < 20 ? 'var(--color-red)' : p < 40 ? 'var(--color-amber)' : 'var(--color-green)'
 
           return (
-            <div
+            <button
               key={m.id}
-              className="animate-slide-r card-interactive"
+              type="button"
+              className="animate-slide-r card-interactive w-full text-left bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] rounded-[14px] p-3.5 mb-2 cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+              style={{ animationDelay: `${i * 0.04}s` }}
               onClick={() => toast(`${m.name} - ${m.inst}`, 'ts')}
-              style={{
-                background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-secondary)',
-                borderRadius: 14, padding: 14, marginBottom: 8, cursor: 'pointer', animationDelay: `${i * 0.04}s`,
-              }}
             >
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-                <span style={{ fontSize: 15, fontWeight: 700 }}>{m.name}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--color-text-tertiary)', background: 'var(--color-bg-tertiary)', padding: '2px 8px', borderRadius: 6 }}>{m.dose}</span>
+              <div className="flex items-start justify-between gap-2 mb-1.5">
+                <span className="text-[15px] font-bold text-[var(--color-text-primary)]">{m.name}</span>
+                <span className="text-[11px] text-[var(--color-text-tertiary)] bg-[var(--color-bg-tertiary)] py-0.5 px-2 rounded-md [font-family:var(--font-mono)]">{m.dose}</span>
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, fontSize: 12, color: 'var(--color-text-secondary)' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <div className="flex flex-wrap gap-3.5 text-xs text-[var(--color-text-secondary)]">
+                <span className="flex items-center gap-1">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
                   {m.times.length > 0 ? m.times.map((t) => fT(t)).join(', ') : 'No time set'}
                 </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span className="flex items-center gap-1">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 20V10" /><path d="M12 20V4" /><path d="M6 20v-6" /></svg>
                   {m.freq}x daily
                 </span>
               </div>
-              <div style={{ marginTop: 8, height: 4, background: 'var(--color-ring-track)', borderRadius: 4, overflow: 'hidden' }}>
-                <div style={{ height: '100%', borderRadius: 4, width: `${p}%`, background: sc, transition: 'width .6s cubic-bezier(.4,0,.2,1)' }} />
+              <div className="mt-2 h-1 bg-[var(--color-ring-track)] rounded overflow-hidden">
+                <div
+                  className="h-full rounded transition-[width] duration-300"
+                  style={{ width: `${p}%`, background: sc }}
+                />
               </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--color-text-tertiary)', marginTop: 4, display: 'flex', justifyContent: 'space-between' }}>
+              <div className="text-[11px] text-[var(--color-text-tertiary)] mt-1 flex justify-between [font-family:var(--font-mono)]">
                 <span>{m.sup} pills left</span>
                 <span>{days} days{days <= 5 ? ' - Refill soon' : ''}</span>
               </div>
-            </div>
+            </button>
           )
         })}
       </div>
 
-      <button onClick={() => openAddMedModal(null)} style={{
-        width: '100%', padding: 14, background: 'transparent', border: '2px dashed var(--color-border-primary)',
-        borderRadius: 14, fontSize: 14, fontWeight: 700, color: 'var(--color-text-tertiary)',
-        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10,
-      }}>
+      <Button
+        type="button"
+        variant="ghost"
+        size="md"
+        onClick={() => openAddMedModal(null)}
+        className="mt-2.5 border-2 border-dashed border-[var(--color-border-primary)] text-[var(--color-text-tertiary)] flex items-center justify-center gap-1.5"
+      >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
         Add Medication
-      </button>
+      </Button>
 
       {showAddMedModal && (
         <AddMedModal
@@ -227,86 +231,68 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
   return (
     <>
       <Modal open onOpenChange={(o) => !o && onClose()} title="Add Medication" variant="bottom">
-        {/* Scan Barcode Button */}
-            <button
-              type="button"
-              onClick={() => setShowScanner(true)}
-              disabled={isLooking}
-              className="tap-spring"
-              style={{
-                width: '100%',
-                padding: 14,
-                marginBottom: 18,
-                background: 'var(--color-accent-bg)',
-                border: '1.5px solid var(--color-green-border)',
-                borderRadius: 12,
-                fontSize: 14,
-                fontWeight: 700,
-                color: 'var(--color-accent)',
-                cursor: isLooking ? 'wait' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                opacity: isLooking ? 0.6 : 1,
-                transition: 'opacity 0.2s, transform 0.15s',
-              }}
-            >
-              {isLooking ? (
-                <>
-                  <div style={{
-                    width: 18, height: 18,
-                    border: '2px solid var(--color-green-border)',
-                    borderTop: '2px solid var(--color-accent)',
-                    borderRadius: '50%',
-                    animation: 'spin 0.8s linear infinite',
-                  }} />
-                  Looking up medication...
-                </>
-              ) : (
-                <>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M3 7V5a2 2 0 0 1 2-2h2" />
-                    <path d="M17 3h2a2 2 0 0 1 2 2v2" />
-                    <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
-                    <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
-                    <line x1="7" y1="12" x2="17" y2="12" />
-                    <line x1="7" y1="8" x2="13" y2="8" />
-                    <line x1="7" y1="16" x2="15" y2="16" />
-                  </svg>
-                  Scan Barcode
-                </>
-              )}
-            </button>
+        <button
+          type="button"
+          onClick={() => setShowScanner(true)}
+          disabled={isLooking}
+          className="tap-spring w-full py-3.5 mb-4 bg-[var(--color-accent-bg)] border-[1.5px] border-[var(--color-green-border)] rounded-xl text-sm font-bold text-[var(--color-accent)] cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-wait outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+        >
+          {isLooking ? (
+            <>
+              <div className="w-[18px] h-[18px] border-2 border-[var(--color-green-border)] border-t-2 border-t-[var(--color-accent)] rounded-full spin-loading" />
+              Looking up medication...
+            </>
+          ) : (
+            <>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+                <line x1="7" y1="12" x2="17" y2="12" /><line x1="7" y1="8" x2="13" y2="8" /><line x1="7" y1="16" x2="15" y2="16" />
+              </svg>
+              Scan Barcode
+            </>
+          )}
+        </button>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-              <div style={{ flex: 1, height: 1, background: 'var(--color-border-primary)' }} />
-              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>or enter manually</span>
-              <div style={{ flex: 1, height: 1, background: 'var(--color-border-primary)' }} />
-            </div>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex-1 h-px bg-[var(--color-border-primary)]" />
+          <span className="text-[11px] font-semibold text-[var(--color-text-tertiary)] uppercase tracking-[0.08em]">or enter manually</span>
+          <div className="flex-1 h-px bg-[var(--color-border-primary)]" />
+        </div>
 
-            <form onSubmit={handleSubmit}>
-              <FormField label="Name" id="med-name"><input className="fi" id="med-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Amoxicillin" required /></FormField>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <FormField label="Dosage" id="med-dosage"><input className="fi" id="med-dosage" value={dose} onChange={(e) => setDose(e.target.value)} placeholder="e.g. 500mg" /></FormField>
-                <FormField label="Frequency" id="med-freq">
-                  <select className="fi" id="med-freq" value={freq} onChange={(e) => setFreq(e.target.value)} style={{ appearance: 'auto' }}>
-                    <option value="1">Once daily</option>
-                    <option value="2">Twice daily</option>
-                    <option value="3">Three times</option>
-                  </select>
-                </FormField>
-              </div>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <FormField label="Time" id="med-time"><input className="fi" id="med-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} /></FormField>
-                <FormField label="Pills in Bottle" id="med-sup"><input className="fi" id="med-sup" type="number" value={sup} onChange={(e) => setSup(e.target.value)} min="0" /></FormField>
-              </div>
-              <FormField label="Instructions" id="med-inst"><input className="fi" id="med-inst" value={inst} onChange={(e) => setInst(e.target.value)} placeholder="e.g. Take with food" /></FormField>
-              <FormField label="Warnings" id="med-warn"><input className="fi" id="med-warn" value={warn} onChange={(e) => setWarn(e.target.value)} placeholder="e.g. May cause drowsiness" /></FormField>
-              <button type="submit" style={{ width: '100%', padding: 14, background: 'var(--color-accent)', color: '#fff', border: 'none', fontSize: 14, fontWeight: 700, cursor: 'pointer', borderRadius: 12, marginTop: 6 }}>
-                Add Medication
-              </button>
-            </form>
+        <form onSubmit={handleSubmit}>
+          <FormField label="Name" id="med-name">
+            <Input id="med-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Amoxicillin" required />
+          </FormField>
+          <div className="flex gap-2.5">
+            <FormField label="Dosage" id="med-dosage">
+              <Input id="med-dosage" value={dose} onChange={(e) => setDose(e.target.value)} placeholder="e.g. 500mg" />
+            </FormField>
+            <FormField label="Frequency" id="med-freq">
+              <select className="fi" id="med-freq" value={freq} onChange={(e) => setFreq(e.target.value)}>
+                <option value="1">Once daily</option>
+                <option value="2">Twice daily</option>
+                <option value="3">Three times</option>
+              </select>
+            </FormField>
+          </div>
+          <div className="flex gap-2.5">
+            <FormField label="Time" id="med-time">
+              <Input id="med-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+            </FormField>
+            <FormField label="Pills in Bottle" id="med-sup">
+              <Input id="med-sup" type="number" value={sup} onChange={(e) => setSup(e.target.value)} min={0} />
+            </FormField>
+          </div>
+          <FormField label="Instructions" id="med-inst">
+            <Input id="med-inst" value={inst} onChange={(e) => setInst(e.target.value)} placeholder="e.g. Take with food" />
+          </FormField>
+          <FormField label="Warnings" id="med-warn">
+            <Input id="med-warn" value={warn} onChange={(e) => setWarn(e.target.value)} placeholder="e.g. May cause drowsiness" />
+          </FormField>
+          <Button type="submit" variant="primary" size="md" className="mt-1.5">
+            Add Medication
+          </Button>
+        </form>
       </Modal>
 
       {showScanner && (
@@ -321,8 +307,10 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
 
 function FormField({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
   return (
-    <div style={{ marginBottom: 14, flex: 1 }}>
-      <label htmlFor={id} style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</label>
+    <div className="mb-3.5 flex-1">
+      <label htmlFor={id} className="block text-[11px] font-bold text-[var(--color-text-secondary)] mb-1 uppercase tracking-[0.08em]">
+        {label}
+      </label>
       {children}
     </div>
   )

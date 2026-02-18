@@ -5,6 +5,7 @@ import { useTimeline } from '@/shared/hooks/useTimeline'
 import { useDoseLogs } from '@/shared/hooks/useDoseLogs'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { Modal } from '@/shared/components/Modal'
+import { Pill, Button } from '@/shared/components/ui'
 
 const CIRC = 2 * Math.PI * 46
 
@@ -45,44 +46,51 @@ export function TimelineView() {
 
   return (
     <div className="animate-view-in">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.03em' }}>{now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
-          <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', fontWeight: 500 }}>{now.toLocaleDateString('en-US', { weekday: 'long' })}</div>
+          <div className="text-2xl font-extrabold tracking-[-0.03em] text-[var(--color-text-primary)]">
+            {now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </div>
+          <div className="text-[13px] text-[var(--color-text-secondary)] font-medium">
+            {now.toLocaleDateString('en-US', { weekday: 'long' })}
+          </div>
         </div>
-        <div style={{ textAlign: 'center' }} role="img" aria-label={`Adherence ${pct}%`}>
-          <svg width="120" height="120" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }} aria-hidden>
+        <div className="text-center" role="img" aria-label={`Adherence ${pct}%`}>
+          <svg width="120" height="120" viewBox="0 0 100 100" className="-rotate-90" aria-hidden>
             <circle cx="50" cy="50" r="46" fill="none" stroke="var(--color-ring-track)" strokeWidth="6" />
-            <circle cx="50" cy="50" r="46" fill="none" strokeWidth="6" strokeLinecap="round" stroke={ringColor} strokeDasharray={`${CIRC}`} strokeDashoffset={`${offset}`} style={{ transition: 'stroke-dashoffset 1s cubic-bezier(.4,0,.2,1), stroke .3s' }} />
+            <circle
+              cx="50"
+              cy="50"
+              r="46"
+              fill="none"
+              strokeWidth="6"
+              strokeLinecap="round"
+              stroke={ringColor}
+              strokeDasharray={CIRC}
+              strokeDashoffset={offset}
+              className="transition-[stroke-dashoffset,stroke] duration-300"
+              style={{ transition: 'stroke-dashoffset 1s cubic-bezier(.4,0,.2,1), stroke .3s' }}
+            />
           </svg>
-          <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.03em', marginTop: -82, position: 'relative', zIndex: 1 }}>{pct}%</div>
-          <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 2 }}>Adherence</div>
+          <div className="text-[26px] font-extrabold tracking-[-0.03em] -mt-[82px] relative z-[1] text-[var(--color-text-primary)]">{pct}%</div>
+          <div className="text-[11px] text-[var(--color-text-tertiary)] font-medium uppercase tracking-[0.08em] mt-0.5">Adherence</div>
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        <Pill color="var(--color-green)" label={`${dn} Done`} />
-        <Pill color="var(--color-amber)" label={`${lt} Late`} />
-        <Pill color="var(--color-red)" label={`${ms} Missed`} />
+      <div className="flex gap-2 mb-5">
+        <Pill variant="green">{dn} Done</Pill>
+        <Pill variant="amber">{lt} Late</Pill>
+        <Pill variant="red">{ms} Missed</Pill>
       </div>
 
-      <div style={{ position: 'relative', paddingLeft: 20 }}>
-        <div style={{ position: 'absolute', left: 4, top: 12, bottom: 12, width: 1.5, background: 'linear-gradient(to bottom, var(--color-border-primary), transparent)', borderRadius: 1 }} />
+      <div className="relative pl-5">
+        <div className="absolute left-1 top-3 bottom-3 w-[1.5px] rounded bg-gradient-to-b from-[var(--color-border-primary)] to-transparent" aria-hidden />
         {sched.length === 0 ? (
-          <div style={{ padding: 20, color: 'var(--color-text-secondary)', fontSize: 13 }}>No items for today</div>
+          <div className="py-5 text-[var(--color-text-secondary)] text-[13px]">No items for today</div>
         ) : (
           <div className="stagger-children">{sched.map((it) => <TimelineItem key={it.id} item={it} nowMin={nM} />)}</div>
         )}
       </div>
-    </div>
-  )
-}
-
-function Pill({ color, label }: { color: string; label: string }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-primary)', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
-      <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0 }} />
-      {label}
     </div>
   )
 }
@@ -92,7 +100,6 @@ function TimelineItem({ item: it, nowMin }: { item: SchedItem; nowMin: number })
   const [open, setOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
 
-  const borderStyle = '1px solid var(--color-border-secondary)'
   let bg = 'var(--color-bg-secondary)'
   let dotColor = 'var(--color-text-tertiary)'
   let dotRadius = '50%'
@@ -143,17 +150,21 @@ function TimelineItem({ item: it, nowMin }: { item: SchedItem; nowMin: number })
       <button
         type="button"
         ref={triggerRef}
-        className="animate-slide-r card-interactive"
+        className="animate-slide-r card-interactive relative mb-1.5 py-3 px-3.5 w-full text-left rounded-xl cursor-pointer border border-[var(--color-border-secondary)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+        style={{ background: bg, borderLeft, opacity }}
         onClick={handleClick}
         aria-label={ariaLabel}
-        style={{ position: 'relative', marginBottom: 6, padding: '12px 14px', background: bg, border: borderStyle, borderLeft, borderRadius: 12, cursor: 'pointer', opacity, width: '100%', textAlign: 'left' }}
       >
-        <div style={{ position: 'absolute', left: -20, top: 18, width: 9, height: 9, background: dotColor, border: '2px solid var(--color-bg-primary)', borderRadius: dotRadius, zIndex: 1 }} aria-hidden />
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--color-text-secondary)', minWidth: 60, paddingTop: 1 }}>{fT(it.time)}</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.name}</div>
-            <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.inst || ''}</div>
+        <div
+          className="absolute -left-5 top-[18px] w-[9px] h-[9px] border-2 border-[var(--color-bg-primary)] z-[1]"
+          style={{ background: dotColor, borderRadius: dotRadius }}
+          aria-hidden
+        />
+        <div className="flex items-start gap-2.5">
+          <span className="text-[11px] font-bold text-[var(--color-text-secondary)] min-w-[60px] pt-0.5 [font-family:var(--font-mono)]">{fT(it.time)}</span>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-bold mb-0.5 truncate text-[var(--color-text-primary)]">{it.name}</div>
+            <div className="text-xs text-[var(--color-text-secondary)] truncate">{it.inst || ''}</div>
           </div>
           {tag}
         </div>
@@ -165,7 +176,10 @@ function TimelineItem({ item: it, nowMin }: { item: SchedItem; nowMin: number })
 
 function Tag({ bg, color, border, label, dashed, icon }: { bg: string; color: string; border: string; label: string; dashed?: boolean; icon?: React.ReactNode }) {
   return (
-    <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', padding: '3px 8px', borderRadius: 6, whiteSpace: 'nowrap', flexShrink: 0, alignSelf: 'flex-start', background: bg, color, border: `1px ${dashed ? 'dashed' : 'solid'} ${border}`, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+    <span
+      className="text-[9px] font-bold uppercase tracking-[0.08em] py-0.5 px-2 rounded-md whitespace-nowrap shrink-0 self-start inline-flex items-center gap-1"
+      style={{ background: bg, color, border: `1px ${dashed ? 'dashed' : 'solid'} ${border}` }}
+    >
       {icon}
       {label}
     </span>
@@ -218,14 +232,32 @@ function DoseModal({ item: it, onClose, nowMin, triggerRef }: { item: SchedItem;
       variant="bottom"
       triggerRef={triggerRef}
     >
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--color-text-tertiary)', marginBottom: 4 }}>{fT(it.time)}</div>
-      <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 3 }}>{it.name} {it.dose || ''}</div>
-      <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 14 }}>{it.inst || ''}</div>
+      <div className="text-xs text-[var(--color-text-tertiary)] mb-1 [font-family:var(--font-mono)]">{fT(it.time)}</div>
+      <div className="text-[22px] font-extrabold tracking-[-0.02em] mb-0.5 text-[var(--color-text-primary)]">{it.name} {it.dose || ''}</div>
+      <div className="text-[13px] text-[var(--color-text-secondary)] mb-3.5">{it.inst || ''}</div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <button onClick={() => { markDone(); onClose() }} style={{ width: '100%', padding: 14, fontSize: 14, fontWeight: 700, borderRadius: 12, cursor: 'pointer', border: 'none', background: 'var(--color-green)', color: '#fff' }}>Mark Done</button>
-        <button onClick={() => { toast(`${it.name} snoozed`, 'tw'); onClose() }} style={{ width: '100%', padding: 14, fontSize: 14, fontWeight: 700, borderRadius: 12, cursor: 'pointer', background: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)', border: '1.5px solid var(--color-border-primary)' }}>Snooze</button>
-        <button onClick={() => { markMissed(); onClose() }} style={{ background: 'transparent', color: 'var(--color-red)', border: 'none', fontSize: 12, fontWeight: 600, padding: 10, cursor: 'pointer' }}>Mark as Missed</button>
+      <div className="flex flex-col gap-2">
+        <Button
+          type="button"
+          variant="primary"
+          size="md"
+          className="!bg-[var(--color-green)]"
+          onClick={() => { markDone(); onClose() }}
+        >
+          Mark Done
+        </Button>
+        <Button type="button" variant="secondary" size="md" onClick={() => { toast(`${it.name} snoozed`, 'tw'); onClose() }}>
+          Snooze
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="text-[var(--color-red)] font-semibold"
+          onClick={() => { markMissed(); onClose() }}
+        >
+          Mark as Missed
+        </Button>
       </div>
     </Modal>
   )

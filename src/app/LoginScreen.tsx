@@ -3,6 +3,8 @@ import { useThemeStore } from '@/shared/stores/theme-store'
 import { useAppStore } from '@/shared/stores/app-store'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { getErrorMessage } from '@/shared/lib/errors'
+import { IconButton } from '@/shared/components/IconButton'
+import { Button, Input } from '@/shared/components/ui'
 
 type LoginScreenProps = {
   onBack?: () => void
@@ -53,113 +55,139 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
   }
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg-primary)',
-    }}>
-      <button
-        onClick={toggleTheme}
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[var(--color-bg-primary)] p-4 sm:p-6 md:p-8 min-h-screen overflow-y-auto">
+      <IconButton
+        size="lg"
         aria-label="Toggle theme"
-        style={{
-          position: 'absolute', top: 20, right: 20, width: 40, height: 40,
-          background: 'var(--color-bg-tertiary)', border: '1px solid var(--color-border-primary)',
-          borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', color: 'var(--color-text-secondary)',
-        }}
+        onClick={toggleTheme}
+        className="absolute top-4 right-4 sm:top-5 sm:right-5 z-10"
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
         </svg>
-      </button>
+      </IconButton>
 
-      <div style={{ width: '100%', maxWidth: 400, padding: '0 24px' }}>
+      <div className="w-full max-w-[400px] sm:max-w-[420px] px-2 sm:px-4 py-6 sm:py-8 md:py-10">
         {onBack && (
           <button
             type="button"
             onClick={onBack}
             aria-label="Back"
-            style={{
-              position: 'absolute',
-              top: 20,
-              left: 20,
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: 'var(--color-text-secondary)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              fontSize: 14,
-            }}
+            className="absolute top-4 left-4 sm:top-5 sm:left-5 flex items-center gap-1.5 border-none bg-transparent cursor-pointer text-[var(--color-text-secondary)] text-sm outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] min-h-[44px]"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
             Back
           </button>
         )}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--color-text-primary)' }}>MedFlow</h1>
-          <span className="animate-dot-pulse" style={{ width: 8, height: 8, background: 'var(--color-accent)', borderRadius: 2 }} />
+        <div className="flex items-center gap-2 mb-2 sm:mb-3">
+          <h1 className="text-[26px] sm:text-[28px] md:text-[32px] font-extrabold tracking-[-0.03em] text-[var(--color-text-primary)]">
+            MedFlow
+          </h1>
+          <span
+            className="animate-dot-pulse w-2 h-2 rounded-[2px] bg-[var(--color-accent)] shrink-0"
+            aria-hidden
+          />
         </div>
-        <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', marginBottom: 40, fontWeight: 400 }}>
+        <p className="text-sm sm:text-base text-[var(--color-text-secondary)] mb-8 sm:mb-10 font-normal">
           {isSignUp ? 'Create your account.' : 'Stay on time. Stay safe. Stay confident.'}
         </p>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }} autoComplete="off">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-5" autoComplete="off">
           {error && (
-            <div className="animate-fade-in" style={{
-              background: 'var(--color-red-bg)', border: '1px solid var(--color-red-border)',
-              color: 'var(--color-red)', padding: '10px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500,
-            }}>
+            <div
+              className="animate-fade-in bg-[var(--color-red-bg)] border border-[var(--color-red-border)] text-[var(--color-red)] py-3 px-4 rounded-lg text-[13px] sm:text-sm font-medium"
+              role="alert"
+            >
               {error}
             </div>
           )}
 
           {isSignUp && (
             <div>
-              <label htmlFor="login-name" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Name</label>
-              <input id="login-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Doe" required style={{ width: '100%', padding: '13px 14px', background: 'var(--color-bg-tertiary)', border: '1.5px solid var(--color-border-primary)', color: 'var(--color-text-primary)', fontSize: 15, borderRadius: 10, outline: 'none' }} />
+              <label htmlFor="login-name" className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5 sm:mb-2 uppercase tracking-[0.08em]">
+                Name
+              </label>
+              <Input
+                id="login-name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Jane Doe"
+                required
+                className="min-h-[44px]"
+              />
             </div>
           )}
 
           <div>
-            <label htmlFor="login-email" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Email</label>
-            <input id="login-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@domain.com" required style={{ width: '100%', padding: '13px 14px', background: 'var(--color-bg-tertiary)', border: '1.5px solid var(--color-border-primary)', color: 'var(--color-text-primary)', fontSize: 15, borderRadius: 10, outline: 'none' }} />
+            <label htmlFor="login-email" className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5 sm:mb-2 uppercase tracking-[0.08em]">
+              Email
+            </label>
+            <Input
+              id="login-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@domain.com"
+              required
+              className="min-h-[44px]"
+            />
           </div>
 
           <div>
-            <label htmlFor="login-password" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Password</label>
-            <input id="login-password" type="password" value={pass} onChange={(e) => setPass(e.target.value)} placeholder="Enter password" required minLength={6} style={{ width: '100%', padding: '13px 14px', background: 'var(--color-bg-tertiary)', border: '1.5px solid var(--color-border-primary)', color: 'var(--color-text-primary)', fontSize: 15, borderRadius: 10, outline: 'none' }} />
+            <label htmlFor="login-password" className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5 sm:mb-2 uppercase tracking-[0.08em]">
+              Password
+            </label>
+            <Input
+              id="login-password"
+              type="password"
+              value={pass}
+              onChange={(e) => setPass(e.target.value)}
+              placeholder="Enter password"
+              required
+              minLength={6}
+              className="min-h-[44px]"
+            />
           </div>
 
-          <button type="submit" disabled={loading} className={shake ? 'animate-shake' : ''} style={{
-            width: '100%', padding: 14, background: 'var(--color-accent)', color: '#fff', border: 'none', fontSize: 14, fontWeight: 700,
-            cursor: loading ? 'wait' : 'pointer', borderRadius: 10, opacity: loading ? 0.7 : 1,
-          }}>
+          <Button
+            type="submit"
+            variant="primary"
+            size="md"
+            disabled={loading}
+            className={`min-h-[48px] ${shake ? 'animate-shake' : ''}`}
+          >
             {loading ? 'Processing...' : isSignUp ? 'Create Account' : 'Sign In'}
-          </button>
+          </Button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '4px 0', color: 'var(--color-text-tertiary)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-            <span style={{ flex: 1, height: 1, background: 'var(--color-border-primary)' }} />
+          <div className="flex items-center gap-3 my-2 sm:my-3 text-[var(--color-text-tertiary)] text-[11px] sm:text-xs uppercase tracking-[0.1em]">
+            <span className="flex-1 h-px bg-[var(--color-border-primary)]" />
             <span>or</span>
-            <span style={{ flex: 1, height: 1, background: 'var(--color-border-primary)' }} />
+            <span className="flex-1 h-px bg-[var(--color-border-primary)]" />
           </div>
 
-          <button type="button" onClick={handleGoogle} style={{
-            width: '100%', padding: 12, background: 'transparent', border: '1.5px solid var(--color-border-primary)', color: 'var(--color-text-secondary)',
-            fontSize: 13, fontWeight: 600, cursor: 'pointer', borderRadius: 10,
-          }}>
+          <Button
+            type="button"
+            variant="secondary"
+            size="md"
+            onClick={handleGoogle}
+            className="min-h-[48px] py-3"
+          >
             Continue with Google
-          </button>
+          </Button>
 
-          <div style={{ textAlign: 'center', marginTop: 10 }}>
-            <button type="button" onClick={() => setIsSignUp(!isSignUp)} style={{
-              background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--color-accent)', fontWeight: 600,
-            }}>
+          <div className="text-center mt-3 sm:mt-4">
+            <button
+              type="button"
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="border-none bg-transparent cursor-pointer text-[13px] sm:text-sm text-[var(--color-accent)] font-semibold outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] rounded min-h-[44px] inline-flex items-center justify-center"
+            >
               {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
             </button>
           </div>
         </form>
 
-        <p style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid var(--color-border-primary)', fontSize: 11, color: 'var(--color-text-tertiary)', lineHeight: 1.7 }}>
+        <p className="mt-8 sm:mt-10 pt-5 sm:pt-6 border-t border-[var(--color-border-primary)] text-[11px] sm:text-xs text-[var(--color-text-tertiary)] leading-relaxed">
           This app assists with medication tracking and reminders. It does not provide medical advice. Always follow instructions from your healthcare provider.
         </p>
       </div>

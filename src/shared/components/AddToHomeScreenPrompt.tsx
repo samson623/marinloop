@@ -1,5 +1,6 @@
 import { isIOS } from '@/shared/lib/device'
 import { Modal } from '@/shared/components/Modal'
+import { Button } from '@/shared/components/ui/Button'
 
 const ADD_TO_HOME_SEEN_KEY = 'medflow_add_to_home_seen'
 
@@ -51,79 +52,45 @@ export function AddToHomeScreenPrompt({
 
   return (
     <Modal open onOpenChange={(o) => !o && onDismiss()} title={title} variant={variant === 'push-failed' ? 'bottom' : 'center'}>
-      {isIOSDevice ? (
+      <div className="flex flex-col gap-4">
+        {isIOSDevice ? (
           <>
-            <p style={{ fontSize: 15, color: 'var(--color-text-secondary)', marginBottom: 12, lineHeight: 1.5 }}>
+            <p className="text-[15px] text-[var(--color-text-secondary)] mb-0 leading-snug">
               To get medication reminders, add MedFlow to your home screen:
             </p>
-            <ol
-              style={{
-                fontSize: 15,
-                color: 'var(--color-text-primary)',
-                marginLeft: 20,
-                marginBottom: 20,
-                lineHeight: 1.7,
-              }}
-            >
+            <ol className="text-[15px] text-[var(--color-text-primary)] ml-5 mb-0 list-decimal leading-relaxed">
               <li>Tap the <strong>Share</strong> button at the bottom of the screen.</li>
               <li>Tap <strong>Add to Home Screen</strong>.</li>
               <li>Tap <strong>Add</strong>.</li>
             </ol>
-            <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', marginBottom: 20, lineHeight: 1.5 }}>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-0 leading-snug">
               Then open MedFlow from the new icon on your home screen.
             </p>
           </>
         ) : canInstall && onInstall ? (
           <>
-            <p style={{ fontSize: 15, color: 'var(--color-text-secondary)', marginBottom: 20, lineHeight: 1.5 }}>
+            <p className="text-[15px] text-[var(--color-text-secondary)] mb-0 leading-snug">
               Add MedFlow to your phone to get reminders.
             </p>
-            <button
-              type="button"
-              onClick={handleInstallClick}
-              style={{
-                width: '100%',
-                padding: 14,
-                background: 'var(--color-accent)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 10,
-                fontSize: 15,
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
-            >
+            <Button type="button" onClick={handleInstallClick} variant="primary" size="lg">
               Add MedFlow to your phone
-            </button>
+            </Button>
           </>
         ) : (
           <>
-            <p style={{ fontSize: 15, color: 'var(--color-text-secondary)', marginBottom: 12, lineHeight: 1.5 }}>
+            <p className="text-[15px] text-[var(--color-text-secondary)] mb-0 leading-snug">
               Open the browser menu (three dots) and choose <strong>Add to Home screen</strong> or <strong>Install app</strong>.
             </p>
-            <p style={{ fontSize: 14, color: 'var(--color-text-tertiary)', marginBottom: 20, lineHeight: 1.5 }}>
+            <p className="text-sm text-[var(--color-text-tertiary)] mb-0 leading-snug">
               Then open MedFlow from the new icon to get reminders.
             </p>
           </>
         )}
 
-      <button
-        type="button"
-        onClick={onDismiss}
-        style={{
-          width: '100%',
-          padding: 12,
-          background: 'var(--color-bg-tertiary)',
-          border: '1px solid var(--color-border-primary)',
-          borderRadius: 10,
-          fontSize: 14,
-          fontWeight: 600,
-          color: 'var(--color-text-primary)',
-          cursor: 'pointer',
-        }}
-      >
-        {dismissLabel}
-      </button>
+        <Button type="button" onClick={onDismiss} variant="secondary" size="md">
+          {dismissLabel}
+        </Button>
+      </div>
     </Modal>
   )
 }

@@ -2,6 +2,7 @@ import { useAppStore } from '@/shared/stores/app-store'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { useTimeline } from '@/shared/hooks/useTimeline'
 import { useNotes } from '@/shared/hooks/useNotes'
+import { Card } from '@/shared/components/ui'
 
 export function SummaryView() {
   const { isDemo } = useAuthStore()
@@ -42,57 +43,64 @@ export function SummaryView() {
 
   return (
     <div className="animate-view-in">
-      <h2 style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 16, paddingBottom: 10, borderBottom: '2px solid var(--color-text-primary)' }}>
+      <h2 className="text-xl font-extrabold tracking-[-0.02em] mb-4 pb-2.5 border-b-2 border-[var(--color-text-primary)] text-[var(--color-text-primary)]">
         Daily Summary
       </h2>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 20 }}>
+      <div className="grid grid-cols-3 gap-2 mb-5">
         <StatCard n={dn} label="Completed" color="var(--color-green)" />
         <StatCard n={lt} label="Late" color="var(--color-amber)" />
         <StatCard n={ms} label="Missed" color="var(--color-red)" />
       </div>
 
-      <div style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-secondary)', borderRadius: 14, padding: 14, marginBottom: 16 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 14 }}>7-Day Adherence</h3>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 100, paddingBottom: 20, position: 'relative' }}>
+      <Card className="mb-4">
+        <h3 className="text-sm font-bold mb-3.5 text-[var(--color-text-primary)]">7-Day Adherence</h3>
+        <div className="flex items-end gap-1.5 h-[100px] pb-5 relative">
           {days.map((d, i) => {
             const bc = d.pct >= 80 ? 'var(--color-green)' : d.pct >= 50 ? 'var(--color-amber)' : d.pct > 0 ? 'var(--color-red)' : 'var(--color-ring-track)'
             return (
-              <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%', gap: 4, position: 'relative' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--color-text-tertiary)', fontWeight: 700 }}>{d.pct}%</div>
-                <div style={{ width: '100%', background: bc, borderRadius: 4, minHeight: 3, height: `${Math.max(d.pct * 0.7, 3)}%` }} />
-                <div style={{ position: 'absolute', bottom: 0, fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: i === 6 ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)' }}>{d.label}</div>
+              <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-1 relative">
+                <div className="text-[9px] font-bold text-[var(--color-text-tertiary)] [font-family:var(--font-mono)]">{d.pct}%</div>
+                <div
+                  className="w-full rounded min-h-[3px] transition-[width] duration-300"
+                  style={{ background: bc, height: `${Math.max(d.pct * 0.7, 3)}%` }}
+                />
+                <div className={`absolute bottom-0 text-[10px] font-bold [font-family:var(--font-mono)] ${i === 6 ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-tertiary)]'}`}>
+                  {d.label}
+                </div>
               </div>
             )
           })}
         </div>
-      </div>
+      </Card>
 
-      <div style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-secondary)', borderRadius: 14, padding: 14 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>Recent Notes</h3>
+      <Card>
+        <h3 className="text-sm font-bold mb-2.5 text-[var(--color-text-primary)]">Recent Notes</h3>
         {notes.length === 0 ? (
-          <p style={{ fontSize: 13, color: 'var(--color-text-tertiary)' }}>No notes yet.</p>
+          <p className="text-[13px] text-[var(--color-text-tertiary)]">No notes yet.</p>
         ) : (
           notes.slice(0, 5).map((n) => (
-            <div key={n.id} style={{ marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid var(--color-border-secondary)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-                <span style={{ fontWeight: 600, fontSize: 13 }}>{n.title}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--color-text-tertiary)' }}>{new Date(n.created).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            <div key={n.id} className="mb-2 pb-2 border-b border-[var(--color-border-secondary)] last:border-0 last:mb-0 last:pb-0">
+              <div className="flex justify-between mb-0.5">
+                <span className="font-semibold text-[13px] text-[var(--color-text-primary)]">{n.title}</span>
+                <span className="text-[11px] text-[var(--color-text-tertiary)] [font-family:var(--font-mono)]">
+                  {new Date(n.created).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
               </div>
-              <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>{n.text}</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">{n.text}</div>
             </div>
           ))
         )}
-      </div>
+      </Card>
     </div>
   )
 }
 
 function StatCard({ n, label, color }: { n: number; label: string; color: string }) {
   return (
-    <div style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-secondary)', borderRadius: 14, padding: 14, textAlign: 'center' }}>
-      <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.03em', color }}>{n}</div>
-      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
-    </div>
+    <Card className="text-center">
+      <div className="text-[28px] font-extrabold tracking-[-0.03em]" style={{ color }}>{n}</div>
+      <div className="text-[11px] font-semibold text-[var(--color-text-secondary)] uppercase tracking-[0.08em]">{label}</div>
+    </Card>
   )
 }

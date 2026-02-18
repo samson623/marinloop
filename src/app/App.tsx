@@ -20,6 +20,8 @@ import { ProfileView } from '@/app/views/ProfileView'
 import { isMobile, isStandalone } from '@/shared/lib/device'
 import { AddToHomeScreenPrompt, getAddToHomeScreenSeen, setAddToHomeScreenSeen } from '@/shared/components/AddToHomeScreenPrompt'
 import { Modal } from '@/shared/components/Modal'
+import { IconButton } from '@/shared/components/IconButton'
+import { Button, Input } from '@/shared/components/ui'
 import { useInstallPrompt } from '@/shared/hooks/useInstallPrompt'
 import { useServiceWorkerUpdate } from '@/shared/hooks/useServiceWorkerUpdate'
 
@@ -164,7 +166,11 @@ function AppInner() {
   }, [session, isDemo])
 
   if (isLoading) {
-    return <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg-primary)' }}>Loading...</div>
+    return (
+      <div className="flex h-screen items-center justify-center bg-[var(--color-bg-primary)]">
+        Loading...
+      </div>
+    )
   }
 
   if (!session && !isDemo) {
@@ -485,7 +491,7 @@ function AppInner() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--color-bg-primary)' }}>
+    <div className="flex flex-col min-h-screen bg-[var(--color-bg-primary)]">
       {showAddToHomeScreenOnboarding && (
         <AddToHomeScreenPrompt
           variant="onboarding"
@@ -495,85 +501,69 @@ function AppInner() {
         />
       )}
       <a href="#main-content" className="sr-only focus-not-sr-only">Skip to main content</a>
-      <header style={{
-        padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        position: 'sticky', top: 0, zIndex: 100, backdropFilter: 'blur(12px)',
-        background: 'var(--color-bg-primary-translucent)', borderBottom: '1px solid var(--color-border-primary)',
-      }}>
-        <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--color-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+      <header className="sticky top-0 z-[100] py-4 px-4 sm:px-5 backdrop-blur-[12px] bg-[var(--color-bg-primary-translucent)] border-b border-[var(--color-border-primary)]">
+        <div className="max-w-[480px] mx-auto w-full flex items-center justify-between">
+        <div className="animate-fade-in flex items-center gap-2.5">
+          <div className="w-[34px] h-[34px] rounded-[10px] bg-[var(--color-accent)] flex items-center justify-center text-[var(--color-text-inverse)]">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
           </div>
-          <span style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--color-text-primary)' }}>MedFlow</span>
-          {isDemo && <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: 'var(--color-amber)', background: 'var(--color-amber-bg)', border: '1px solid var(--color-amber-border)', borderRadius: 6, padding: '3px 6px' }}>DEMO</span>}
+          <span className="text-lg font-extrabold tracking-[-0.02em] text-[var(--color-text-primary)]">MedFlow</span>
+          {isDemo && (
+            <span className="text-[10px] font-bold tracking-[0.08em] text-[var(--color-amber)] bg-[var(--color-amber-bg)] border border-[var(--color-amber-border)] rounded-md py-0.5 px-1.5">
+              DEMO
+            </span>
+          )}
         </div>
 
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button ref={notifTriggerRef} onClick={() => setNotifOpen(true)} aria-label="Open notifications" style={{
-            width: 38, height: 38, borderRadius: 12, border: 'none', background: 'var(--color-bg-tertiary)',
-            color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-          }}>
+        <div className="flex gap-3">
+          <IconButton
+            ref={notifTriggerRef}
+            size="md"
+            aria-label="Open notifications"
+            onClick={() => setNotifOpen(true)}
+          >
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M15 17h5l-1.4-1.4a2 2 0 0 1-.6-1.4V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5" /><path d="M9.5 17a2.5 2.5 0 0 0 5 0" /></svg>
-          </button>
-          <button onClick={toggleTheme} aria-label="Toggle theme" style={{
-            width: 38, height: 38, borderRadius: 12, border: 'none', background: 'var(--color-bg-tertiary)',
-            color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-          }}>
+          </IconButton>
+          <IconButton size="md" aria-label="Toggle theme" onClick={toggleTheme}>
             {resolvedTheme === 'dark'
               ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" /></svg>
               : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" /></svg>}
-          </button>
-          <button onClick={() => setShowProfile(true)} aria-label="Open profile" style={{
-            width: 38, height: 38, borderRadius: 12, border: 'none', background: 'var(--color-bg-tertiary)',
-            color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden',
-          }}>
-            <img src="https://ui-avatars.com/api/?name=MedFlow+User&background=0D9488&color=fff" alt="" style={{ width: '100%', height: '100%' }} />
-          </button>
+          </IconButton>
+          <IconButton size="md" aria-label="Open profile" onClick={() => setShowProfile(true)} className="overflow-hidden p-0">
+            <img src="https://ui-avatars.com/api/?name=MedFlow+User&background=0D9488&color=fff" alt="" className="w-full h-full object-cover" />
+          </IconButton>
+        </div>
         </div>
       </header>
 
       {updateAvailable && (
         <div
           role="alert"
-          style={{
-            background: 'var(--color-accent)',
-            color: '#fff',
-            padding: '10px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 12,
-            fontSize: 14,
-            fontWeight: 600,
-          }}
+          className="flex items-center justify-center px-4 py-2.5 bg-[var(--color-accent)] text-[var(--color-text-inverse)] text-sm font-semibold"
         >
+          <div className="max-w-[480px] mx-auto w-full flex items-center justify-between gap-3">
           <span>New version available</span>
           <button
             type="button"
             onClick={reloadToUpdate}
-            style={{
-              padding: '6px 14px',
-              background: 'rgba(255,255,255,0.25)',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 8,
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: 'pointer',
-            }}
+            className="px-3.5 py-1.5 bg-white/25 text-white text-[13px] font-bold rounded-lg border-none cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           >
             Refresh
           </button>
+          </div>
         </div>
       )}
 
-      <main id="main-content" role="tabpanel" aria-labelledby={`tab-${tab}`} style={{ flex: 1, maxWidth: 480, margin: '0 auto', width: '100%', padding: '16px 16px 100px' }}>{view}</main>
+      <main id="main-content" role="tabpanel" aria-labelledby={`tab-${tab}`} className="flex-1 max-w-[480px] mx-auto w-full pt-4 px-4 sm:px-5 pb-[100px] min-w-0">
+        {view}
+      </main>
 
-      <nav role="tablist" aria-label="Main navigation" style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, height: 74, background: 'var(--color-bg-primary)',
-        borderTop: '1px solid var(--color-border-primary)', display: 'flex', justifyContent: 'space-around', alignItems: 'center',
-        paddingBottom: 10, zIndex: 90,
-      }}>
+      <nav
+        role="tablist"
+        aria-label="Main navigation"
+        className="fixed bottom-0 left-0 right-0 h-[74px] bg-[var(--color-bg-primary)] border-t border-[var(--color-border-primary)] flex items-center justify-center z-[90] pb-[max(0.625rem,env(safe-area-inset-bottom))]"
+      >
+        <div className="max-w-[480px] mx-auto w-full flex justify-around items-center h-full">
         {tabs.map((t) => {
           const active = tab === t.id
           return (
@@ -584,27 +574,28 @@ function AppInner() {
               aria-selected={active}
               tabIndex={active ? 0 : -1}
               onClick={() => setTab(t.id)}
-              style={{
-                background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                color: active ? 'var(--color-accent)' : 'var(--color-text-tertiary)', cursor: 'pointer', padding: '8px 16px', position: 'relative',
-              }}
+              className={`flex flex-col items-center gap-1 py-2 px-4 relative border-none cursor-pointer bg-transparent outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${active ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-tertiary)]'}`}
             >
-              {active && <span className="animate-scale-in" style={{ position: 'absolute', top: -14, width: 32, height: 4, background: 'var(--color-accent)', borderRadius: '0 0 4px 4px' }} />}
+              {active && (
+                <span
+                  className="animate-scale-in absolute -top-3.5 left-1/2 -translate-x-1/2 w-8 h-1 bg-[var(--color-accent)] rounded-b"
+                  aria-hidden
+                />
+              )}
               {t.icon(active)}
-              <span style={{ fontSize: 10, fontWeight: active ? 700 : 500 }}>{t.label}</span>
+              <span className={`text-[10px] ${active ? 'font-bold' : 'font-medium'}`}>{t.label}</span>
             </button>
           )
         })}
+        </div>
       </nav>
 
       {showVoiceTest && (
-        <div style={{
-          position: 'fixed', top: 56, left: 16, right: 16, zIndex: 99,
-          display: 'flex', gap: 8, alignItems: 'center', background: 'var(--color-bg-secondary)',
-          padding: 8, borderRadius: 12, border: '1px solid var(--color-border-primary)', boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-        }}>
-          <label htmlFor="voice-test-input" style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-tertiary)', whiteSpace: 'nowrap' }}>Test voice:</label>
-          <input
+        <div className="fixed top-14 left-4 right-4 z-[99] flex gap-2 items-center bg-[var(--color-bg-secondary)] p-2 rounded-xl border border-[var(--color-border-primary)] shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+          <label htmlFor="voice-test-input" className="text-[11px] font-semibold text-[var(--color-text-tertiary)] whitespace-nowrap">
+            Test voice:
+          </label>
+          <Input
             id="voice-test-input"
             type="text"
             value={voiceTestInput}
@@ -617,18 +608,20 @@ function AppInner() {
             }}
             placeholder="e.g. go to meds / add note felt dizzy"
             aria-label="Test voice command"
-            style={{
-              flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--color-border-primary)',
-              background: 'var(--color-input-bg)', color: 'var(--color-text-primary)', fontSize: 13, outline: 'none',
-            }}
+            className="flex-1 py-2 px-3 text-[13px] rounded-lg"
           />
-          <button
+          <Button
             type="button"
-            onClick={() => { if (voiceTestInput.trim()) void processVoice(voiceTestInput.trim()); setVoiceTestInput('') }}
-            style={{ padding: '8px 12px', borderRadius: 8, border: 'none', background: 'var(--color-accent)', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+            size="sm"
+            variant="primary"
+            className="w-auto py-2 px-3 text-xs"
+            onClick={() => {
+              if (voiceTestInput.trim()) void processVoice(voiceTestInput.trim())
+              setVoiceTestInput('')
+            }}
           >
             Run
-          </button>
+          </Button>
         </div>
       )}
 
@@ -636,23 +629,13 @@ function AppInner() {
         type="button"
         onClick={handleVoice}
         aria-label={voiceActive ? 'Stop voice input' : 'Voice commands'}
-        className={voiceActive ? 'animate-pulse-ring' : ''}
-        style={{
-          position: 'fixed', bottom: 90, right: 20, width: 56, height: 56, borderRadius: 28,
-          background: voiceActive ? 'var(--color-red)' : 'var(--color-accent)',
-          boxShadow: '0 8px 20px -4px var(--color-accent-translucent)', border: 'none', color: '#fff',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 95,
-        }}
+        className={`fixed bottom-[90px] right-5 w-14 h-14 rounded-full flex items-center justify-center border-none text-[var(--color-text-inverse)] cursor-pointer z-[95] shadow-[0_8px_20px_-4px_var(--color-accent-translucent)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${voiceActive ? 'animate-pulse-ring bg-[var(--color-red)]' : 'bg-[var(--color-accent)]'}`}
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
       </button>
 
       {voiceBubble && (
-        <div className="animate-view-in" style={{
-          position: 'fixed', bottom: 160, right: 20, padding: '12px 16px', background: 'var(--color-bg-secondary)',
-          borderRadius: '16px 16px 4px 16px', border: '1px solid var(--color-border-primary)',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.1)', maxWidth: 220, zIndex: 94, fontSize: 13, fontWeight: 500,
-        }}>
+        <div className="animate-view-in fixed bottom-40 right-5 p-3 px-4 rounded-2xl rounded-br-md bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)] shadow-[0_4px_12px_rgba(0,0,0,0.1)] max-w-[220px] z-[94] text-sm font-medium text-[var(--color-text-primary)]">
           {voiceBubble}
         </div>
       )}
@@ -664,47 +647,31 @@ function AppInner() {
           title="Confirm"
           variant="center"
         >
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 14 }}>
+          <p className="text-[13px] font-semibold text-[var(--color-text-primary)] mb-3.5">
             {voiceConfirmation.message}
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
+          </p>
+          <div className="flex gap-2">
+            <Button
               type="button"
+              variant="primary"
+              size="md"
+              className="flex-1 py-2.5"
               onClick={() => {
                 voiceConfirmation.onConfirm()
                 setVoiceConfirmation(null)
               }}
-              style={{
-                flex: 1,
-                padding: 10,
-                borderRadius: 10,
-                border: 'none',
-                background: 'var(--color-accent)',
-                color: '#fff',
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
             >
               Confirm
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="secondary"
+              size="md"
+              className="flex-1 py-2.5"
               onClick={() => setVoiceConfirmation(null)}
-              style={{
-                flex: 1,
-                padding: 10,
-                borderRadius: 10,
-                border: '1px solid var(--color-border-primary)',
-                background: 'transparent',
-                color: 'var(--color-text-secondary)',
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </Modal>
       )}
@@ -718,19 +685,19 @@ function AppInner() {
 
 function Toasts({ toasts }: { toasts: { id: string; msg: string; cls: string }[] }) {
   if (!toasts.length) return null
-  const bc: Record<string, string> = { ts: 'var(--color-green)', tw: 'var(--color-amber)', te: 'var(--color-red)' }
+  const borderColor: Record<string, string> = { ts: 'var(--color-green)', tw: 'var(--color-amber)', te: 'var(--color-red)' }
   return (
     <div
       role="alert"
       aria-live="polite"
-      style={{ position: 'fixed', top: 14, left: '50%', transform: 'translateX(-50%)', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 6, width: '90%', maxWidth: 400 }}
+      className="fixed top-3.5 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-1.5 w-[90%] max-w-[400px]"
     >
       {toasts.map((t) => (
-        <div key={t.id} className="animate-toast" style={{
-          background: 'var(--color-text-primary)', color: 'var(--color-text-inverse)',
-          padding: '12px 14px', borderRadius: 10, fontSize: 13, fontWeight: 600,
-          borderLeft: `3px solid ${bc[t.cls] || bc.ts}`, boxShadow: 'var(--shadow-elevated)',
-        }}>
+        <div
+          key={t.id}
+          className="animate-toast bg-[var(--color-text-primary)] text-[var(--color-text-inverse)] py-3 px-3.5 rounded-[10px] text-[13px] font-semibold shadow-[var(--shadow-elevated)] border-l-[3px]"
+          style={{ borderLeftColor: borderColor[t.cls] ?? borderColor.ts }}
+        >
           {t.msg}
         </div>
       ))}
@@ -761,9 +728,13 @@ function NotificationsPanel({ onClose, isDemo, triggerRef }: { onClose: () => vo
 
   return (
     <Modal open onOpenChange={(o) => !o && onClose()} title="Notifications" variant="bottom" triggerRef={triggerRef}>
-      <div style={{ padding: '10px 0' }}>
-        {isLoading && !isDemo && <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', padding: '6px 0' }}>Loading notifications...</div>}
-        {!isLoading && notifs.length === 0 && <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', padding: '6px 0' }}>No notifications</div>}
+      <div className="py-2.5">
+        {isLoading && !isDemo && (
+          <div className="text-[13px] text-[var(--color-text-secondary)] py-1.5">Loading notifications...</div>
+        )}
+        {!isLoading && notifs.length === 0 && (
+          <div className="text-[13px] text-[var(--color-text-secondary)] py-1.5">No notifications</div>
+        )}
         {notifs.map((n) => (
           <button
             key={n.id}
@@ -771,18 +742,16 @@ function NotificationsPanel({ onClose, isDemo, triggerRef }: { onClose: () => vo
             onClick={() => {
               if (!isDemo && !n.read) markRead(n.id)
             }}
-            style={{
-              width: '100%', background: 'transparent', border: 'none', textAlign: 'left', display: 'flex', gap: 12,
-              padding: '12px 0', borderBottom: '1px solid var(--color-border-secondary)', cursor: 'pointer',
-              opacity: !isDemo && n.read ? 0.6 : 1,
-            }}
+            className={`w-full bg-transparent border-none text-left flex gap-3 py-3 border-b border-[var(--color-border-secondary)] cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${!isDemo && n.read ? 'opacity-60' : ''}`}
           >
-            <span style={{ fontSize: 20, width: 32, textAlign: 'center', flexShrink: 0 }}>{n.icon}</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>{n.msg}</div>
-              <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>{n.sub}</div>
+            <span className="text-xl w-8 text-center shrink-0">{n.icon}</span>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold text-[var(--color-text-primary)]">{n.msg}</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">{n.sub}</div>
             </div>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--color-text-tertiary)', whiteSpace: 'nowrap' }}>{n.time}</span>
+            <span className="text-[11px] text-[var(--color-text-tertiary)] whitespace-nowrap shrink-0 [font-family:var(--font-mono)]">
+              {n.time}
+            </span>
           </button>
         ))}
       </div>

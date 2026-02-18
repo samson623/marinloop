@@ -1,10 +1,13 @@
 import { useState } from 'react'
+import { cn } from '@/shared/lib/utils'
 import { useAppStore } from '@/shared/stores/app-store'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { getErrorMessage } from '@/shared/lib/errors'
 import { usePushNotifications } from '@/shared/hooks/usePushNotifications'
 import { useInstallPrompt } from '@/shared/hooks/useInstallPrompt'
 import { AddToHomeScreenPrompt, setAddToHomeScreenSeen } from '@/shared/components/AddToHomeScreenPrompt'
+import { IconButton } from '@/shared/components/IconButton'
+import { Button, Input, Card } from '@/shared/components/ui'
 
 export function ProfileView() {
   const { setShowProfile, toast } = useAppStore()
@@ -55,82 +58,125 @@ export function ProfileView() {
 
   return (
     <div className="animate-view-in">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--color-text-primary)' }}>Profile</h1>
-        <button onClick={() => setShowProfile(false)} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg-tertiary)', border: 'none', borderRadius: '50%', cursor: 'pointer', color: 'var(--color-text-secondary)' }}>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[var(--color-text-primary)]">Profile</h1>
+        <IconButton
+          size="sm"
+          aria-label="Close profile"
+          onClick={() => setShowProfile(false)}
+          className="w-8 h-8 rounded-full"
+        >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-        </button>
+        </IconButton>
       </div>
 
-      <div style={{ padding: 20, background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-primary)', borderRadius: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-        <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'var(--color-bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 700, color: 'var(--color-text-secondary)', overflow: 'hidden' }}>
-          {profile?.avatar_url ? <img src={profile.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (profile?.name?.[0] || user?.email?.[0] || '?').toUpperCase()}
+      <Card className="p-5 flex flex-col items-center gap-3 mb-5 rounded-2xl">
+        <div className="w-20 h-20 rounded-full bg-[var(--color-bg-tertiary)] flex items-center justify-center text-[32px] font-bold text-[var(--color-text-secondary)] overflow-hidden">
+          {profile?.avatar_url ? (
+            <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+          ) : (
+            (profile?.name?.[0] || user?.email?.[0] || '?').toUpperCase()
+          )}
         </div>
-        <div style={{ textAlign: 'center' }}>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text-primary)' }}>{profile?.name || (isDemo ? 'Demo User' : 'User')}</h2>
-          <p style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>{user?.email}</p>
+        <div className="text-center">
+          <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
+            {profile?.name || (isDemo ? 'Demo User' : 'User')}
+          </h2>
+          <p className="text-[13px] text-[var(--color-text-secondary)]">{user?.email}</p>
         </div>
-        {isDemo && <div style={{ fontSize: 11, fontWeight: 700, background: 'var(--color-amber-bg)', color: 'var(--color-amber)', padding: '4px 10px', borderRadius: 20 }}>DEMO MODE</div>}
-      </div>
+        {isDemo && (
+          <span className="text-[11px] font-bold bg-[var(--color-amber-bg)] text-[var(--color-amber)] py-1 px-2.5 rounded-[20px]">
+            DEMO MODE
+          </span>
+        )}
+      </Card>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
-        <div style={{ padding: 16, background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-primary)', borderRadius: 12 }}>
-          <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Plan</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-text-primary)' }}>{profile?.plan ? profile.plan.charAt(0).toUpperCase() + profile.plan.slice(1) : 'Free'}</div>
-        </div>
-        <div style={{ padding: 16, background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-primary)', borderRadius: 12 }}>
-          <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Joined</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-text-primary)' }}>{joined}</div>
-        </div>
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        <Card className="p-4 rounded-xl">
+          <div className="text-[11px] text-[var(--color-text-tertiary)] uppercase tracking-[0.05em] mb-1">Plan</div>
+          <div className="text-base font-bold text-[var(--color-text-primary)]">
+            {profile?.plan ? profile.plan.charAt(0).toUpperCase() + profile.plan.slice(1) : 'Free'}
+          </div>
+        </Card>
+        <Card className="p-4 rounded-xl">
+          <div className="text-[11px] text-[var(--color-text-tertiary)] uppercase tracking-[0.05em] mb-1">Joined</div>
+          <div className="text-base font-bold text-[var(--color-text-primary)]">{joined}</div>
+        </Card>
       </div>
 
       {!isDemo && (
-        <div style={{ padding: 16, background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-primary)', borderRadius: 12, marginBottom: 20 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-secondary)' }}>Multi-Factor Authentication</div>
+        <Card className="p-4 mb-5 rounded-xl">
+          <div className="text-xs font-bold mb-2.5 uppercase tracking-[0.08em] text-[var(--color-text-secondary)]">
+            Multi-Factor Authentication
+          </div>
           {!qrCode && (
-            <button onClick={handleEnrollMfa} disabled={mfaLoading} style={{ width: '100%', padding: 12, background: 'var(--color-bg-tertiary)', border: '1px solid var(--color-border-primary)', borderRadius: 10, cursor: mfaLoading ? 'wait' : 'pointer' }}>
+            <Button
+              type="button"
+              variant="secondary"
+              size="md"
+              onClick={handleEnrollMfa}
+              disabled={mfaLoading}
+              className="py-3"
+            >
               {mfaLoading ? 'Enrolling...' : 'Enroll TOTP MFA'}
-            </button>
+            </Button>
           )}
 
           {qrCode && (
             <>
-              <div style={{ marginTop: 12, marginBottom: 12 }} dangerouslySetInnerHTML={{ __html: qrCode }} />
-              <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Enter 6-digit code" className="fi" style={{ width: '100%', marginBottom: 8 }} />
-              <button onClick={handleVerifyMfa} disabled={mfaLoading} style={{ width: '100%', padding: 12, background: 'var(--color-accent)', color: '#fff', border: 'none', borderRadius: 10, cursor: mfaLoading ? 'wait' : 'pointer' }}>
+              <div className="my-3 [&_svg]:max-w-full [&_svg]:h-auto" dangerouslySetInnerHTML={{ __html: qrCode }} />
+              <Input
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="Enter 6-digit code"
+                className="mb-2"
+              />
+              <Button
+                type="button"
+                variant="primary"
+                size="md"
+                onClick={handleVerifyMfa}
+                disabled={mfaLoading}
+                className="py-3"
+              >
                 {mfaLoading ? 'Verifying...' : 'Verify MFA'}
-              </button>
+              </Button>
             </>
           )}
-        </div>
+        </Card>
       )}
 
       {!isDemo && installPrompt.canInstall && (
-        <div style={{ padding: 16, background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-primary)', borderRadius: 12, marginBottom: 20 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-secondary)', marginBottom: 8 }}>Add to your phone</div>
-          <p style={{ fontSize: 13, color: 'var(--color-text-tertiary)', marginBottom: 12 }}>Get MedFlow on your home screen for reminders.</p>
-          <button
+        <Card className="p-4 mb-5 rounded-xl">
+          <div className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-text-secondary)] mb-2">
+            Add to your phone
+          </div>
+          <p className="text-[13px] text-[var(--color-text-tertiary)] mb-3">
+            Get MedFlow on your home screen for reminders.
+          </p>
+          <Button
             type="button"
+            variant="primary"
+            size="md"
+            className="py-3"
             onClick={async () => {
               const accepted = await installPrompt.promptInstall()
               if (accepted) toast('MedFlow added to your phone', 'ts')
             }}
-            style={{
-              width: '100%', padding: 12, background: 'var(--color-accent)', color: '#fff', border: 'none', borderRadius: 10,
-              fontSize: 14, fontWeight: 600, cursor: 'pointer',
-            }}
           >
             Add MedFlow to your phone
-          </button>
-        </div>
+          </Button>
+        </Card>
       )}
 
       {!isDemo && (
-        <div style={{ padding: 16, background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-primary)', borderRadius: 12, marginBottom: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <Card className="p-4 mb-5 rounded-xl">
+          <div className="flex items-center justify-between mb-2">
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-secondary)' }}>Push Notifications</div>
-              <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', marginTop: 2 }}>
+              <div className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-text-secondary)]">
+                Push Notifications
+              </div>
+              <div className="text-[11px] text-[var(--color-text-tertiary)] mt-0.5">
                 {!push.isSupported
                   ? 'Not supported in this browser'
                   : push.permission === 'denied'
@@ -147,24 +193,20 @@ export function ProfileView() {
               aria-label={push.isSubscribed ? 'Disable push notifications' : 'Enable push notifications'}
               aria-checked={push.isSubscribed}
               role="switch"
-              style={{
-                width: 48, height: 26, borderRadius: 13, border: 'none', padding: 2,
-                background: push.isSubscribed ? 'var(--color-accent)' : 'var(--color-bg-tertiary)',
-                cursor: !push.isSupported || push.permission === 'denied' || push.isLoading ? 'not-allowed' : 'pointer',
-                transition: 'background 0.2s',
-                display: 'flex', alignItems: 'center',
-                opacity: !push.isSupported || push.permission === 'denied' ? 0.5 : 1,
-              }}
+              className={cn(
+                'w-12 h-[26px] rounded-[13px] border-none p-0.5 flex items-center transition-[background] duration-200 outline-none cursor-pointer',
+                'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+                push.isSubscribed ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-bg-tertiary)]'
+              )}
             >
-              <div style={{
-                width: 22, height: 22, borderRadius: '50%', background: '#fff',
-                transform: push.isSubscribed ? 'translateX(22px)' : 'translateX(0)',
-                transition: 'transform 0.2s',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-              }} />
+              <div
+                className="w-[22px] h-[22px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.2)] transition-transform duration-200"
+                style={{ transform: push.isSubscribed ? 'translateX(22px)' : 'translateX(0)' }}
+              />
             </button>
           </div>
-        </div>
+        </Card>
       )}
 
       {push.showAddToHomeScreenHelp && (
@@ -177,13 +219,13 @@ export function ProfileView() {
         />
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <button onClick={() => { void signOut() }} style={{ width: '100%', padding: 14, background: 'var(--color-red-bg)', border: '1px solid var(--color-red-border)', borderRadius: 12, fontSize: 14, fontWeight: 700, color: 'var(--color-red)', cursor: 'pointer' }}>
+      <div className="flex flex-col gap-2">
+        <Button type="button" variant="danger" size="md" onClick={() => { void signOut() }}>
           Sign Out
-        </button>
+        </Button>
       </div>
 
-      <p style={{ marginTop: 24, fontSize: 11, color: 'var(--color-text-tertiary)', lineHeight: 1.6, textAlign: 'center' }}>
+      <p className="mt-6 text-[11px] text-[var(--color-text-tertiary)] leading-relaxed text-center">
         MedFlow Care v1.0.0
       </p>
     </div>

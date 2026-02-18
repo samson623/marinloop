@@ -1,5 +1,7 @@
 import * as Dialog from '@radix-ui/react-dialog'
 import { useRef, type ReactNode } from 'react'
+import { cn } from '@/shared/lib/utils'
+import { IconButton } from '@/shared/components/IconButton'
 
 export type ModalVariant = 'center' | 'bottom'
 
@@ -16,77 +18,6 @@ type ModalProps = {
   closeLabel?: string
 }
 
-const overlayStyle: React.CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  zIndex: 500,
-  background: 'var(--color-overlay)',
-}
-
-const contentBase: React.CSSProperties = {
-  position: 'fixed',
-  zIndex: 501,
-  background: 'var(--color-bg-primary)',
-  boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
-}
-
-const contentCenter: React.CSSProperties = {
-  ...contentBase,
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  maxWidth: 400,
-  width: 'calc(100% - 48px)',
-  maxHeight: '90vh',
-  overflowY: 'auto',
-  borderRadius: 16,
-  border: '1px solid var(--color-border-primary)',
-  padding: 24,
-}
-
-const contentBottom: React.CSSProperties = {
-  ...contentBase,
-  bottom: 0,
-  left: 0,
-  right: 0,
-  width: '100%',
-  maxWidth: 480,
-  maxHeight: '88vh',
-  margin: '0 auto',
-  overflowY: 'auto',
-  borderRadius: '16px 16px 0 0',
-  border: 'none',
-  padding: 0,
-}
-
-const headerStyle: React.CSSProperties = {
-  padding: '4px 20px 14px',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  borderBottom: '1px solid var(--color-border-primary)',
-}
-
-const titleStyle: React.CSSProperties = {
-  fontSize: 17,
-  fontWeight: 700,
-  color: 'var(--color-text-primary)',
-  margin: 0,
-}
-
-const closeButtonStyle: React.CSSProperties = {
-  width: 30,
-  height: 30,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  background: 'var(--color-bg-tertiary)',
-  border: 'none',
-  cursor: 'pointer',
-  color: 'var(--color-text-secondary)',
-  borderRadius: '50%',
-}
-
 export function Modal({
   open,
   onOpenChange,
@@ -100,8 +31,6 @@ export function Modal({
   const titleId = useRef(`modal-title-${Math.random().toString(36).slice(2, 9)}`).current
   const descId = description ? `modal-desc-${titleId}` : undefined
 
-  const contentStyle = variant === 'center' ? contentCenter : contentBottom
-
   const handleCloseAutoFocus = (e: Event) => {
     if (triggerRef?.current) {
       e.preventDefault()
@@ -112,20 +41,39 @@ export function Modal({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay style={overlayStyle} />
+        <Dialog.Overlay
+          className="fixed inset-0 z-[500] bg-[var(--color-overlay)]"
+        />
         <Dialog.Content
-          className={variant === 'bottom' ? 'animate-slide-up-sheet' : undefined}
-          style={contentStyle}
+          className={cn(
+            'fixed z-[501] bg-[var(--color-bg-primary)] shadow-[0_20px_40px_rgba(0,0,0,0.15)]',
+            variant === 'center'
+              ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[400px] w-[calc(100%-48px)] max-h-[90vh] overflow-y-auto rounded-2xl border border-[var(--color-border-primary)] p-6'
+              : 'animate-slide-up-sheet bottom-0 left-0 right-0 w-full max-w-[480px] max-h-[88vh] mx-auto overflow-y-auto rounded-t-2xl border-none p-0'
+          )}
           aria-labelledby={titleId}
           aria-describedby={descId || undefined}
           onCloseAutoFocus={handleCloseAutoFocus}
           onEscapeKeyDown={() => onOpenChange(false)}
         >
           {variant === 'bottom' && (
-            <div style={{ width: 36, height: 4, background: 'var(--color-text-tertiary)', opacity: 0.3, margin: '10px auto', borderRadius: 4 }} aria-hidden />
+            <div
+              className="w-9 h-1 bg-[var(--color-text-tertiary)] opacity-30 my-2.5 mx-auto rounded"
+              aria-hidden
+            />
           )}
-          <div style={variant === 'bottom' ? headerStyle : { marginBottom: 16 }}>
-            <Dialog.Title id={titleId} style={titleStyle}>
+          <div
+            className={cn(
+              'flex items-center justify-between',
+              variant === 'bottom'
+                ? 'py-1 px-5 pb-3.5 border-b border-[var(--color-border-primary)]'
+                : 'mb-4'
+            )}
+          >
+            <Dialog.Title
+              id={titleId}
+              className="text-[17px] font-bold text-[var(--color-text-primary)] m-0"
+            >
               {title}
             </Dialog.Title>
             {description && (
@@ -134,15 +82,15 @@ export function Modal({
               </Dialog.Description>
             )}
             <Dialog.Close asChild>
-              <button type="button" aria-label={closeLabel} style={closeButtonStyle}>
+              <IconButton aria-label={closeLabel} size="sm" className="!w-[30px] !h-[30px] !rounded-full" type="button">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
-              </button>
+              </IconButton>
             </Dialog.Close>
           </div>
-          <div style={variant === 'center' ? undefined : { padding: 20 }}>{children}</div>
+          <div className={variant === 'center' ? undefined : 'p-5'}>{children}</div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

@@ -59,19 +59,19 @@ export function ProfileView() {
   return (
     <div className="animate-view-in">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[var(--color-text-primary)]">Profile</h1>
+        <h1 className="font-extrabold tracking-[-0.03em] text-[var(--color-text-primary)] [font-size:var(--text-title)]">Profile</h1>
         <IconButton
-          size="sm"
+          size="md"
           aria-label="Close profile"
           onClick={() => setShowProfile(false)}
-          className="w-8 h-8 rounded-full"
+          className="rounded-full"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
         </IconButton>
       </div>
 
-      <Card className="p-5 flex flex-col items-center gap-3 mb-5 rounded-2xl">
-        <div className="w-20 h-20 rounded-full bg-[var(--color-bg-tertiary)] flex items-center justify-center text-[32px] font-bold text-[var(--color-text-secondary)] overflow-hidden">
+      <Card className="p-5 flex flex-col items-center gap-4 mb-5 rounded-2xl">
+        <div className="w-20 h-20 rounded-full bg-[var(--color-bg-tertiary)] flex items-center justify-center font-bold text-[var(--color-text-secondary)] overflow-hidden [font-size:var(--text-display)]">
           {profile?.avatar_url ? (
             <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
           ) : (
@@ -79,34 +79,34 @@ export function ProfileView() {
           )}
         </div>
         <div className="text-center">
-          <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
+          <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)]">
             {profile?.name || (isDemo ? 'Demo User' : 'User')}
           </h2>
-          <p className="text-[13px] text-[var(--color-text-secondary)]">{user?.email}</p>
+          <p className="text-[var(--color-text-secondary)] [font-size:var(--text-body)]">{user?.email}</p>
         </div>
         {isDemo && (
-          <span className="text-[11px] font-bold bg-[var(--color-amber-bg)] text-[var(--color-amber)] py-1 px-2.5 rounded-[20px]">
+          <span className="font-bold bg-[var(--color-amber-bg)] text-[var(--color-amber)] py-1.5 px-3 rounded-[20px] [font-size:var(--text-caption)]">
             DEMO MODE
           </span>
         )}
       </Card>
 
       <div className="grid grid-cols-2 gap-3 mb-5">
-        <Card className="p-4 rounded-xl">
-          <div className="text-[11px] text-[var(--color-text-tertiary)] uppercase tracking-[0.05em] mb-1">Plan</div>
-          <div className="text-base font-bold text-[var(--color-text-primary)]">
+        <Card className="p-4 rounded-2xl">
+          <div className="text-[var(--color-text-tertiary)] uppercase tracking-[0.05em] mb-1 [font-size:var(--text-caption)]">Plan</div>
+          <div className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-body)]">
             {profile?.plan ? profile.plan.charAt(0).toUpperCase() + profile.plan.slice(1) : 'Free'}
           </div>
         </Card>
-        <Card className="p-4 rounded-xl">
-          <div className="text-[11px] text-[var(--color-text-tertiary)] uppercase tracking-[0.05em] mb-1">Joined</div>
-          <div className="text-base font-bold text-[var(--color-text-primary)]">{joined}</div>
+        <Card className="p-4 rounded-2xl">
+          <div className="text-[var(--color-text-tertiary)] uppercase tracking-[0.05em] mb-1 [font-size:var(--text-caption)]">Joined</div>
+          <div className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-body)]">{joined}</div>
         </Card>
       </div>
 
       {!isDemo && (
-        <Card className="p-4 mb-5 rounded-xl">
-          <div className="text-xs font-bold mb-2.5 uppercase tracking-[0.08em] text-[var(--color-text-secondary)]">
+        <Card className="p-4 mb-5 rounded-2xl">
+          <div className="font-bold mb-3 uppercase tracking-[0.08em] text-[var(--color-text-secondary)] [font-size:var(--text-label)]">
             Multi-Factor Authentication
           </div>
           {!qrCode && (
@@ -148,10 +148,10 @@ export function ProfileView() {
 
       {!isDemo && installPrompt.canInstall && (
         <Card className="p-4 mb-5 rounded-xl">
-          <div className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-text-secondary)] mb-2">
+          <div className="font-bold uppercase tracking-[0.08em] text-[var(--color-text-secondary)] mb-2 [font-size:var(--text-label)]">
             Add to your phone
           </div>
-          <p className="text-[13px] text-[var(--color-text-tertiary)] mb-3">
+          <p className="text-[var(--color-text-tertiary)] mb-3 [font-size:var(--text-body)]">
             Get MedFlow on your home screen for reminders.
           </p>
           <Button
@@ -173,10 +173,10 @@ export function ProfileView() {
         <Card className="p-4 mb-5 rounded-xl">
           <div className="flex items-center justify-between mb-2">
             <div>
-              <div className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--color-text-secondary)]">
+              <div className="font-bold uppercase tracking-[0.08em] text-[var(--color-text-secondary)] [font-size:var(--text-label)]">
                 Push Notifications
               </div>
-              <div className="text-[11px] text-[var(--color-text-tertiary)] mt-0.5">
+              <div className="text-[var(--color-text-tertiary)] mt-0.5 [font-size:var(--text-caption)]">
                 {!push.isSupported
                   ? 'Not supported in this browser'
                   : push.permission === 'denied'
@@ -225,7 +225,7 @@ export function ProfileView() {
         </Button>
       </div>
 
-      <p className="mt-6 text-[11px] text-[var(--color-text-tertiary)] leading-relaxed text-center">
+      <p className="mt-6 text-[var(--color-text-tertiary)] leading-relaxed text-center [font-size:var(--text-caption)]">
         MedFlow Care v1.0.0
       </p>
     </div>

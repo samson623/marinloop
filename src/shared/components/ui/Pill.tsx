@@ -31,11 +31,12 @@ export function Pill({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 py-1.5 px-3 rounded-[20px] text-xs font-semibold',
+        'inline-flex items-center gap-2 py-2 px-3.5 rounded-[20px] font-semibold min-h-[32px]',
         'bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)]',
         variantTextClasses[variant],
         className
       )}
+      style={{ fontSize: 'var(--text-caption)' }}
     >
       <span
         className={cn('shrink-0 rounded-full w-[7px] h-[7px]', variantDotClasses[variant])}

@@ -32,13 +32,13 @@ export function ApptsView() {
 
   return (
     <div className="animate-view-in w-full max-w-[480px] mx-auto">
-      <h2 className="text-xl font-extrabold tracking-[-0.02em] mb-4 pb-2.5 border-b-2 border-[var(--color-text-primary)] text-[var(--color-text-primary)]">
+      <h2 className="font-extrabold tracking-[-0.02em] mb-5 pb-3 border-b-2 border-[var(--color-text-primary)] text-[var(--color-text-primary)] [font-size:var(--text-title)]">
         Appointments
       </h2>
 
       <div className="stagger-children">
         {sorted.length === 0 && !isDemo && (
-          <div className="py-5 text-center text-[var(--color-text-secondary)] border border-dashed border-[var(--color-border-secondary)] rounded-xl">
+          <div className="py-6 text-center text-[var(--color-text-secondary)] border border-dashed border-[var(--color-border-secondary)] rounded-xl [font-size:var(--text-body)]">
             No upcoming appointments.
           </div>
         )}
@@ -49,15 +49,15 @@ export function ApptsView() {
             <button
               key={a.id}
               type="button"
-              className="animate-slide-r card-interactive w-full text-left bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] border-l-[3px] border-l-[var(--color-text-primary)] rounded-[14px] p-3.5 mb-2 cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+              className="animate-slide-r card-interactive w-full text-left bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] border-l-4 border-l-[var(--color-text-primary)] rounded-2xl p-4 mb-3 min-h-[56px] cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
               style={{ animationDelay: `${i * 0.04}s`, opacity: past ? 0.45 : 1 }}
               onClick={() => toast(`${a.title} - ${fD(a.date)}`, 'ts')}
             >
-              <div className="text-[11px] text-[var(--color-text-tertiary)] mb-0.5 [font-family:var(--font-mono)]">
+              <div className="text-[var(--color-text-tertiary)] mb-1 [font-family:var(--font-mono)] [font-size:var(--text-caption)]">
                 {fD(a.date)} at {fT(a.time)}
               </div>
-              <div className="text-[15px] font-bold mb-0.5 text-[var(--color-text-primary)]">{a.title}</div>
-              <div className="text-xs text-[var(--color-text-secondary)]">{a.loc}</div>
+              <div className="font-bold mb-0.5 text-[var(--color-text-primary)] [font-size:var(--text-body)]">{a.title}</div>
+              <div className="text-[var(--color-text-secondary)] [font-size:var(--text-label)]">{a.loc}</div>
             </button>
           )
         })}
@@ -140,7 +140,7 @@ function AddApptModal({
   }
 
   return (
-    <Modal open onOpenChange={(o) => !o && onClose()} title="Add Appointment" variant="bottom">
+    <Modal open onOpenChange={(o) => !o && onClose()} title="Add Appointment" variant="center">
       <form onSubmit={handleSubmit}>
         <FG label="Title" id="appt-title">
           <Input id="appt-title" value={title} onChange={(e) => setTitle(e.target.value)} required />
@@ -176,7 +176,7 @@ function AddApptModal({
 function FG({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
   return (
     <div className="mb-3.5 flex-1">
-      <label htmlFor={id} className="block text-[11px] font-bold text-[var(--color-text-secondary)] mb-1 uppercase tracking-[0.08em]">
+      <label htmlFor={id} className="block font-bold text-[var(--color-text-secondary)] mb-1 uppercase tracking-[0.08em] [font-size:var(--text-label)]">
         {label}
       </label>
       {children}

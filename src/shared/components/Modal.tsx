@@ -49,7 +49,7 @@ export function Modal({
             'fixed z-[501] bg-[var(--color-bg-primary)] shadow-[0_20px_40px_rgba(0,0,0,0.15)]',
             variant === 'center'
               ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[400px] w-[calc(100%-48px)] max-h-[90vh] overflow-y-auto rounded-2xl border border-[var(--color-border-primary)] p-6'
-              : 'animate-slide-up-sheet bottom-0 left-0 right-0 w-full max-w-[480px] max-h-[88vh] mx-auto overflow-y-auto rounded-t-2xl border-none p-0'
+              : 'animate-slide-up-sheet bottom-0 left-0 right-0 w-full max-w-[480px] max-h-[88vh] mx-auto overflow-y-auto rounded-t-2xl border-none p-0 pt-[env(safe-area-inset-top)]'
           )}
           aria-labelledby={titleId}
           aria-describedby={descId || undefined}
@@ -58,21 +58,22 @@ export function Modal({
         >
           {variant === 'bottom' && (
             <div
-              className="w-9 h-1 bg-[var(--color-text-tertiary)] opacity-30 my-2.5 mx-auto rounded"
+              className="w-10 h-1 bg-[var(--color-text-tertiary)] opacity-30 mt-2 mb-3 mx-auto rounded-full"
               aria-hidden
             />
           )}
           <div
             className={cn(
-              'flex items-center justify-between',
+              'flex items-center justify-between gap-3',
               variant === 'bottom'
-                ? 'py-1 px-5 pb-3.5 border-b border-[var(--color-border-primary)]'
+                ? 'py-1 px-5 pb-4 border-b border-[var(--color-border-primary)]'
                 : 'mb-4'
             )}
           >
             <Dialog.Title
               id={titleId}
-              className="text-[17px] font-bold text-[var(--color-text-primary)] m-0"
+              className="m-0 font-bold text-[var(--color-text-primary)]"
+              style={{ fontSize: 'var(--text-subtitle)' }}
             >
               {title}
             </Dialog.Title>
@@ -82,7 +83,7 @@ export function Modal({
               </Dialog.Description>
             )}
             <Dialog.Close asChild>
-              <IconButton aria-label={closeLabel} size="sm" className="!w-[30px] !h-[30px] !rounded-full" type="button">
+              <IconButton aria-label={closeLabel} size="md" className="!rounded-full shrink-0" type="button">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
@@ -90,7 +91,7 @@ export function Modal({
               </IconButton>
             </Dialog.Close>
           </div>
-          <div className={variant === 'center' ? undefined : 'p-5'}>{children}</div>
+          <div className={variant === 'center' ? undefined : 'px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]'}>{children}</div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

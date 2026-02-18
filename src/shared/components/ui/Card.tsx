@@ -15,7 +15,7 @@ export function Card({
   return (
     <div
       className={cn(
-        'bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] rounded-[14px] p-[14px]',
+        'bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] rounded-2xl p-4',
         interactive && 'card-interactive cursor-pointer',
         className
       )}

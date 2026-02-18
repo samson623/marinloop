@@ -501,21 +501,24 @@ function AppInner() {
         />
       )}
       <a href="#main-content" className="sr-only focus-not-sr-only">Skip to main content</a>
-      <header className="sticky top-0 left-0 right-0 z-[100] w-full py-4 px-4 sm:px-5 backdrop-blur-[12px] bg-[var(--color-bg-primary-translucent)] border-b border-[var(--color-border-primary)]">
-        <div className="max-w-[480px] mx-auto w-full flex items-center justify-between">
-        <div className="animate-fade-in flex items-center gap-2.5">
-          <div className="w-[34px] h-[34px] rounded-[10px] bg-[var(--color-accent)] flex items-center justify-center text-[var(--color-text-inverse)]">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
+      <header
+        className="sticky top-0 left-0 right-0 z-[100] w-full pt-[max(1rem,env(safe-area-inset-top))] pb-4 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:px-5 backdrop-blur-[12px] bg-[var(--color-bg-primary-translucent)] border-b border-[var(--color-border-primary)]"
+        dir="ltr"
+      >
+        <div className="w-full flex flex-row items-center justify-between gap-4">
+        <div className="animate-fade-in flex items-center gap-3 shrink-0 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-[var(--color-accent)] flex items-center justify-center text-[var(--color-text-inverse)] shrink-0">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
           </div>
-          <span className="text-lg font-extrabold tracking-[-0.02em] text-[var(--color-text-primary)]">MedFlow</span>
+          <span className="text-[var(--text-subtitle)] font-extrabold tracking-[-0.02em] text-[var(--color-text-primary)] truncate">MedFlow</span>
           {isDemo && (
-            <span className="text-[10px] font-bold tracking-[0.08em] text-[var(--color-amber)] bg-[var(--color-amber-bg)] border border-[var(--color-amber-border)] rounded-md py-0.5 px-1.5">
+            <span className="text-[var(--text-caption)] font-bold tracking-[0.08em] text-[var(--color-amber)] bg-[var(--color-amber-bg)] border border-[var(--color-amber-border)] rounded-md py-1 px-2 shrink-0">
               DEMO
             </span>
           )}
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-row items-center gap-2 sm:gap-3 shrink-0">
           <IconButton
             ref={notifTriggerRef}
             size="md"
@@ -555,7 +558,16 @@ function AppInner() {
       )}
 
       <div className="flex-1 w-full flex justify-center">
-        <main id="main-content" role="tabpanel" aria-labelledby={`tab-${tab}`} className="w-full max-w-[480px] pt-4 px-4 sm:px-5 pb-[100px] min-w-0">
+        <main
+          id="main-content"
+          role="tabpanel"
+          aria-labelledby={`tab-${tab}`}
+          className="w-full max-w-[480px] pt-5 px-[max(1rem,env(safe-area-inset-left))] sm:px-5 min-w-0"
+          style={{
+            paddingRight: 'max(1rem, env(safe-area-inset-right))',
+            paddingBottom: 'calc(88px + env(safe-area-inset-bottom))',
+          }}
+        >
           {view}
         </main>
       </div>
@@ -563,7 +575,8 @@ function AppInner() {
       <nav
         role="tablist"
         aria-label="Main navigation"
-        className="fixed bottom-0 left-0 right-0 w-full h-[74px] bg-[var(--color-bg-primary)] border-t border-[var(--color-border-primary)] flex items-center justify-center z-[90] pb-[max(0.625rem,env(safe-area-inset-bottom))]"
+        className="fixed bottom-0 left-0 right-0 w-full min-h-[72px] bg-[var(--color-bg-primary)] border-t border-[var(--color-border-primary)] flex items-center justify-center z-[90] pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+        style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
       >
         <div className="max-w-[480px] mx-auto w-full flex justify-around items-center h-full">
         {tabs.map((t) => {
@@ -576,16 +589,16 @@ function AppInner() {
               aria-selected={active}
               tabIndex={active ? 0 : -1}
               onClick={() => setTab(t.id)}
-              className={`flex flex-col items-center gap-1 py-2 px-4 relative border-none cursor-pointer bg-transparent outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${active ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-tertiary)]'}`}
+              className={`flex flex-col items-center justify-center gap-1.5 min-h-[44px] min-w-[44px] py-2 px-4 relative border-none cursor-pointer bg-transparent outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${active ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-tertiary)]'}`}
             >
               {active && (
                 <span
-                  className="animate-scale-in absolute -top-3.5 left-1/2 -translate-x-1/2 w-8 h-1 bg-[var(--color-accent)] rounded-b"
+                  className="animate-scale-in absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[var(--color-accent)] rounded-b"
                   aria-hidden
                 />
               )}
               {t.icon(active)}
-              <span className={`text-[10px] ${active ? 'font-bold' : 'font-medium'}`}>{t.label}</span>
+              <span className="font-medium leading-none [font-size:var(--text-caption)]">{t.label}</span>
             </button>
           )
         })}
@@ -631,13 +644,16 @@ function AppInner() {
         type="button"
         onClick={handleVoice}
         aria-label={voiceActive ? 'Stop voice input' : 'Voice commands'}
-        className={`fixed bottom-[90px] right-5 w-14 h-14 rounded-full flex items-center justify-center border-none text-[var(--color-text-inverse)] cursor-pointer z-[95] shadow-[0_8px_20px_-4px_var(--color-accent-translucent)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${voiceActive ? 'animate-pulse-ring bg-[var(--color-red)]' : 'bg-[var(--color-accent)]'}`}
+        className={`fixed bottom-[calc(88px+env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] w-14 h-14 rounded-full flex items-center justify-center border-none text-[var(--color-text-inverse)] cursor-pointer z-[95] shadow-[0_8px_20px_-4px_var(--color-accent-translucent)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] hover:opacity-95 active:scale-95 transition-transform ${voiceActive ? 'animate-pulse-ring bg-[var(--color-red)]' : 'bg-[var(--color-accent)]'}`}
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
       </button>
 
       {voiceBubble && (
-        <div className="animate-view-in fixed bottom-40 right-5 p-3 px-4 rounded-2xl rounded-br-md bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)] shadow-[0_4px_12px_rgba(0,0,0,0.1)] max-w-[220px] z-[94] text-sm font-medium text-[var(--color-text-primary)]">
+        <div
+          className="animate-view-in fixed bottom-44 p-3 px-4 rounded-2xl rounded-br-md bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)] shadow-[0_4px_12px_rgba(0,0,0,0.1)] max-w-[min(220px,calc(100vw-2rem))] z-[94] font-medium text-[var(--color-text-primary)]"
+          style={{ right: 'max(1rem, env(safe-area-inset-right))', fontSize: 'var(--text-body)' }}
+        >
           {voiceBubble}
         </div>
       )}
@@ -697,7 +713,7 @@ function Toasts({ toasts }: { toasts: { id: string; msg: string; cls: string }[]
       {toasts.map((t) => (
         <div
           key={t.id}
-          className="animate-toast bg-[var(--color-text-primary)] text-[var(--color-text-inverse)] py-3 px-3.5 rounded-[10px] text-[13px] font-semibold shadow-[var(--shadow-elevated)] border-l-[3px]"
+          className="animate-toast bg-[var(--color-text-primary)] text-[var(--color-text-inverse)] py-3.5 px-4 rounded-xl font-semibold shadow-[var(--shadow-elevated)] border-l-4 [font-size:var(--text-body)]"
           style={{ borderLeftColor: borderColor[t.cls] ?? borderColor.ts }}
         >
           {t.msg}
@@ -729,13 +745,13 @@ function NotificationsPanel({ onClose, isDemo, triggerRef }: { onClose: () => vo
   const notifs = isDemo ? demoNotifs : liveNotifs
 
   return (
-    <Modal open onOpenChange={(o) => !o && onClose()} title="Notifications" variant="bottom" triggerRef={triggerRef}>
+    <Modal open onOpenChange={(o) => !o && onClose()} title="Notifications" variant="center" triggerRef={triggerRef}>
       <div className="py-2.5">
         {isLoading && !isDemo && (
-          <div className="text-[13px] text-[var(--color-text-secondary)] py-1.5">Loading notifications...</div>
+          <div className="text-[var(--color-text-secondary)] py-2 [font-size:var(--text-body)]">Loading notifications...</div>
         )}
         {!isLoading && notifs.length === 0 && (
-          <div className="text-[13px] text-[var(--color-text-secondary)] py-1.5">No notifications</div>
+          <div className="text-[var(--color-text-secondary)] py-2 [font-size:var(--text-body)]">No notifications</div>
         )}
         {notifs.map((n) => (
           <button
@@ -744,14 +760,14 @@ function NotificationsPanel({ onClose, isDemo, triggerRef }: { onClose: () => vo
             onClick={() => {
               if (!isDemo && !n.read) markRead(n.id)
             }}
-            className={`w-full bg-transparent border-none text-left flex gap-3 py-3 border-b border-[var(--color-border-secondary)] cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${!isDemo && n.read ? 'opacity-60' : ''}`}
+            className={`w-full bg-transparent border-none text-left flex gap-3 min-h-[56px] py-4 border-b border-[var(--color-border-secondary)] cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${!isDemo && n.read ? 'opacity-60' : ''}`}
           >
-            <span className="text-xl w-8 text-center shrink-0">{n.icon}</span>
+            <span className="text-xl w-9 text-center shrink-0">{n.icon}</span>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold text-[var(--color-text-primary)]">{n.msg}</div>
-              <div className="text-xs text-[var(--color-text-secondary)]">{n.sub}</div>
+              <div className="font-semibold text-[var(--color-text-primary)] [font-size:var(--text-body)]">{n.msg}</div>
+              <div className="text-[var(--color-text-secondary)] [font-size:var(--text-label)]">{n.sub}</div>
             </div>
-            <span className="text-[11px] text-[var(--color-text-tertiary)] whitespace-nowrap shrink-0 [font-family:var(--font-mono)]">
+            <span className="text-[var(--color-text-tertiary)] whitespace-nowrap shrink-0 [font-family:var(--font-mono)] [font-size:var(--text-caption)]">
               {n.time}
             </span>
           </button>

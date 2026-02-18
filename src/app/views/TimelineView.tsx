@@ -46,12 +46,12 @@ export function TimelineView() {
 
   return (
     <div className="animate-view-in w-full max-w-[480px] mx-auto">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-5">
         <div>
-          <div className="text-2xl font-extrabold tracking-[-0.03em] text-[var(--color-text-primary)]">
+          <div className="font-extrabold tracking-[-0.03em] text-[var(--color-text-primary)] [font-size:var(--text-title)]">
             {now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </div>
-          <div className="text-[13px] text-[var(--color-text-secondary)] font-medium">
+          <div className="text-[var(--color-text-secondary)] font-medium [font-size:var(--text-label)]">
             {now.toLocaleDateString('en-US', { weekday: 'long' })}
           </div>
         </div>
@@ -72,21 +72,21 @@ export function TimelineView() {
               style={{ transition: 'stroke-dashoffset 1s cubic-bezier(.4,0,.2,1), stroke .3s' }}
             />
           </svg>
-          <div className="text-[26px] font-extrabold tracking-[-0.03em] -mt-[82px] relative z-[1] text-[var(--color-text-primary)]">{pct}%</div>
-          <div className="text-[11px] text-[var(--color-text-tertiary)] font-medium uppercase tracking-[0.08em] mt-0.5">Adherence</div>
+          <div className="font-extrabold tracking-[-0.03em] -mt-[82px] relative z-[1] text-[var(--color-text-primary)] [font-size:var(--text-subtitle)]">{pct}%</div>
+          <div className="text-[var(--color-text-tertiary)] font-medium uppercase tracking-[0.08em] mt-0.5 [font-size:var(--text-caption)]">Adherence</div>
         </div>
       </div>
 
-      <div className="flex gap-2 mb-5">
+      <div className="flex flex-wrap gap-2 mb-6">
         <Pill variant="green">{dn} Done</Pill>
         <Pill variant="amber">{lt} Late</Pill>
         <Pill variant="red">{ms} Missed</Pill>
       </div>
 
-      <div className="relative pl-5">
-        <div className="absolute left-1 top-3 bottom-3 w-[1.5px] rounded bg-gradient-to-b from-[var(--color-border-primary)] to-transparent" aria-hidden />
+      <div className="relative pl-6">
+        <div className="absolute left-1 top-3 bottom-3 w-[2px] rounded-full bg-gradient-to-b from-[var(--color-border-primary)] to-transparent" aria-hidden />
         {sched.length === 0 ? (
-          <div className="py-5 text-[var(--color-text-secondary)] text-[13px]">No items for today</div>
+          <div className="py-6 text-[var(--color-text-secondary)] [font-size:var(--text-body)]">No items for today</div>
         ) : (
           <div className="stagger-children">{sched.map((it) => <TimelineItem key={it.id} item={it} nowMin={nM} />)}</div>
         )}
@@ -150,21 +150,21 @@ function TimelineItem({ item: it, nowMin }: { item: SchedItem; nowMin: number })
       <button
         type="button"
         ref={triggerRef}
-        className="animate-slide-r card-interactive relative mb-1.5 py-3 px-3.5 w-full text-left rounded-xl cursor-pointer border border-[var(--color-border-secondary)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+        className="animate-slide-r card-interactive relative mb-2 min-h-[56px] py-4 px-4 w-full text-left rounded-xl cursor-pointer border border-[var(--color-border-secondary)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
         style={{ background: bg, borderLeft, opacity }}
         onClick={handleClick}
         aria-label={ariaLabel}
       >
         <div
-          className="absolute -left-5 top-[18px] w-[9px] h-[9px] border-2 border-[var(--color-bg-primary)] z-[1]"
+          className="absolute -left-6 top-5 w-[10px] h-[10px] border-2 border-[var(--color-bg-primary)] z-[1]"
           style={{ background: dotColor, borderRadius: dotRadius }}
           aria-hidden
         />
-        <div className="flex items-start gap-2.5">
-          <span className="text-[11px] font-bold text-[var(--color-text-secondary)] min-w-[60px] pt-0.5 [font-family:var(--font-mono)]">{fT(it.time)}</span>
+        <div className="flex items-start gap-3">
+          <span className="text-[var(--color-text-secondary)] font-bold min-w-[64px] pt-0.5 [font-family:var(--font-mono)] [font-size:var(--text-caption)]">{fT(it.time)}</span>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-bold mb-0.5 truncate text-[var(--color-text-primary)]">{it.name}</div>
-            <div className="text-xs text-[var(--color-text-secondary)] truncate">{it.inst || ''}</div>
+            <div className="font-bold mb-0.5 truncate text-[var(--color-text-primary)] [font-size:var(--text-body)]">{it.name}</div>
+            <div className="text-[var(--color-text-secondary)] truncate [font-size:var(--text-label)]">{it.inst || ''}</div>
           </div>
           {tag}
         </div>
@@ -177,7 +177,7 @@ function TimelineItem({ item: it, nowMin }: { item: SchedItem; nowMin: number })
 function Tag({ bg, color, border, label, dashed, icon }: { bg: string; color: string; border: string; label: string; dashed?: boolean; icon?: React.ReactNode }) {
   return (
     <span
-      className="text-[9px] font-bold uppercase tracking-[0.08em] py-0.5 px-2 rounded-md whitespace-nowrap shrink-0 self-start inline-flex items-center gap-1"
+      className="font-bold uppercase tracking-[0.08em] py-1 px-2.5 rounded-lg whitespace-nowrap shrink-0 self-start inline-flex items-center gap-1.5 [font-size:var(--text-caption)]"
       style={{ background: bg, color, border: `1px ${dashed ? 'dashed' : 'solid'} ${border}` }}
     >
       {icon}
@@ -232,9 +232,9 @@ function DoseModal({ item: it, onClose, nowMin, triggerRef }: { item: SchedItem;
       variant="bottom"
       triggerRef={triggerRef}
     >
-      <div className="text-xs text-[var(--color-text-tertiary)] mb-1 [font-family:var(--font-mono)]">{fT(it.time)}</div>
-      <div className="text-[22px] font-extrabold tracking-[-0.02em] mb-0.5 text-[var(--color-text-primary)]">{it.name} {it.dose || ''}</div>
-      <div className="text-[13px] text-[var(--color-text-secondary)] mb-3.5">{it.inst || ''}</div>
+      <div className="text-[var(--color-text-tertiary)] mb-1 [font-family:var(--font-mono)] [font-size:var(--text-caption)]">{fT(it.time)}</div>
+      <div className="font-extrabold tracking-[-0.02em] mb-1 text-[var(--color-text-primary)] [font-size:var(--text-subtitle)]">{it.name} {it.dose || ''}</div>
+      <div className="text-[var(--color-text-secondary)] mb-4 [font-size:var(--text-body)]">{it.inst || ''}</div>
 
       <div className="flex flex-col gap-2">
         <Button

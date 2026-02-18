@@ -69,13 +69,13 @@ export function MedsView() {
 
   return (
     <div className="animate-view-in w-full max-w-[480px] mx-auto">
-      <h2 className="text-xl font-extrabold tracking-[-0.02em] mb-4 pb-2.5 border-b-2 border-[var(--color-text-primary)] text-[var(--color-text-primary)]">
+      <h2 className="font-extrabold tracking-[-0.02em] mb-5 pb-3 border-b-2 border-[var(--color-text-primary)] text-[var(--color-text-primary)] [font-size:var(--text-title)]">
         Medications
       </h2>
 
       <div className="stagger-children">
         {displayMeds.length === 0 && !isDemo && (
-          <div className="py-5 text-center text-[var(--color-text-secondary)] border border-dashed border-[var(--color-border-secondary)] rounded-xl">
+          <div className="py-6 text-center text-[var(--color-text-secondary)] border border-dashed border-[var(--color-border-secondary)] rounded-xl [font-size:var(--text-body)]">
             No medications found. Add one below.
           </div>
         )}
@@ -89,33 +89,33 @@ export function MedsView() {
             <button
               key={m.id}
               type="button"
-              className="animate-slide-r card-interactive w-full text-left bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] rounded-[14px] p-3.5 mb-2 cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+              className="animate-slide-r card-interactive w-full text-left bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] rounded-2xl p-4 mb-3 min-h-[72px] cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
               style={{ animationDelay: `${i * 0.04}s` }}
               onClick={() => toast(`${m.name} - ${m.inst}`, 'ts')}
             >
-              <div className="flex items-start justify-between gap-2 mb-1.5">
-                <span className="text-[15px] font-bold text-[var(--color-text-primary)]">{m.name}</span>
-                <span className="text-[11px] text-[var(--color-text-tertiary)] bg-[var(--color-bg-tertiary)] py-0.5 px-2 rounded-md [font-family:var(--font-mono)]">{m.dose}</span>
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <span className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-body)]">{m.name}</span>
+                <span className="text-[var(--color-text-tertiary)] bg-[var(--color-bg-tertiary)] py-1 px-2.5 rounded-lg [font-family:var(--font-mono)] [font-size:var(--text-caption)] shrink-0">{m.dose}</span>
               </div>
-              <div className="flex flex-wrap gap-3.5 text-xs text-[var(--color-text-secondary)]">
-                <span className="flex items-center gap-1">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+              <div className="flex flex-wrap gap-4 text-[var(--color-text-secondary)] [font-size:var(--text-label)]">
+                <span className="flex items-center gap-1.5">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
                   {m.times.length > 0 ? m.times.map((t) => fT(t)).join(', ') : 'No time set'}
                 </span>
-                <span className="flex items-center gap-1">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 20V10" /><path d="M12 20V4" /><path d="M6 20v-6" /></svg>
+                <span className="flex items-center gap-1.5">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 20V10" /><path d="M12 20V4" /><path d="M6 20v-6" /></svg>
                   {m.freq}x daily
                 </span>
               </div>
-              <div className="mt-2 h-1 bg-[var(--color-ring-track)] rounded overflow-hidden">
+              <div className="mt-3 h-1.5 bg-[var(--color-ring-track)] rounded-full overflow-hidden">
                 <div
-                  className="h-full rounded transition-[width] duration-300"
+                  className="h-full rounded-full transition-[width] duration-300"
                   style={{ width: `${p}%`, background: sc }}
                 />
               </div>
-              <div className="text-[11px] text-[var(--color-text-tertiary)] mt-1 flex justify-between [font-family:var(--font-mono)]">
+              <div className="text-[var(--color-text-tertiary)] mt-1.5 flex justify-between [font-family:var(--font-mono)] [font-size:var(--text-caption)]">
                 <span>{m.sup} pills left</span>
-                <span>{days} days{days <= 5 ? ' - Refill soon' : ''}</span>
+                <span>{days} days{days <= 5 ? ' — Refill soon' : ''}</span>
               </div>
             </button>
           )
@@ -230,32 +230,32 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
 
   return (
     <>
-      <Modal open onOpenChange={(o) => !o && onClose()} title="Add Medication" variant="bottom">
+      <Modal open onOpenChange={(o) => !o && onClose()} title="Add Medication" variant="center">
         <button
           type="button"
           onClick={() => setShowScanner(true)}
           disabled={isLooking}
-          className="tap-spring w-full py-3.5 mb-4 bg-[var(--color-accent-bg)] border-[1.5px] border-[var(--color-green-border)] rounded-xl text-sm font-bold text-[var(--color-accent)] cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-wait outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+          className="tap-spring w-full max-w-full py-4 px-6 mb-5 bg-[var(--color-accent-bg)] border-2 border-[var(--color-green-border)] rounded-2xl font-bold text-[var(--color-accent)] cursor-pointer flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-wait outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] min-h-[52px] [font-size:var(--text-body)]"
         >
           {isLooking ? (
             <>
-              <div className="w-[18px] h-[18px] border-2 border-[var(--color-green-border)] border-t-2 border-t-[var(--color-accent)] rounded-full spin-loading" />
-              Looking up medication...
+              <div className="w-5 h-5 border-2 border-[var(--color-green-border)] border-t-2 border-t-[var(--color-accent)] rounded-full spin-loading shrink-0" />
+              <span>Looking up medication...</span>
             </>
           ) : (
             <>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden>
                 <path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" />
                 <line x1="7" y1="12" x2="17" y2="12" /><line x1="7" y1="8" x2="13" y2="8" /><line x1="7" y1="16" x2="15" y2="16" />
               </svg>
-              Scan Barcode
+              <span>Scan Barcode</span>
             </>
           )}
         </button>
 
         <div className="flex items-center gap-3 mb-4">
           <div className="flex-1 h-px bg-[var(--color-border-primary)]" />
-          <span className="text-[11px] font-semibold text-[var(--color-text-tertiary)] uppercase tracking-[0.08em]">or enter manually</span>
+          <span className="font-semibold text-[var(--color-text-tertiary)] uppercase tracking-[0.08em] [font-size:var(--text-caption)]">or enter manually</span>
           <div className="flex-1 h-px bg-[var(--color-border-primary)]" />
         </div>
 
@@ -308,7 +308,7 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
 function FormField({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
   return (
     <div className="mb-3.5 flex-1">
-      <label htmlFor={id} className="block text-[11px] font-bold text-[var(--color-text-secondary)] mb-1 uppercase tracking-[0.08em]">
+      <label htmlFor={id} className="block font-bold text-[var(--color-text-secondary)] mb-1 uppercase tracking-[0.08em] [font-size:var(--text-label)]">
         {label}
       </label>
       {children}

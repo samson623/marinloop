@@ -55,12 +55,15 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[var(--color-bg-primary)] p-4 sm:p-6 md:p-8 min-h-screen overflow-y-auto">
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-[var(--color-bg-primary)] p-4 sm:p-6 md:p-8 min-h-screen overflow-y-auto safe-x"
+      style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+    >
       <IconButton
         size="lg"
         aria-label="Toggle theme"
         onClick={toggleTheme}
-        className="absolute top-4 right-4 sm:top-5 sm:right-5 z-10"
+        className="absolute top-[max(1rem,env(safe-area-inset-top))] right-[max(1rem,env(safe-area-inset-right))] z-10"
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
@@ -73,14 +76,14 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
             type="button"
             onClick={onBack}
             aria-label="Back"
-            className="absolute top-4 left-4 sm:top-5 sm:left-5 flex items-center gap-1.5 border-none bg-transparent cursor-pointer text-[var(--color-text-secondary)] text-sm outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] min-h-[44px]"
+            className="absolute top-[max(1rem,env(safe-area-inset-top))] left-[max(1rem,env(safe-area-inset-left))] flex items-center gap-2 border-none bg-transparent cursor-pointer text-[var(--color-text-secondary)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] min-h-[44px] min-w-[44px] [font-size:var(--text-body)]"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
             Back
           </button>
         )}
-        <div className="flex items-center gap-2 mb-2 sm:mb-3">
-          <h1 className="text-[26px] sm:text-[28px] md:text-[32px] font-extrabold tracking-[-0.03em] text-[var(--color-text-primary)]">
+        <div className="flex items-center gap-2 mb-3 sm:mb-4">
+          <h1 className="font-extrabold tracking-[-0.03em] text-[var(--color-text-primary)] [font-size:var(--text-title)]">
             MedFlow
           </h1>
           <span
@@ -88,7 +91,7 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
             aria-hidden
           />
         </div>
-        <p className="text-sm sm:text-base text-[var(--color-text-secondary)] mb-8 sm:mb-10 font-normal">
+        <p className="text-[var(--color-text-secondary)] mb-8 sm:mb-10 font-normal [font-size:var(--text-body)]">
           {isSignUp ? 'Create your account.' : 'Stay on time. Stay safe. Stay confident.'}
         </p>
 
@@ -104,7 +107,7 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
 
           {isSignUp && (
             <div>
-              <label htmlFor="login-name" className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5 sm:mb-2 uppercase tracking-[0.08em]">
+              <label htmlFor="login-name" className="block font-semibold text-[var(--color-text-secondary)] mb-1.5 sm:mb-2 uppercase tracking-[0.08em] [font-size:var(--text-label)]">
                 Name
               </label>
               <Input
@@ -120,7 +123,7 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
           )}
 
           <div>
-            <label htmlFor="login-email" className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5 sm:mb-2 uppercase tracking-[0.08em]">
+            <label htmlFor="login-email" className="block font-semibold text-[var(--color-text-secondary)] mb-1.5 sm:mb-2 uppercase tracking-[0.08em] [font-size:var(--text-label)]">
               Email
             </label>
             <Input
@@ -135,7 +138,7 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
           </div>
 
           <div>
-            <label htmlFor="login-password" className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5 sm:mb-2 uppercase tracking-[0.08em]">
+            <label htmlFor="login-password" className="block font-semibold text-[var(--color-text-secondary)] mb-1.5 sm:mb-2 uppercase tracking-[0.08em] [font-size:var(--text-label)]">
               Password
             </label>
             <Input
@@ -160,7 +163,7 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
             {loading ? 'Processing...' : isSignUp ? 'Create Account' : 'Sign In'}
           </Button>
 
-          <div className="flex items-center gap-3 my-2 sm:my-3 text-[var(--color-text-tertiary)] text-[11px] sm:text-xs uppercase tracking-[0.1em]">
+          <div className="flex items-center gap-3 my-3 sm:my-4 text-[var(--color-text-tertiary)] uppercase tracking-[0.1em] [font-size:var(--text-caption)]">
             <span className="flex-1 h-px bg-[var(--color-border-primary)]" />
             <span>or</span>
             <span className="flex-1 h-px bg-[var(--color-border-primary)]" />
@@ -187,7 +190,7 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
           </div>
         </form>
 
-        <p className="mt-8 sm:mt-10 pt-5 sm:pt-6 border-t border-[var(--color-border-primary)] text-[11px] sm:text-xs text-[var(--color-text-tertiary)] leading-relaxed">
+        <p className="mt-8 sm:mt-10 pt-5 sm:pt-6 border-t border-[var(--color-border-primary)] text-[var(--color-text-tertiary)] leading-relaxed [font-size:var(--text-caption)]">
           This app assists with medication tracking and reminders. It does not provide medical advice. Always follow instructions from your healthcare provider.
         </p>
       </div>

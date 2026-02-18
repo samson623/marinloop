@@ -32,13 +32,13 @@ export function ApptsView() {
 
   return (
     <div className="animate-view-in w-full max-w-[480px] mx-auto">
-      <h2 className="font-extrabold tracking-[-0.02em] mb-5 pb-3 border-b-2 border-[var(--color-text-primary)] text-[var(--color-text-primary)] [font-size:var(--text-title)]">
+      <h2 className="font-extrabold tracking-[-0.02em] mb-5 pb-3 border-b-2 border-[var(--color-text-primary)] text-[var(--color-text-primary)] text-xl sm:[font-size:var(--text-title)]">
         Appointments
       </h2>
 
       <div className="stagger-children">
         {sorted.length === 0 && !isDemo && (
-          <div className="py-6 text-center text-[var(--color-text-secondary)] border border-dashed border-[var(--color-border-secondary)] rounded-xl [font-size:var(--text-body)]">
+          <div className="py-8 px-5 text-center text-[var(--color-text-secondary)] border-2 border-dashed border-[var(--color-border-secondary)] rounded-2xl text-lg font-medium sm:py-6 sm:px-4 sm:text-base">
             No upcoming appointments.
           </div>
         )}
@@ -53,11 +53,11 @@ export function ApptsView() {
               style={{ animationDelay: `${i * 0.04}s`, opacity: past ? 0.45 : 1 }}
               onClick={() => toast(`${a.title} - ${fD(a.date)}`, 'ts')}
             >
-              <div className="text-[var(--color-text-tertiary)] mb-1 [font-family:var(--font-mono)] [font-size:var(--text-caption)]">
+              <div className="text-[var(--color-text-tertiary)] mb-1 [font-family:var(--font-mono)] text-sm sm:[font-size:var(--text-caption)]">
                 {fD(a.date)} at {fT(a.time)}
               </div>
-              <div className="font-bold mb-0.5 text-[var(--color-text-primary)] [font-size:var(--text-body)]">{a.title}</div>
-              <div className="text-[var(--color-text-secondary)] [font-size:var(--text-label)]">{a.loc}</div>
+              <div className="font-bold mb-0.5 text-[var(--color-text-primary)] text-base sm:[font-size:var(--text-body)]">{a.title}</div>
+              <div className="text-[var(--color-text-secondary)] text-sm sm:[font-size:var(--text-label)]">{a.loc}</div>
             </button>
           )
         })}
@@ -68,9 +68,9 @@ export function ApptsView() {
         variant="ghost"
         size="md"
         onClick={() => openAddApptModal(null)}
-        className="mt-2.5 border-2 border-dashed border-[var(--color-border-primary)] text-[var(--color-text-tertiary)] flex items-center justify-center gap-1.5"
+        className="mt-4 py-4 text-lg font-bold border-2 border-dashed border-[var(--color-border-primary)] text-[var(--color-text-secondary)] flex items-center justify-center gap-2 min-h-[52px] sm:mt-2.5 sm:py-3.5 sm:text-base sm:font-semibold sm:min-h-0"
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 sm:w-[18px] sm:h-[18px]"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
         Add Appointment
       </Button>
 

@@ -69,13 +69,13 @@ export function MedsView() {
 
   return (
     <div className="animate-view-in w-full max-w-[480px] mx-auto">
-      <h2 className="font-extrabold tracking-[-0.02em] mb-5 pb-3 border-b-2 border-[var(--color-text-primary)] text-[var(--color-text-primary)] [font-size:var(--text-title)]">
+      <h2 className="font-extrabold tracking-[-0.02em] mb-5 pb-3 border-b-2 border-[var(--color-text-primary)] text-[var(--color-text-primary)] text-xl sm:[font-size:var(--text-title)]">
         Medications
       </h2>
 
       <div className="stagger-children">
         {displayMeds.length === 0 && !isDemo && (
-          <div className="py-6 text-center text-[var(--color-text-secondary)] border border-dashed border-[var(--color-border-secondary)] rounded-xl [font-size:var(--text-body)]">
+          <div className="py-8 px-5 text-center text-[var(--color-text-secondary)] border-2 border-dashed border-[var(--color-border-secondary)] rounded-2xl text-lg font-medium sm:py-6 sm:px-4 sm:text-base">
             No medications found. Add one below.
           </div>
         )}
@@ -94,10 +94,10 @@ export function MedsView() {
               onClick={() => toast(`${m.name} - ${m.inst}`, 'ts')}
             >
               <div className="flex items-start justify-between gap-3 mb-2">
-                <span className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-body)]">{m.name}</span>
-                <span className="text-[var(--color-text-tertiary)] bg-[var(--color-bg-tertiary)] py-1 px-2.5 rounded-lg [font-family:var(--font-mono)] [font-size:var(--text-caption)] shrink-0">{m.dose}</span>
+                <span className="font-bold text-[var(--color-text-primary)] text-base sm:[font-size:var(--text-body)]">{m.name}</span>
+                <span className="text-[var(--color-text-tertiary)] bg-[var(--color-bg-tertiary)] py-1 px-2.5 rounded-lg [font-family:var(--font-mono)] text-sm sm:[font-size:var(--text-caption)] shrink-0">{m.dose}</span>
               </div>
-              <div className="flex flex-wrap gap-4 text-[var(--color-text-secondary)] [font-size:var(--text-label)]">
+              <div className="flex flex-wrap gap-4 text-[var(--color-text-secondary)] text-sm sm:[font-size:var(--text-label)]">
                 <span className="flex items-center gap-1.5">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
                   {m.times.length > 0 ? m.times.map((t) => fT(t)).join(', ') : 'No time set'}
@@ -113,7 +113,7 @@ export function MedsView() {
                   style={{ width: `${p}%`, background: sc }}
                 />
               </div>
-              <div className="text-[var(--color-text-tertiary)] mt-1.5 flex justify-between [font-family:var(--font-mono)] [font-size:var(--text-caption)]">
+              <div className="text-[var(--color-text-tertiary)] mt-1.5 flex justify-between [font-family:var(--font-mono)] text-sm sm:[font-size:var(--text-caption)]">
                 <span>{m.sup} pills left</span>
                 <span>{days} days{days <= 5 ? ' — Refill soon' : ''}</span>
               </div>
@@ -127,9 +127,9 @@ export function MedsView() {
         variant="ghost"
         size="md"
         onClick={() => openAddMedModal(null)}
-        className="mt-2.5 border-2 border-dashed border-[var(--color-border-primary)] text-[var(--color-text-tertiary)] flex items-center justify-center gap-1.5"
+        className="mt-4 py-4 text-lg font-bold border-2 border-dashed border-[var(--color-border-primary)] text-[var(--color-text-secondary)] flex items-center justify-center gap-2 min-h-[52px] sm:mt-2.5 sm:py-3.5 sm:text-base sm:font-semibold sm:min-h-0"
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 sm:w-[18px] sm:h-[18px]"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
         Add Medication
       </Button>
 

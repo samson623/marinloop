@@ -46,16 +46,31 @@ export function TimelineView() {
 
   return (
     <div className="animate-view-in w-full max-w-[480px] mx-auto">
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <div className="font-extrabold tracking-[-0.03em] text-[var(--color-text-primary)] [font-size:var(--text-title)]">
+      <div className="flex items-stretch justify-between gap-3 mb-6">
+        <div className="shrink-0">
+          <div className="font-extrabold tracking-[-0.03em] text-[var(--color-text-primary)] text-lg sm:[font-size:var(--text-title)]">
             {now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </div>
-          <div className="text-[var(--color-text-secondary)] font-medium [font-size:var(--text-label)]">
+          <div className="text-[var(--color-text-secondary)] font-medium text-base sm:[font-size:var(--text-label)]">
             {now.toLocaleDateString('en-US', { weekday: 'long' })}
           </div>
         </div>
-        <div className="text-center" role="img" aria-label={`Adherence ${pct}%`}>
+
+        <div className="flex-1 flex flex-col items-center justify-center min-w-0 px-2">
+          {sched.length === 0 ? (
+            <p className="text-center text-[var(--color-text-secondary)] text-base sm:[font-size:var(--text-body)] font-medium py-1">
+              No items for today
+            </p>
+          ) : (
+            <div className="flex flex-wrap justify-center gap-2">
+              <Pill variant="green">{dn} Done</Pill>
+              <Pill variant="amber">{lt} Late</Pill>
+              <Pill variant="red">{ms} Missed</Pill>
+            </div>
+          )}
+        </div>
+
+        <div className="shrink-0 text-center" role="img" aria-label={`Adherence ${pct}%`}>
           <svg width="120" height="120" viewBox="0 0 100 100" className="-rotate-90" aria-hidden>
             <circle cx="50" cy="50" r="46" fill="none" stroke="var(--color-ring-track)" strokeWidth="6" />
             <circle
@@ -72,25 +87,17 @@ export function TimelineView() {
               style={{ transition: 'stroke-dashoffset 1s cubic-bezier(.4,0,.2,1), stroke .3s' }}
             />
           </svg>
-          <div className="font-extrabold tracking-[-0.03em] -mt-[82px] relative z-[1] text-[var(--color-text-primary)] [font-size:var(--text-subtitle)]">{pct}%</div>
-          <div className="text-[var(--color-text-tertiary)] font-medium uppercase tracking-[0.08em] mt-0.5 [font-size:var(--text-caption)]">Adherence</div>
+          <div className="font-extrabold tracking-[-0.03em] -mt-[82px] relative z-[1] text-[var(--color-text-primary)] text-xl sm:[font-size:var(--text-subtitle)]">{pct}%</div>
+          <div className="text-[var(--color-text-tertiary)] font-medium uppercase tracking-[0.08em] mt-0.5 text-xs sm:[font-size:var(--text-caption)]">Adherence</div>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-6">
-        <Pill variant="green">{dn} Done</Pill>
-        <Pill variant="amber">{lt} Late</Pill>
-        <Pill variant="red">{ms} Missed</Pill>
-      </div>
-
-      <div className="relative pl-6">
-        <div className="absolute left-1 top-3 bottom-3 w-[2px] rounded-full bg-gradient-to-b from-[var(--color-border-primary)] to-transparent" aria-hidden />
-        {sched.length === 0 ? (
-          <div className="py-6 text-[var(--color-text-secondary)] [font-size:var(--text-body)]">No items for today</div>
-        ) : (
+      {sched.length > 0 && (
+        <div className="relative pl-6">
+          <div className="absolute left-1 top-3 bottom-3 w-[2px] rounded-full bg-gradient-to-b from-[var(--color-border-primary)] to-transparent" aria-hidden />
           <div className="stagger-children">{sched.map((it) => <TimelineItem key={it.id} item={it} nowMin={nM} />)}</div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -161,10 +168,10 @@ function TimelineItem({ item: it, nowMin }: { item: SchedItem; nowMin: number })
           aria-hidden
         />
         <div className="flex items-start gap-3">
-          <span className="text-[var(--color-text-secondary)] font-bold min-w-[64px] pt-0.5 [font-family:var(--font-mono)] [font-size:var(--text-caption)]">{fT(it.time)}</span>
+          <span className="text-[var(--color-text-secondary)] font-bold min-w-[64px] pt-0.5 [font-family:var(--font-mono)] text-sm sm:[font-size:var(--text-caption)]">{fT(it.time)}</span>
           <div className="flex-1 min-w-0">
-            <div className="font-bold mb-0.5 truncate text-[var(--color-text-primary)] [font-size:var(--text-body)]">{it.name}</div>
-            <div className="text-[var(--color-text-secondary)] truncate [font-size:var(--text-label)]">{it.inst || ''}</div>
+            <div className="font-bold mb-0.5 truncate text-[var(--color-text-primary)] text-base sm:[font-size:var(--text-body)]">{it.name}</div>
+            <div className="text-[var(--color-text-secondary)] truncate text-sm sm:[font-size:var(--text-label)]">{it.inst || ''}</div>
           </div>
           {tag}
         </div>

@@ -45,3 +45,10 @@ self.addEventListener('notificationclick', (event) => {
 self.addEventListener('activate', (event) => {
     event.waitUntil(self.clients.claim())
 })
+
+// Allow the app to tell this worker to activate immediately (so user gets the new version after refresh)
+self.addEventListener('message', (event) => {
+    if (event.data === 'SKIP_WAITING') {
+        self.skipWaiting()
+    }
+})

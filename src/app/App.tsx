@@ -21,6 +21,7 @@ import { isMobile, isStandalone } from '@/shared/lib/device'
 import { AddToHomeScreenPrompt, getAddToHomeScreenSeen, setAddToHomeScreenSeen } from '@/shared/components/AddToHomeScreenPrompt'
 import { Modal } from '@/shared/components/Modal'
 import { useInstallPrompt } from '@/shared/hooks/useInstallPrompt'
+import { useServiceWorkerUpdate } from '@/shared/hooks/useServiceWorkerUpdate'
 
 type SpeechRecognitionResultLike = {
   isFinal: boolean
@@ -127,6 +128,7 @@ function AppInner() {
   const [showLoginScreen, setShowLoginScreen] = useState(false)
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
   const installPrompt = useInstallPrompt()
+  const { updateAvailable, reloadToUpdate } = useServiceWorkerUpdate()
 
   useEffect(() => {
     try {
@@ -529,6 +531,41 @@ function AppInner() {
           </button>
         </div>
       </header>
+
+      {updateAvailable && (
+        <div
+          role="alert"
+          style={{
+            background: 'var(--color-accent)',
+            color: '#fff',
+            padding: '10px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            fontSize: 14,
+            fontWeight: 600,
+          }}
+        >
+          <span>New version available</span>
+          <button
+            type="button"
+            onClick={reloadToUpdate}
+            style={{
+              padding: '6px 14px',
+              background: 'rgba(255,255,255,0.25)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            Refresh
+          </button>
+        </div>
+      )}
 
       <main id="main-content" role="tabpanel" aria-labelledby={`tab-${tab}`} style={{ flex: 1, maxWidth: 480, margin: '0 auto', width: '100%', padding: '16px 16px 100px' }}>{view}</main>
 

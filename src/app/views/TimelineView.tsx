@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { Check, Clock, XCircle } from 'lucide-react'
 import { useAppStore, fT, type SchedItem } from '@/shared/stores/app-store'
 import { useTimeline } from '@/shared/hooks/useTimeline'
 import { useDoseLogs } from '@/shared/hooks/useDoseLogs'
 import { useAuthStore } from '@/shared/stores/auth-store'
+import { Modal } from '@/shared/components/Modal'
 
 const CIRC = 2 * Math.PI * 46
 
@@ -48,8 +50,8 @@ export function TimelineView() {
           <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.03em' }}>{now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
           <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', fontWeight: 500 }}>{now.toLocaleDateString('en-US', { weekday: 'long' })}</div>
         </div>
-        <div style={{ textAlign: 'center' }}>
-          <svg width="120" height="120" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+        <div style={{ textAlign: 'center' }} role="img" aria-label={`Adherence ${pct}%`}>
+          <svg width="120" height="120" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }} aria-hidden>
             <circle cx="50" cy="50" r="46" fill="none" stroke="var(--color-ring-track)" strokeWidth="6" />
             <circle cx="50" cy="50" r="46" fill="none" strokeWidth="6" strokeLinecap="round" stroke={ringColor} strokeDasharray={`${CIRC}`} strokeDashoffset={`${offset}`} style={{ transition: 'stroke-dashoffset 1s cubic-bezier(.4,0,.2,1), stroke .3s' }} />
           </svg>
@@ -88,6 +90,7 @@ function Pill({ color, label }: { color: string; label: string }) {
 function TimelineItem({ item: it, nowMin }: { item: SchedItem; nowMin: number }) {
   const { toast, setTab } = useAppStore()
   const [open, setOpen] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
   const borderStyle = '1px solid var(--color-border-secondary)'
   let bg = 'var(--color-bg-secondary)'
@@ -97,9 +100,9 @@ function TimelineItem({ item: it, nowMin }: { item: SchedItem; nowMin: number })
   let opacity = 1
 
   if (it.tp === 'med') {
-    if (it.st === 'done') { dotColor = 'var(--color-green)'; opacity = 0.55; tag = <Tag bg="var(--color-green-bg)" color="var(--color-green)" border="var(--color-green-border)" label="Done" /> }
-    else if (it.st === 'late') { dotColor = 'var(--color-amber)'; opacity = 0.6; tag = <Tag bg="var(--color-amber-bg)" color="var(--color-amber)" border="var(--color-amber-border)" label="Late" /> }
-    else if (it.st === 'missed') { dotColor = 'var(--color-red)'; bg = 'var(--color-red-bg)'; tag = <Tag bg="var(--color-red-bg)" color="var(--color-red)" border="var(--color-red-border)" label="Missed" /> }
+    if (it.st === 'done') { dotColor = 'var(--color-green)'; opacity = 0.55; tag = <Tag bg="var(--color-green-bg)" color="var(--color-green)" border="var(--color-green-border)" label="Done" icon={<Check size={10} aria-hidden />} /> }
+    else if (it.st === 'late') { dotColor = 'var(--color-amber)'; opacity = 0.6; tag = <Tag bg="var(--color-amber-bg)" color="var(--color-amber)" border="var(--color-amber-border)" label="Late" icon={<Clock size={10} aria-hidden />} /> }
+    else if (it.st === 'missed') { dotColor = 'var(--color-red)'; bg = 'var(--color-red-bg)'; tag = <Tag bg="var(--color-red-bg)" color="var(--color-red)" border="var(--color-red-border)" label="Missed" icon={<XCircle size={10} aria-hidden />} /> }
     else if (it.nx) { dotColor = 'var(--color-amber)'; bg = 'var(--color-amber-bg)'; tag = <Tag bg="var(--color-amber-bg)" color="var(--color-amber)" border="var(--color-amber-border)" label="Next" /> }
   } else if (it.tp === 'food') {
     dotColor = 'var(--color-amber)'
@@ -132,10 +135,20 @@ function TimelineItem({ item: it, nowMin }: { item: SchedItem; nowMin: number })
     else if (it.st === 'done' || it.st === 'late') toast(`${it.name} - already confirmed`, 'ts')
   }
 
+  const statusText = it.tp === 'med' && it.st ? `, ${it.st}` : it.tp === 'appt' ? ', appointment' : it.tp === 'food' ? ', food' : ''
+  const ariaLabel = `${it.name}, ${fT(it.time)}${statusText}`
+
   return (
     <>
-      <div className="animate-slide-r card-interactive" onClick={handleClick} style={{ position: 'relative', marginBottom: 6, padding: '12px 14px', background: bg, border: borderStyle, borderLeft, borderRadius: 12, cursor: 'pointer', opacity }}>
-        <div style={{ position: 'absolute', left: -20, top: 18, width: 9, height: 9, background: dotColor, border: '2px solid var(--color-bg-primary)', borderRadius: dotRadius, zIndex: 1 }} />
+      <button
+        type="button"
+        ref={triggerRef}
+        className="animate-slide-r card-interactive"
+        onClick={handleClick}
+        aria-label={ariaLabel}
+        style={{ position: 'relative', marginBottom: 6, padding: '12px 14px', background: bg, border: borderStyle, borderLeft, borderRadius: 12, cursor: 'pointer', opacity, width: '100%', textAlign: 'left' }}
+      >
+        <div style={{ position: 'absolute', left: -20, top: 18, width: 9, height: 9, background: dotColor, border: '2px solid var(--color-bg-primary)', borderRadius: dotRadius, zIndex: 1 }} aria-hidden />
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--color-text-secondary)', minWidth: 60, paddingTop: 1 }}>{fT(it.time)}</span>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -144,21 +157,22 @@ function TimelineItem({ item: it, nowMin }: { item: SchedItem; nowMin: number })
           </div>
           {tag}
         </div>
-      </div>
-      {open && <DoseModal item={it} onClose={() => setOpen(false)} nowMin={nowMin} />}
+      </button>
+      {open && <DoseModal item={it} onClose={() => setOpen(false)} nowMin={nowMin} triggerRef={triggerRef} />}
     </>
   )
 }
 
-function Tag({ bg, color, border, label, dashed }: { bg: string; color: string; border: string; label: string; dashed?: boolean }) {
+function Tag({ bg, color, border, label, dashed, icon }: { bg: string; color: string; border: string; label: string; dashed?: boolean; icon?: React.ReactNode }) {
   return (
-    <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', padding: '3px 8px', borderRadius: 6, whiteSpace: 'nowrap', flexShrink: 0, alignSelf: 'flex-start', background: bg, color, border: `1px ${dashed ? 'dashed' : 'solid'} ${border}` }}>
+    <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', padding: '3px 8px', borderRadius: 6, whiteSpace: 'nowrap', flexShrink: 0, alignSelf: 'flex-start', background: bg, color, border: `1px ${dashed ? 'dashed' : 'solid'} ${border}`, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+      {icon}
       {label}
     </span>
   )
 }
 
-function DoseModal({ item: it, onClose, nowMin }: { item: SchedItem; onClose: () => void; nowMin: number }) {
+function DoseModal({ item: it, onClose, nowMin, triggerRef }: { item: SchedItem; onClose: () => void; nowMin: number; triggerRef?: React.RefObject<HTMLElement | null> }) {
   const { isDemo } = useAuthStore()
   const { markDone: markDoneDemo, markMissed: markMissedDemo, toast } = useAppStore()
   const { logDose } = useDoseLogs()
@@ -197,28 +211,22 @@ function DoseModal({ item: it, onClose, nowMin }: { item: SchedItem; onClose: ()
   }
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'var(--color-overlay)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 480, maxHeight: '88vh', background: 'var(--color-bg-primary)', borderRadius: '16px 16px 0 0', overflowY: 'auto' }}>
-        <div style={{ width: 36, height: 4, background: 'var(--color-text-tertiary)', opacity: 0.3, margin: '10px auto', borderRadius: 4 }} />
-        <div style={{ padding: '4px 20px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border-primary)' }}>
-          <h3 style={{ fontSize: 17, fontWeight: 700 }}>Medication</h3>
-          <button onClick={onClose} style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg-tertiary)', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', borderRadius: '50%' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-          </button>
-        </div>
+    <Modal
+      open
+      onOpenChange={(o) => !o && onClose()}
+      title="Medication"
+      variant="bottom"
+      triggerRef={triggerRef}
+    >
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--color-text-tertiary)', marginBottom: 4 }}>{fT(it.time)}</div>
+      <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 3 }}>{it.name} {it.dose || ''}</div>
+      <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 14 }}>{it.inst || ''}</div>
 
-        <div style={{ padding: 20 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--color-text-tertiary)', marginBottom: 4 }}>{fT(it.time)}</div>
-          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 3 }}>{it.name} {it.dose || ''}</div>
-          <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 14 }}>{it.inst || ''}</div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <button onClick={() => { markDone(); onClose() }} style={{ width: '100%', padding: 14, fontSize: 14, fontWeight: 700, borderRadius: 12, cursor: 'pointer', border: 'none', background: 'var(--color-green)', color: '#fff' }}>Mark Done</button>
-            <button onClick={() => { toast(`${it.name} snoozed`, 'tw'); onClose() }} style={{ width: '100%', padding: 14, fontSize: 14, fontWeight: 700, borderRadius: 12, cursor: 'pointer', background: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)', border: '1.5px solid var(--color-border-primary)' }}>Snooze</button>
-            <button onClick={() => { markMissed(); onClose() }} style={{ background: 'transparent', color: 'var(--color-red)', border: 'none', fontSize: 12, fontWeight: 600, padding: 10, cursor: 'pointer' }}>Mark as Missed</button>
-          </div>
-        </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <button onClick={() => { markDone(); onClose() }} style={{ width: '100%', padding: 14, fontSize: 14, fontWeight: 700, borderRadius: 12, cursor: 'pointer', border: 'none', background: 'var(--color-green)', color: '#fff' }}>Mark Done</button>
+        <button onClick={() => { toast(`${it.name} snoozed`, 'tw'); onClose() }} style={{ width: '100%', padding: 14, fontSize: 14, fontWeight: 700, borderRadius: 12, cursor: 'pointer', background: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)', border: '1.5px solid var(--color-border-primary)' }}>Snooze</button>
+        <button onClick={() => { markMissed(); onClose() }} style={{ background: 'transparent', color: 'var(--color-red)', border: 'none', fontSize: 12, fontWeight: 600, padding: 10, cursor: 'pointer' }}>Mark as Missed</button>
       </div>
-    </div>
+    </Modal>
   )
 }

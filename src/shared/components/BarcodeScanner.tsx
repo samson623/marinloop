@@ -113,6 +113,9 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
 
     return (
         <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="barcode-scanner-title"
             style={{
                 position: 'fixed',
                 inset: 0,
@@ -139,9 +142,11 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
                     background: 'linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%)',
                 }}
             >
-                <span style={{ fontWeight: 600, fontSize: 18, letterSpacing: '0.5px' }}>Scan Medication</span>
+                <span id="barcode-scanner-title" style={{ fontWeight: 600, fontSize: 18, letterSpacing: '0.5px' }}>Scan Medication</span>
                 <button
+                    type="button"
                     onClick={handleClose}
+                    aria-label="Close scanner"
                     style={{
                         background: 'rgba(255,255,255,0.2)',
                         border: 'none',
@@ -156,7 +161,7 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
                         backdropFilter: 'blur(4px)',
                     }}
                 >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                         <line x1="18" y1="6" x2="6" y2="18" />
                         <line x1="6" y1="6" x2="18" y2="18" />
                     </svg>

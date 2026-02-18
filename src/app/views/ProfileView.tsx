@@ -141,8 +141,12 @@ export function ProfileView() {
               </div>
             </div>
             <button
+              type="button"
               onClick={() => push.isSubscribed ? push.unsubscribe() : push.subscribe()}
               disabled={!push.isSupported || push.permission === 'denied' || push.isLoading}
+              aria-label={push.isSubscribed ? 'Disable push notifications' : 'Enable push notifications'}
+              aria-checked={push.isSubscribed}
+              role="switch"
               style={{
                 width: 48, height: 26, borderRadius: 13, border: 'none', padding: 2,
                 background: push.isSubscribed ? 'var(--color-accent)' : 'var(--color-bg-tertiary)',

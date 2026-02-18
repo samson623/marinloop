@@ -5,6 +5,7 @@ import { useMedications } from '@/shared/hooks/useMedications'
 import { useSchedules } from '@/shared/hooks/useSchedules'
 import { useRefills } from '@/shared/hooks/useRefillsList'
 import { BarcodeScanner } from '@/shared/components/BarcodeScanner'
+import { Modal } from '@/shared/components/Modal'
 import { lookupByBarcode } from '@/shared/services/openfda'
 
 type AddMedModalProps = {
@@ -225,18 +226,8 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
 
   return (
     <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'var(--color-overlay)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-        <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 480, maxHeight: '88vh', background: 'var(--color-bg-primary)', borderRadius: '16px 16px 0 0', overflowY: 'auto' }}>
-          <div style={{ width: 36, height: 4, background: 'var(--color-text-tertiary)', opacity: 0.3, margin: '10px auto', borderRadius: 4 }} />
-          <div style={{ padding: '4px 20px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border-primary)' }}>
-            <h3 style={{ fontSize: 17, fontWeight: 700 }}>Add Medication</h3>
-            <button onClick={onClose} style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg-tertiary)', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', borderRadius: '50%' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-            </button>
-          </div>
-
-          <div style={{ padding: 20 }}>
-            {/* Scan Barcode Button */}
+      <Modal open onOpenChange={(o) => !o && onClose()} title="Add Medication" variant="bottom">
+        {/* Scan Barcode Button */}
             <button
               type="button"
               onClick={() => setShowScanner(true)}
@@ -295,11 +286,11 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
             </div>
 
             <form onSubmit={handleSubmit}>
-              <FormField label="Name"><input className="fi" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Amoxicillin" required /></FormField>
+              <FormField label="Name" id="med-name"><input className="fi" id="med-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Amoxicillin" required /></FormField>
               <div style={{ display: 'flex', gap: 10 }}>
-                <FormField label="Dosage"><input className="fi" value={dose} onChange={(e) => setDose(e.target.value)} placeholder="e.g. 500mg" /></FormField>
-                <FormField label="Frequency">
-                  <select className="fi" value={freq} onChange={(e) => setFreq(e.target.value)} style={{ appearance: 'auto' }}>
+                <FormField label="Dosage" id="med-dosage"><input className="fi" id="med-dosage" value={dose} onChange={(e) => setDose(e.target.value)} placeholder="e.g. 500mg" /></FormField>
+                <FormField label="Frequency" id="med-freq">
+                  <select className="fi" id="med-freq" value={freq} onChange={(e) => setFreq(e.target.value)} style={{ appearance: 'auto' }}>
                     <option value="1">Once daily</option>
                     <option value="2">Twice daily</option>
                     <option value="3">Three times</option>
@@ -307,18 +298,16 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
                 </FormField>
               </div>
               <div style={{ display: 'flex', gap: 10 }}>
-                <FormField label="Time"><input className="fi" type="time" value={time} onChange={(e) => setTime(e.target.value)} /></FormField>
-                <FormField label="Pills in Bottle"><input className="fi" type="number" value={sup} onChange={(e) => setSup(e.target.value)} min="0" /></FormField>
+                <FormField label="Time" id="med-time"><input className="fi" id="med-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} /></FormField>
+                <FormField label="Pills in Bottle" id="med-sup"><input className="fi" id="med-sup" type="number" value={sup} onChange={(e) => setSup(e.target.value)} min="0" /></FormField>
               </div>
-              <FormField label="Instructions"><input className="fi" value={inst} onChange={(e) => setInst(e.target.value)} placeholder="e.g. Take with food" /></FormField>
-              <FormField label="Warnings"><input className="fi" value={warn} onChange={(e) => setWarn(e.target.value)} placeholder="e.g. May cause drowsiness" /></FormField>
+              <FormField label="Instructions" id="med-inst"><input className="fi" id="med-inst" value={inst} onChange={(e) => setInst(e.target.value)} placeholder="e.g. Take with food" /></FormField>
+              <FormField label="Warnings" id="med-warn"><input className="fi" id="med-warn" value={warn} onChange={(e) => setWarn(e.target.value)} placeholder="e.g. May cause drowsiness" /></FormField>
               <button type="submit" style={{ width: '100%', padding: 14, background: 'var(--color-accent)', color: '#fff', border: 'none', fontSize: 14, fontWeight: 700, cursor: 'pointer', borderRadius: 12, marginTop: 6 }}>
                 Add Medication
               </button>
             </form>
-          </div>
-        </div>
-      </div>
+      </Modal>
 
       {showScanner && (
         <BarcodeScanner
@@ -330,10 +319,10 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
   )
 }
 
-function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+function FormField({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 14, flex: 1 }}>
-      <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</label>
+      <label htmlFor={id} style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</label>
       {children}
     </div>
   )

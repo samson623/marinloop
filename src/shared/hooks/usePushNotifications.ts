@@ -16,13 +16,26 @@ export function usePushNotifications() {
     const [isLoading, setIsLoading] = useState(false)
     const [showAddToHomeScreenHelp, setShowAddToHomeScreenHelp] = useState(false)
 
+    const refreshState = useCallback(() => {
+        if (!isSupported || isDemo) return
+        setPermission(typeof Notification !== 'undefined' ? Notification.permission : 'default')
+        PushService.getExistingSubscription()
+            .then((sub) => setIsSubscribed(!!sub))
+            .catch(() => setIsSubscribed(false))
+    }, [isSupported, isDemo])
+
+    useEffect(() => {
+        refreshState()
+    }, [refreshState])
+
     useEffect(() => {
         if (!isSupported || isDemo) return
-
-        PushService.getExistingSubscription().then((sub) => {
-            setIsSubscribed(!!sub)
-        }).catch(() => { })
-    }, [isSupported, isDemo])
+        const onVisibilityChange = () => {
+            if (document.visibilityState === 'visible') refreshState()
+        }
+        document.addEventListener('visibilitychange', onVisibilityChange)
+        return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+    }, [isSupported, isDemo, refreshState])
 
     const subscribe = useCallback(async () => {
         if (isDemo || isLoading) return
@@ -44,9 +57,15 @@ export function usePushNotifications() {
                 } else {
                     toast('Failed to enable push notifications', 'te')
                 }
+                // Re-check subscription so UI matches reality (e.g. partial failure)
+                const sub = await PushService.getExistingSubscription().catch(() => null)
+                setIsSubscribed(!!sub)
             }
         } catch {
             toast('Failed to enable push notifications', 'te')
+            const sub = await PushService.getExistingSubscription().catch(() => null)
+            setIsSubscribed(!!sub)
+            setPermission(typeof Notification !== 'undefined' ? Notification.permission : 'default')
         } finally {
             setIsLoading(false)
         }

@@ -36,6 +36,9 @@ export const PushService = {
     async subscribe(): Promise<boolean> {
         if (!this.isSupported()) return false
 
+        await this.registerSW()
+        const reg = await navigator.serviceWorker.ready
+
         const permission = await Notification.requestPermission()
         if (permission !== 'granted') return false
 
@@ -45,7 +48,6 @@ export const PushService = {
             return false
         }
 
-        const reg = await navigator.serviceWorker.ready
         const existing = await reg.pushManager.getSubscription()
         if (existing) await existing.unsubscribe()
 

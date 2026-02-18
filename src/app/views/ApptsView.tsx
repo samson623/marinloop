@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAppStore, fD, fT } from '@/shared/stores/app-store'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { useAppointments } from '@/shared/hooks/useAppointments'
+import { Modal } from '@/shared/components/Modal'
 
 export function ApptsView() {
   const {
@@ -139,41 +140,29 @@ function AddApptModal({
   }
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'var(--color-overlay)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 480, maxHeight: '88vh', background: 'var(--color-bg-primary)', borderRadius: '16px 16px 0 0', overflowY: 'auto' }}>
-        <div style={{ width: 36, height: 4, background: 'var(--color-text-tertiary)', opacity: 0.3, margin: '10px auto', borderRadius: 4 }} />
-        <div style={{ padding: '4px 20px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border-primary)' }}>
-          <h3 style={{ fontSize: 17, fontWeight: 700 }}>Add Appointment</h3>
-          <button onClick={onClose} style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg-tertiary)', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', borderRadius: '50%' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-          </button>
+    <Modal open onOpenChange={(o) => !o && onClose()} title="Add Appointment" variant="bottom">
+      <form onSubmit={handleSubmit}>
+        <FG label="Title" id="appt-title"><input className="fi" id="appt-title" value={title} onChange={(e) => setTitle(e.target.value)} required /></FG>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <FG label="Date" id="appt-date"><input className="fi" id="appt-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required /></FG>
+          <FG label="Time" id="appt-time"><input className="fi" id="appt-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} required /></FG>
         </div>
-
-        <div style={{ padding: 20 }}>
-          <form onSubmit={handleSubmit}>
-            <FG label="Title"><input className="fi" value={title} onChange={(e) => setTitle(e.target.value)} required /></FG>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <FG label="Date"><input className="fi" type="date" value={date} onChange={(e) => setDate(e.target.value)} required /></FG>
-              <FG label="Time"><input className="fi" type="time" value={time} onChange={(e) => setTime(e.target.value)} required /></FG>
-            </div>
-            <FG label="Location"><input className="fi" value={loc} onChange={(e) => setLoc(e.target.value)} /></FG>
-            <FG label="Notes">
-              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} style={{ width: '100%', height: 80, padding: 12, background: 'var(--color-input-bg)', border: '1.5px solid var(--color-border-primary)', borderRadius: 10, fontSize: 13, color: 'var(--color-text-primary)', resize: 'none', outline: 'none' }} />
-            </FG>
-            <button type="submit" style={{ width: '100%', padding: 14, background: 'var(--color-accent)', color: '#fff', border: 'none', fontSize: 14, fontWeight: 700, cursor: 'pointer', borderRadius: 12, marginTop: 6 }}>
-              Add Appointment
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
+        <FG label="Location" id="appt-loc"><input className="fi" id="appt-loc" value={loc} onChange={(e) => setLoc(e.target.value)} /></FG>
+        <FG label="Notes" id="appt-notes">
+          <textarea id="appt-notes" value={notes} onChange={(e) => setNotes(e.target.value)} style={{ width: '100%', height: 80, padding: 12, background: 'var(--color-input-bg)', border: '1.5px solid var(--color-border-primary)', borderRadius: 10, fontSize: 13, color: 'var(--color-text-primary)', resize: 'none', outline: 'none' }} />
+        </FG>
+        <button type="submit" style={{ width: '100%', padding: 14, background: 'var(--color-accent)', color: '#fff', border: 'none', fontSize: 14, fontWeight: 700, cursor: 'pointer', borderRadius: 12, marginTop: 6 }}>
+          Add Appointment
+        </button>
+      </form>
+    </Modal>
   )
 }
 
-function FG({ label, children }: { label: string; children: React.ReactNode }) {
+function FG({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 14, flex: 1 }}>
-      <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</label>
+      <label htmlFor={id} style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</label>
       {children}
     </div>
   )

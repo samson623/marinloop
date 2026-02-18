@@ -76,6 +76,7 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
           <button
             type="button"
             onClick={onBack}
+            aria-label="Back"
             style={{
               position: 'absolute',
               top: 20,
@@ -90,7 +91,7 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
               fontSize: 14,
             }}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
             Back
           </button>
         )}
@@ -114,19 +115,19 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
 
           {isSignUp && (
             <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Name</label>
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Doe" required style={{ width: '100%', padding: '13px 14px', background: 'var(--color-bg-tertiary)', border: '1.5px solid var(--color-border-primary)', color: 'var(--color-text-primary)', fontSize: 15, borderRadius: 10, outline: 'none' }} />
+              <label htmlFor="login-name" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Name</label>
+              <input id="login-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Doe" required style={{ width: '100%', padding: '13px 14px', background: 'var(--color-bg-tertiary)', border: '1.5px solid var(--color-border-primary)', color: 'var(--color-text-primary)', fontSize: 15, borderRadius: 10, outline: 'none' }} />
             </div>
           )}
 
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@domain.com" required style={{ width: '100%', padding: '13px 14px', background: 'var(--color-bg-tertiary)', border: '1.5px solid var(--color-border-primary)', color: 'var(--color-text-primary)', fontSize: 15, borderRadius: 10, outline: 'none' }} />
+            <label htmlFor="login-email" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Email</label>
+            <input id="login-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@domain.com" required style={{ width: '100%', padding: '13px 14px', background: 'var(--color-bg-tertiary)', border: '1.5px solid var(--color-border-primary)', color: 'var(--color-text-primary)', fontSize: 15, borderRadius: 10, outline: 'none' }} />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Password</label>
-            <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} placeholder="Enter password" required minLength={6} style={{ width: '100%', padding: '13px 14px', background: 'var(--color-bg-tertiary)', border: '1.5px solid var(--color-border-primary)', color: 'var(--color-text-primary)', fontSize: 15, borderRadius: 10, outline: 'none' }} />
+            <label htmlFor="login-password" style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Password</label>
+            <input id="login-password" type="password" value={pass} onChange={(e) => setPass(e.target.value)} placeholder="Enter password" required minLength={6} style={{ width: '100%', padding: '13px 14px', background: 'var(--color-bg-tertiary)', border: '1.5px solid var(--color-border-primary)', color: 'var(--color-text-primary)', fontSize: 15, borderRadius: 10, outline: 'none' }} />
           </div>
 
           <button type="submit" disabled={loading} className={shake ? 'animate-shake' : ''} style={{

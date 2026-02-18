@@ -491,7 +491,7 @@ function AppInner() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-[var(--color-bg-primary)]">
+    <div className="flex flex-col min-h-screen bg-[var(--color-bg-primary)] w-full">
       {showAddToHomeScreenOnboarding && (
         <AddToHomeScreenPrompt
           variant="onboarding"
@@ -501,7 +501,7 @@ function AppInner() {
         />
       )}
       <a href="#main-content" className="sr-only focus-not-sr-only">Skip to main content</a>
-      <header className="sticky top-0 z-[100] py-4 px-4 sm:px-5 backdrop-blur-[12px] bg-[var(--color-bg-primary-translucent)] border-b border-[var(--color-border-primary)]">
+      <header className="sticky top-0 left-0 right-0 z-[100] w-full py-4 px-4 sm:px-5 backdrop-blur-[12px] bg-[var(--color-bg-primary-translucent)] border-b border-[var(--color-border-primary)]">
         <div className="max-w-[480px] mx-auto w-full flex items-center justify-between">
         <div className="animate-fade-in flex items-center gap-2.5">
           <div className="w-[34px] h-[34px] rounded-[10px] bg-[var(--color-accent)] flex items-center justify-center text-[var(--color-text-inverse)]">
@@ -554,14 +554,16 @@ function AppInner() {
         </div>
       )}
 
-      <main id="main-content" role="tabpanel" aria-labelledby={`tab-${tab}`} className="flex-1 max-w-[480px] mx-auto w-full pt-4 px-4 sm:px-5 pb-[100px] min-w-0">
-        {view}
-      </main>
+      <div className="flex-1 w-full flex justify-center">
+        <main id="main-content" role="tabpanel" aria-labelledby={`tab-${tab}`} className="w-full max-w-[480px] pt-4 px-4 sm:px-5 pb-[100px] min-w-0">
+          {view}
+        </main>
+      </div>
 
       <nav
         role="tablist"
         aria-label="Main navigation"
-        className="fixed bottom-0 left-0 right-0 h-[74px] bg-[var(--color-bg-primary)] border-t border-[var(--color-border-primary)] flex items-center justify-center z-[90] pb-[max(0.625rem,env(safe-area-inset-bottom))]"
+        className="fixed bottom-0 left-0 right-0 w-full h-[74px] bg-[var(--color-bg-primary)] border-t border-[var(--color-border-primary)] flex items-center justify-center z-[90] pb-[max(0.625rem,env(safe-area-inset-bottom))]"
       >
         <div className="max-w-[480px] mx-auto w-full flex justify-around items-center h-full">
         {tabs.map((t) => {

@@ -45,7 +45,7 @@ export function TimelineView() {
   const offset = CIRC - (pct / 100) * CIRC
 
   return (
-    <div className="animate-view-in">
+    <div className="animate-view-in w-full max-w-[480px] mx-auto">
       <div className="flex items-center justify-between mb-4">
         <div>
           <div className="text-2xl font-extrabold tracking-[-0.03em] text-[var(--color-text-primary)]">

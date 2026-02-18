@@ -42,7 +42,7 @@ export function SummaryView() {
     : realNotes.map((n) => ({ id: n.id, title: 'Note', text: n.content, created: n.created_at }))
 
   return (
-    <div className="animate-view-in">
+    <div className="animate-view-in w-full max-w-[480px] mx-auto">
       <h2 className="text-xl font-extrabold tracking-[-0.02em] mb-4 pb-2.5 border-b-2 border-[var(--color-text-primary)] text-[var(--color-text-primary)]">
         Daily Summary
       </h2>

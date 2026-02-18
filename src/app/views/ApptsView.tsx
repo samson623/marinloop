@@ -31,7 +31,7 @@ export function ApptsView() {
   const sorted = [...displayAppts].sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime())
 
   return (
-    <div className="animate-view-in">
+    <div className="animate-view-in w-full max-w-[480px] mx-auto">
       <h2 className="text-xl font-extrabold tracking-[-0.02em] mb-4 pb-2.5 border-b-2 border-[var(--color-text-primary)] text-[var(--color-text-primary)]">
         Appointments
       </h2>

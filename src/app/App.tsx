@@ -113,7 +113,6 @@ function AppInner() {
     openAddApptModal,
     addNote,
     meds,
-    openQuickCaptureModal,
     assistantState,
     setAssistantPendingIntent,
     clearAssistantState,
@@ -644,18 +643,6 @@ function AppInner() {
         </div>
       )}
 
-      {tab === 'summary' && (
-        <button
-          type="button"
-          onClick={openQuickCaptureModal}
-          aria-label="Add note for doctor"
-          className="fixed bottom-[calc(88px+env(safe-area-inset-bottom))] right-[calc(max(1rem,env(safe-area-inset-right))+72px)] w-12 h-12 rounded-full flex items-center justify-center border-none text-[var(--color-text-inverse)] cursor-pointer z-[95] bg-[var(--color-accent)] shadow-[0_4px_12px_-2px_var(--color-accent-translucent)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] hover:opacity-95 active:scale-95 transition-transform"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-        </button>
-      )}
       <button
         type="button"
         onClick={handleVoice}

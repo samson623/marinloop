@@ -60,7 +60,7 @@ export function QuickCaptureModal({
       onOpenChange={onOpenChange}
       title="Note for your doctor"
       description="Jot down side effects or questions to bring to your next visit"
-      variant="bottom"
+      variant="center"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

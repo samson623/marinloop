@@ -1,5 +1,6 @@
 import { useAppStore } from '@/shared/stores/app-store'
 import { useAuthStore } from '@/shared/stores/auth-store'
+import { toLocalDateString } from '@/shared/lib/dates'
 import { useTimeline } from '@/shared/hooks/useTimeline'
 import { useNotes } from '@/shared/hooks/useNotes'
 import { Card } from '@/shared/components/ui'
@@ -29,7 +30,7 @@ export function SummaryView() {
   for (let i = 6; i >= 0; i--) {
     const d = new Date()
     d.setDate(d.getDate() - i)
-    const key = d.toISOString().split('T')[0]
+    const key = toLocalDateString(d)
     const label = ['S', 'M', 'T', 'W', 'T', 'F', 'S'][d.getDay()]
     const pct = isDemo
       ? (adh[key] ? Math.round((adh[key].d / adh[key].t) * 100) : i === 0 && total > 0 ? Math.round((dn / total) * 100) : 0)

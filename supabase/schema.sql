@@ -1,4 +1,4 @@
-create extension if not exists "uuid-ossp";
+﻿create extension if not exists "uuid-ossp";
 
 create type public.plan_type as enum ('free', 'pro', 'family');
 create type public.dose_status as enum ('taken', 'late', 'missed', 'skipped');
@@ -363,18 +363,18 @@ language plpgsql
 security invoker
 as $$
 declare
-  current_user uuid := auth.uid();
+  auth_user_id uuid := auth.uid();
   med_id uuid;
   t text;
 begin
-  if current_user is null then
+  if auth_user_id is null then
     raise exception 'Not authenticated';
   end if;
 
   insert into public.medications (
     user_id, name, dosage, instructions, warnings, freq, color, icon
   ) values (
-    current_user, medication_name, medication_dosage, medication_instructions,
+    auth_user_id, medication_name, medication_dosage, medication_instructions,
     medication_warnings, medication_freq, medication_color, medication_icon
   ) returning id into med_id;
 
@@ -382,14 +382,14 @@ begin
     insert into public.schedules (
       medication_id, user_id, time, days, food_context_minutes, active
     ) values (
-      med_id, current_user, t, schedule_days, 0, true
+      med_id, auth_user_id, t, schedule_days, 0, true
     );
   end loop;
 
   insert into public.refills (
     medication_id, user_id, current_quantity, total_quantity, refill_date, pharmacy
   ) values (
-    med_id, current_user, refill_current_quantity, refill_total_quantity, refill_date, refill_pharmacy
+    med_id, auth_user_id, refill_current_quantity, refill_total_quantity, refill_date, refill_pharmacy
   )
   on conflict (medication_id, user_id)
   do update set

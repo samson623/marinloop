@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAppStore, fD, fT } from '@/shared/stores/app-store'
 import { useAuthStore } from '@/shared/stores/auth-store'
+import { todayLocal, isoToLocalDate } from '@/shared/lib/dates'
 import { useAppointments } from '@/shared/hooks/useAppointments'
 import { Modal } from '@/shared/components/Modal'
 import { Button, Input } from '@/shared/components/ui'
@@ -22,7 +23,7 @@ export function ApptsView() {
     : realAppts.map((a) => ({
       id: a.id,
       title: a.title,
-      date: a.start_time.split('T')[0],
+      date: isoToLocalDate(a.start_time),
       time: a.start_time.split('T')[1].slice(0, 5),
       loc: a.location || '',
       notes: a.notes ? [a.notes] : [],
@@ -98,7 +99,7 @@ function AddApptModal({
   initialDraft: { title?: string; date?: string; time?: string; loc?: string; notes?: string } | null
 }) {
   const { addAppt: addApptDemo } = useAppStore()
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayLocal()
   const [title, setTitle] = useState('')
   const [date, setDate] = useState(today)
   const [time, setTime] = useState('14:00')
@@ -128,7 +129,7 @@ function AddApptModal({
     } else {
       createRealAppt({
         title,
-        start_time: `${date}T${time}:00`,
+        start_time: new Date(`${date}T${time}:00`).toISOString(),
         location: loc,
         notes,
         commute_minutes: 0,

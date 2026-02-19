@@ -24,6 +24,7 @@ import { IconButton } from '@/shared/components/IconButton'
 import { Button, Input } from '@/shared/components/ui'
 import { useInstallPrompt } from '@/shared/hooks/useInstallPrompt'
 import { useServiceWorkerUpdate } from '@/shared/hooks/useServiceWorkerUpdate'
+import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
 
 type SpeechRecognitionResultLike = {
   isFinal: boolean
@@ -491,6 +492,7 @@ function AppInner() {
   }
 
   return (
+    <ErrorBoundary>
     <div className="flex flex-col min-h-screen bg-[var(--color-bg-primary)] w-full">
       {showAddToHomeScreenOnboarding && (
         <AddToHomeScreenPrompt
@@ -698,6 +700,7 @@ function AppInner() {
 
       <Toasts toasts={toasts} />
     </div>
+    </ErrorBoundary>
   )
 }
 

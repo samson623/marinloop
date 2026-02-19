@@ -1,12 +1,7 @@
 import { create } from 'zustand'
+import { todayLocal, dateOffset } from '@/shared/lib/dates'
 
 // ===== HELPERS =====
-const today = () => new Date().toISOString().split('T')[0]
-const dOff = (n: number) => {
-    const d = new Date()
-    d.setDate(d.getDate() + n)
-    return d.toISOString().split('T')[0]
-}
 const tM = (t: string) => {
     const [h, m] = t.split(':').map(Number)
     return h * 60 + m
@@ -137,13 +132,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     toasts: [],
     log: {},
     notes: [
-        { id: 'n1', text: 'Mild dizziness after morning dose', time: dOff(-1) + ' 08:45', mid: 'm1' },
-        { id: 'n2', text: 'Ask Dr. Chen about switching to morning', time: dOff(-1) + ' 14:20', mid: 'm3' },
-        { id: 'n3', text: 'Missed morning — took at 10am', time: dOff(-2) + ' 10:05', mid: 'm2' },
+        { id: 'n1', text: 'Mild dizziness after morning dose', time: dateOffset(-1) + ' 08:45', mid: 'm1' },
+        { id: 'n2', text: 'Ask Dr. Chen about switching to morning', time: dateOffset(-1) + ' 14:20', mid: 'm3' },
+        { id: 'n3', text: 'Missed morning — took at 10am', time: dateOffset(-2) + ' 10:05', mid: 'm2' },
     ],
     adh: {
-        [dOff(-6)]: { t: 7, d: 7 }, [dOff(-5)]: { t: 7, d: 6 }, [dOff(-4)]: { t: 7, d: 5 },
-        [dOff(-3)]: { t: 7, d: 7 }, [dOff(-2)]: { t: 7, d: 6 }, [dOff(-1)]: { t: 7, d: 7 },
+        [dateOffset(-6)]: { t: 7, d: 7 }, [dateOffset(-5)]: { t: 7, d: 6 }, [dateOffset(-4)]: { t: 7, d: 5 },
+        [dateOffset(-3)]: { t: 7, d: 7 }, [dateOffset(-2)]: { t: 7, d: 6 }, [dateOffset(-1)]: { t: 7, d: 7 },
     },
     meds: [
         { id: 'm1', name: 'Levothyroxine', dose: '50mcg', freq: 1, times: ['08:00'], inst: 'Take on empty stomach with water', warn: 'Do not eat for 45 min after', fw: 45, sup: 22, tot: 30, dpd: 1 },
@@ -152,9 +147,9 @@ export const useAppStore = create<AppState>((set, get) => ({
         { id: 'm4', name: 'Metformin', dose: '850mg', freq: 2, times: ['08:30', '19:00'], inst: 'Take with meals', warn: 'Take with food to reduce nausea.', fw: 0, sup: 45, tot: 60, dpd: 2 },
     ],
     appts: [
-        { id: 'a1', title: 'Dr. Chen — Cardiology', date: today(), time: '15:30', loc: 'City Medical Center, Suite 420', notes: ['Review blood pressure trends', 'Discuss Lisinopril dosage', 'Bring medication list'] },
-        { id: 'a2', title: 'Lab Work — Blood Panel', date: dOff(3), time: '09:00', loc: 'Quest Diagnostics, 2nd Floor', notes: ['Fasting required', 'Bring insurance card'] },
-        { id: 'a3', title: 'Dr. Patel — Endocrinology', date: dOff(10), time: '11:00', loc: 'University Hospital, Bldg C', notes: ['Thyroid follow-up', 'Bring recent lab results'] },
+        { id: 'a1', title: 'Dr. Chen — Cardiology', date: todayLocal(), time: '15:30', loc: 'City Medical Center, Suite 420', notes: ['Review blood pressure trends', 'Discuss Lisinopril dosage', 'Bring medication list'] },
+        { id: 'a2', title: 'Lab Work — Blood Panel', date: dateOffset(3), time: '09:00', loc: 'Quest Diagnostics, 2nd Floor', notes: ['Fasting required', 'Bring insurance card'] },
+        { id: 'a3', title: 'Dr. Patel — Endocrinology', date: dateOffset(10), time: '11:00', loc: 'University Hospital, Bldg C', notes: ['Thyroid follow-up', 'Bring recent lab results'] },
     ],
     sched: [],
 
@@ -198,7 +193,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     buildSched: () => {
         const { meds, appts, log } = get()
         const items: SchedItem[] = []
-        const td = today()
+        const td = todayLocal()
         meds.forEach(m => {
             m.times.forEach((t, i) => {
                 const k = `${m.id}_${t}_${td}`
@@ -262,7 +257,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         const n = new Date()
         const note: NoteEntry = {
             id: uid(), text, mid,
-            time: `${today()} ${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`,
+            time: `${todayLocal()} ${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`,
         }
         set(s => ({ notes: [note, ...s.notes] }))
         get().toast('Note saved', 'ts')

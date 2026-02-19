@@ -16,7 +16,37 @@ Medication management app built with React, TypeScript, Vite, and Supabase.
    supabase secrets set OPENAI_API_KEY=sk-your-openai-api-key
    ```
 
-3. Deploy the `openai-chat` Edge Function and run migrations (see Supabase section below).
+3. Deploy the Edge Functions: `supabase functions deploy openai-chat` and `supabase functions deploy send-push`
+
+---
+
+## Push Notifications Setup
+
+1. **Generate VAPID keys** (one-time):
+   ```bash
+   npx web-push generate-vapid-keys
+   ```
+   You'll get a public and private key.
+
+2. **Add the public key to `.env`**:
+   ```env
+   VITE_VAPID_PUBLIC_KEY=your-public-key-base64
+   ```
+   The public key is safe to expose in the client bundle.
+
+3. **Add secrets to Supabase** (for the `send-push` Edge Function):
+   ```bash
+   supabase secrets set VAPID_PUBLIC_KEY=your-public-key
+   supabase secrets set VAPID_PRIVATE_KEY=your-private-key
+   supabase secrets set VAPID_SUBJECT=mailto:your-email@example.com
+   ```
+
+4. **Deploy the send-push function**:
+   ```bash
+   supabase functions deploy send-push
+   ```
+
+Without these, push notifications will fail with a generic "Failed to enable push notifications" message.
 
 ---
 
@@ -24,13 +54,13 @@ Medication management app built with React, TypeScript, Vite, and Supabase.
 
 ### Apply migrations
 
-In Supabase Dashboard → SQL Editor, run in order:
+**Dashboard (no CLI):** Supabase Dashboard → SQL Editor. Run in order:
 1. `supabase/schema.sql` (base schema)
-2. `supabase/migrations/001_add_barcode_column.sql`
-3. `supabase/migrations/002_push_subscriptions.sql`
-4. `supabase/migrations/003_ai_conversations.sql`
+2. `supabase/run-migrations.sql` (001, 002, 003, 004 — includes the `create_medication_bundle` fix)
 
-Or with Supabase CLI: `supabase db push`
+**CLI:** `supabase db push` (if Supabase CLI is installed and linked)
+
+Details: see [supabase/DATABASE_SETUP.md](supabase/DATABASE_SETUP.md)
 
 ### Google OAuth (Sign in with Google)
 

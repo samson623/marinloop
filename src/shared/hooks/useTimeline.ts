@@ -5,6 +5,7 @@ import { useMedications } from '@/shared/hooks/useMedications'
 import { useSchedules } from '@/shared/hooks/useSchedules'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { useAppStore, type SchedItem } from '@/shared/stores/app-store'
+import { todayLocal, isoToLocalDate, toLocalTimeString } from '@/shared/lib/dates'
 
 export function useTimeline() {
   const { isDemo } = useAuthStore()
@@ -20,7 +21,7 @@ export function useTimeline() {
 
     const byMedication = new Map(meds.map((m) => [m.id, m]))
     const items: SchedItem[] = []
-    const todayStr = new Date().toISOString().split('T')[0]
+    const todayStr = todayLocal()
 
     for (const schedule of scheds) {
       if (!schedule.active) continue
@@ -31,7 +32,7 @@ export function useTimeline() {
       const time = schedule.time.slice(0, 5)
       const log = todayLogs.find((l) => l.schedule_id === schedule.id)
       const st = log ? (log.status === 'taken' ? 'done' : log.status) : 'pending'
-      const at = log ? new Date(log.taken_at).toISOString().slice(11, 16) : null
+      const at = log ? toLocalTimeString(log.taken_at) : null
 
       items.push({
         id: schedule.id,
@@ -49,7 +50,7 @@ export function useTimeline() {
     }
 
     for (const appt of appts) {
-      const date = appt.start_time.split('T')[0]
+      const date = isoToLocalDate(appt.start_time)
       if (date !== todayStr) continue
 
       const time = appt.start_time.split('T')[1].slice(0, 5)

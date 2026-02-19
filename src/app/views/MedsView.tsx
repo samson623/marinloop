@@ -75,8 +75,9 @@ export function MedsView() {
 
       <div className="stagger-children">
         {displayMeds.length === 0 && !isDemo && (
-          <div className="py-8 px-5 text-center text-[var(--color-text-secondary)] border-2 border-dashed border-[var(--color-border-secondary)] rounded-2xl text-lg font-medium sm:py-6 sm:px-4 sm:text-base">
-            No medications found. Add one below.
+          <div className="py-8 px-5 text-center border-2 border-dashed border-[var(--color-border-secondary)] rounded-2xl sm:py-6 sm:px-4">
+            <p className="text-[var(--color-text-secondary)] text-lg font-medium sm:text-base">No medications found. Add one below.</p>
+            <p className="mt-2 text-[var(--color-text-tertiary)] text-sm sm:[font-size:var(--text-caption)]">Add your first medication to get started</p>
           </div>
         )}
 

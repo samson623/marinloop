@@ -3,11 +3,13 @@ import { useAuthStore } from '@/shared/stores/auth-store'
 import { toLocalDateString } from '@/shared/lib/dates'
 import { useTimeline } from '@/shared/hooks/useTimeline'
 import { useNotes } from '@/shared/hooks/useNotes'
+import { useAdherenceHistory } from '@/shared/hooks/useAdherenceHistory'
 import { Card } from '@/shared/components/ui'
 
 export function SummaryView() {
   const { isDemo } = useAuthStore()
-  const { sched: demoSched, notes: demoNotes, adh } = useAppStore()
+  const { sched: demoSched, notes: demoNotes, adh: demoAdh } = useAppStore()
+  const { adh: realAdh } = useAdherenceHistory(7)
   const { timeline } = useTimeline()
   const { notes: realNotes } = useNotes()
 
@@ -26,6 +28,7 @@ export function SummaryView() {
     else if (i.st === 'missed') ms += 1
   })
 
+  const adh = isDemo ? demoAdh : realAdh
   const days: { label: string; pct: number }[] = []
   for (let i = 6; i >= 0; i--) {
     const d = new Date()
@@ -34,7 +37,7 @@ export function SummaryView() {
     const label = ['S', 'M', 'T', 'W', 'T', 'F', 'S'][d.getDay()]
     const pct = isDemo
       ? (adh[key] ? Math.round((adh[key].d / adh[key].t) * 100) : i === 0 && total > 0 ? Math.round((dn / total) * 100) : 0)
-      : (i === 0 && total > 0 ? Math.round((dn / total) * 100) : 0)
+      : (adh[key] && adh[key].t > 0 ? Math.round((adh[key].d / adh[key].t) * 100) : i === 0 && total > 0 ? Math.round((dn / total) * 100) : 0)
     days.push({ label, pct })
   }
 
@@ -78,7 +81,7 @@ export function SummaryView() {
       <Card>
         <h3 className="font-bold mb-3 text-[var(--color-text-primary)] text-base sm:[font-size:var(--text-label)]">Recent Notes</h3>
         {notes.length === 0 ? (
-          <p className="text-[var(--color-text-tertiary)] text-base sm:[font-size:var(--text-body)]">No notes yet.</p>
+          <p className="text-[var(--color-text-tertiary)] text-base sm:[font-size:var(--text-body)]">Jot down side effects or questions for your doctor</p>
         ) : (
           notes.slice(0, 5).map((n) => (
             <div key={n.id} className="mb-3 pb-3 border-b border-[var(--color-border-secondary)] last:border-0 last:mb-0 last:pb-0">

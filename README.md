@@ -4,23 +4,152 @@ Medication management app built with React, TypeScript, Vite, and Supabase.
 
 ---
 
+## Quick Start / Full Setup
+
+Follow these steps in order to get MedFlow Care running end-to-end.
+
+### 1. Clone, install, and env copy
+
+```bash
+git clone <repo-url>
+cd medflow-care
+npm install
+cp .env.example .env
+```
+
+### 2. Fill `.env` checklist
+
+Edit `.env` and set:
+
+| Variable | Where to get it |
+|----------|-----------------|
+| `VITE_SUPABASE_URL` | Supabase Dashboard → Project Settings → API → Project URL |
+| `VITE_SUPABASE_ANON_KEY` | Supabase Dashboard → Project Settings → API → anon/public key |
+| `VITE_OAUTH_REDIRECT_URL` | For local dev: `http://localhost:5173` (production uses window origin) |
+| `VITE_VAPID_PUBLIC_KEY` | From step 3 below (VAPID public key) |
+| `VITE_OPENAI_MODEL` | e.g. `gpt-5-nano` |
+
+### 3. Generate VAPID keys (where each key goes)
+
+Run once:
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+You'll get two keys:
+
+| Output | Goes to |
+|--------|---------|
+| **Public key** | `.env` as `VITE_VAPID_PUBLIC_KEY=<public-key>` |
+| **Private key** | Supabase secrets (step 4), never put in `.env` |
+
+Example:
+
+```bash
+# Output:
+Public Key: BEl62iUYgUivxIkv69yViEuiBIa...
+Private Key: UUxI4O8F...
+```
+
+- Put the **public** value in `.env`:
+  ```env
+  VITE_VAPID_PUBLIC_KEY=BEl62iUYgUivxIkv69yViEuiBIa...
+  ```
+- Save the **private** value for Supabase secrets (next step).
+
+### 4. Supabase secrets (backend only)
+
+Set these in your Supabase project (Dashboard → Project Settings → Edge Functions → Secrets, or CLI):
+
+```bash
+supabase secrets set OPENAI_API_KEY=sk-your-openai-api-key
+supabase secrets set VAPID_PUBLIC_KEY=your-public-key
+supabase secrets set VAPID_PRIVATE_KEY=your-private-key
+supabase secrets set VAPID_SUBJECT=mailto:your-email@example.com
+```
+
+- `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` are the same pair from step 3.
+- `VAPID_SUBJECT` is a contact email for the push service (e.g. `mailto:you@example.com`).
+
+### 5. Deploy Edge Functions
+
+```bash
+supabase functions deploy openai-chat
+supabase functions deploy send-push
+```
+
+### 6. Apply migrations
+
+**Dashboard (no CLI):** Supabase Dashboard → SQL Editor. Run in order:
+
+1. `supabase/schema.sql` (base schema)
+2. `supabase/run-migrations.sql` (001, 002, 003, 004)
+
+**CLI:** `supabase db push` (if Supabase CLI is installed and linked)
+
+---
+
+## Environment Checklist
+
+Before running or deploying, ensure these variables are set. Use `.env` locally and your hosting provider's env vars (e.g. Vercel) for production.
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `VITE_APP_MODE` | Yes | `demo` or `prod` |
+| `VITE_SUPABASE_URL` | Yes | Your Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | Yes | Supabase anon/public key |
+| `VITE_OAUTH_REDIRECT_URL` | Optional | For local dev OAuth callback (e.g. `http://localhost:5173`) |
+| `VITE_OPENAI_MODEL` | Yes | Model name only, e.g. `gpt-5-nano` — no API key in frontend |
+| `VITE_VAPID_PUBLIC_KEY` | Yes | From `npx web-push generate-vapid-keys` (public key only) |
+
+**Note:** `OPENAI_API_KEY` is set in Supabase secrets only, never in `.env` or frontend env.
+
+---
+
+## Edge Functions Deployment
+
+Deploy the Edge Functions after setting their prerequisites:
+
+| Function | Deploy Command | Prerequisites |
+|----------|----------------|---------------|
+| `openai-chat` | `supabase functions deploy openai-chat` | `supabase secrets set OPENAI_API_KEY=sk-...` |
+| `send-push` | `supabase functions deploy send-push` | VAPID keys in Supabase (see Push Notifications Setup) |
+
+**Prerequisite for `openai-chat`:**
+```bash
+supabase secrets set OPENAI_API_KEY=sk-your-openai-api-key
+```
+
+**Prerequisite for `send-push`:** Configure VAPID keys in Supabase secrets (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`). See [Push Notifications Setup](#push-notifications-setup) below.
+
+**Deploy both:**
+```bash
+supabase functions deploy openai-chat
+supabase functions deploy send-push
+```
+
+---
+
 ## GPT-5 Nano Setup
+
+> See **Quick Start / Full Setup** above for the full deployment flow. This section is reference for GPT/OpenAI configuration.
 
 1. Set the model name in `.env` (no API key in frontend env):
    ```env
    VITE_OPENAI_MODEL=gpt-5-nano
    ```
 
-2. **Supabase Edge Function (production):** Set the secret so the API key stays server-side:
+2. **Supabase Edge Function (production):** Set the secret so the API key stays server-side (see [Edge Functions Deployment](#edge-functions-deployment) for deploy commands):
    ```bash
    supabase secrets set OPENAI_API_KEY=sk-your-openai-api-key
    ```
 
-3. Deploy the Edge Functions: `supabase functions deploy openai-chat` and `supabase functions deploy send-push`
-
 ---
 
 ## Push Notifications Setup
+
+> See **Quick Start / Full Setup** above for the full flow and VAPID key placement. This section is reference.
 
 1. **Generate VAPID keys** (one-time):
    ```bash
@@ -41,16 +170,15 @@ Medication management app built with React, TypeScript, Vite, and Supabase.
    supabase secrets set VAPID_SUBJECT=mailto:your-email@example.com
    ```
 
-4. **Deploy the send-push function**:
-   ```bash
-   supabase functions deploy send-push
-   ```
+4. **Deploy the send-push function** — see [Edge Functions Deployment](#edge-functions-deployment).
 
 Without these, push notifications will fail with a generic "Failed to enable push notifications" message.
 
 ---
 
 ## Supabase Setup
+
+> See **Quick Start / Full Setup** above for the full flow. This section has details.
 
 ### Apply migrations
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAppStore, fD, fT } from '@/shared/stores/app-store'
 import { useAuthStore } from '@/shared/stores/auth-store'
-import { todayLocal, isoToLocalDate } from '@/shared/lib/dates'
+import { todayLocal, isoToLocalDate, toLocalTimeString } from '@/shared/lib/dates'
 import { useAppointments } from '@/shared/hooks/useAppointments'
 import { Modal } from '@/shared/components/Modal'
 import { Button, Input } from '@/shared/components/ui'
@@ -24,7 +24,7 @@ export function ApptsView() {
       id: a.id,
       title: a.title,
       date: isoToLocalDate(a.start_time),
-      time: a.start_time.split('T')[1].slice(0, 5),
+      time: toLocalTimeString(a.start_time),
       loc: a.location || '',
       notes: a.notes ? [a.notes] : [],
     }))
@@ -39,8 +39,9 @@ export function ApptsView() {
 
       <div className="stagger-children">
         {sorted.length === 0 && !isDemo && (
-          <div className="py-8 px-5 text-center text-[var(--color-text-secondary)] border-2 border-dashed border-[var(--color-border-secondary)] rounded-2xl text-lg font-medium sm:py-6 sm:px-4 sm:text-base">
-            No upcoming appointments.
+          <div className="py-8 px-5 text-center border-2 border-dashed border-[var(--color-border-secondary)] rounded-2xl sm:py-6 sm:px-4">
+            <p className="text-[var(--color-text-secondary)] text-lg font-medium sm:text-base">No upcoming appointments.</p>
+            <p className="mt-2 text-[var(--color-text-tertiary)] text-sm sm:[font-size:var(--text-caption)]">Tap the button below to add one</p>
           </div>
         )}
 

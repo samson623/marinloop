@@ -21,6 +21,7 @@ export function useDoseLogs() {
     mutationFn: (input: DoseLogCreateInput) => DoseLogsService.logDose(input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['dose_logs'] })
+      void queryClient.invalidateQueries({ queryKey: ['adherence'] })
       toast('Dose logged', 'ts')
     },
     onError: (err: unknown) => toast(getErrorMessage(err, 'Failed to log dose'), 'te'),

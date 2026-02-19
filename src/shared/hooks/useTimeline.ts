@@ -53,7 +53,7 @@ export function useTimeline() {
       const date = isoToLocalDate(appt.start_time)
       if (date !== todayStr) continue
 
-      const time = appt.start_time.split('T')[1].slice(0, 5)
+      const time = toLocalTimeString(appt.start_time)
       items.push({
         id: `appt_${appt.id}`,
         tp: 'appt',

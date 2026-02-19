@@ -24,9 +24,9 @@ Transform MedFlow Care from a client-side demo with hardcoded data into a **prod
 
 ---
 
-## Agent Assignments
+## Development prompt assignments (optional; not part of shipped app)
 
-| Agent | Domain | Responsibilities |
+| Prompt | Domain | Responsibilities |
 |-------|--------|-----------------|
 | `database-architect` | Supabase Schema | Tables, RLS policies, migration SQL, indexes |
 | `backend-specialist` | Services + Auth | Supabase client, service layer, auth store, React Query hooks |

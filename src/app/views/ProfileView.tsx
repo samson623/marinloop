@@ -8,6 +8,7 @@ import { useInstallPrompt } from '@/shared/hooks/useInstallPrompt'
 import { AddToHomeScreenPrompt, setAddToHomeScreenSeen } from '@/shared/components/AddToHomeScreenPrompt'
 import { IconButton } from '@/shared/components/IconButton'
 import { Button, Input, Card } from '@/shared/components/ui'
+import { getPlatformLabel, isStandalone } from '@/shared/lib/device'
 
 export function ProfileView() {
   const { setShowProfile, toast } = useAppStore()
@@ -171,19 +172,19 @@ export function ProfileView() {
 
       {!isDemo && (
         <Card className="p-4 mb-5 rounded-xl">
-          <div className="flex items-center justify-between mb-2">
+          <div className="font-bold uppercase tracking-[0.08em] text-[var(--color-text-secondary)] mb-2 [font-size:var(--text-label)]">
+            Push Notifications
+          </div>
+          <div className="flex items-center justify-between mb-3">
             <div>
-              <div className="font-bold uppercase tracking-[0.08em] text-[var(--color-text-secondary)] [font-size:var(--text-label)]">
-                Push Notifications
-              </div>
               <div className="text-[var(--color-text-tertiary)] mt-0.5 [font-size:var(--text-caption)]">
                 {!push.isSupported
                   ? 'Not supported in this browser'
                   : push.permission === 'denied'
-                    ? 'Blocked — update in browser settings'
+                    ? 'Blocked. Re-enable in browser or device settings.'
                     : push.isSubscribed
-                      ? 'Medication reminders enabled'
-                      : 'Enable to get dose & appointment reminders'}
+                      ? 'Reminders enabled'
+                      : 'Enable to get dose and appointment reminders'}
               </div>
             </div>
             <button
@@ -205,6 +206,37 @@ export function ProfileView() {
                 style={{ transform: push.isSubscribed ? 'translateX(22px)' : 'translateX(0)' }}
               />
             </button>
+          </div>
+          <div className="border-t border-[var(--color-border-secondary)] pt-3 [font-size:var(--text-caption)] text-[var(--color-text-tertiary)]">
+            <div className="font-semibold text-[var(--color-text-secondary)] mb-1.5">How it works</div>
+            {getPlatformLabel() === 'iOS' && !isStandalone() && (
+              <p className="mb-2">
+                On iOS, push notifications require adding MedFlow to your Home Screen first. Open this site in Safari, tap Share, then Add to Home Screen. After that, open the app from the home screen and enable notifications here.
+              </p>
+            )}
+            {push.permission === 'denied' && (
+              <p className="mb-2">
+                To re-enable: open your browser or device Settings, find MedFlow (or this site), and turn on Notifications.
+              </p>
+            )}
+            {(push.isSubscribed || (push.isSupported && push.permission === 'granted')) && (
+              <p className="mb-2">
+                Reminders are enabled. Tapping a notification will open the app.
+              </p>
+            )}
+            {getPlatformLabel() === 'Android' && !push.isSubscribed && push.isSupported && push.permission !== 'denied' && (
+              <p className="mb-2">
+                Tap the switch above to allow notifications. You may be asked to allow in browser settings.
+              </p>
+            )}
+            {getPlatformLabel() === 'Desktop' && push.isSupported && !push.isSubscribed && (
+              <p className="mb-2">
+                Tap the switch above to allow notifications if your browser supports them.
+              </p>
+            )}
+            <p className="mt-2 text-[var(--color-text-tertiary)]">
+              Delivery can be delayed. Push reminders are for convenience only and are not a substitute for emergency or medical alerting.
+            </p>
           </div>
         </Card>
       )}

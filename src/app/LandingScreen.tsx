@@ -38,8 +38,11 @@ export function LandingScreen({ onGetStarted }: LandingScreenProps) {
         <p className="text-[var(--color-text-secondary)] mb-3 sm:mb-4 leading-snug max-w-[320px] sm:max-w-none [font-size:var(--text-body)]">
           Stay on time. Stay safe. Stay confident.
         </p>
-        <p className="text-[var(--color-text-tertiary)] mb-10 sm:mb-12 md:mb-14 leading-snug max-w-[280px] sm:max-w-none [font-size:var(--text-label)]">
+        <p className="text-[var(--color-text-tertiary)] mb-6 leading-snug max-w-[280px] sm:max-w-none [font-size:var(--text-label)]">
           Medication reminders and daily care in one place.
+        </p>
+        <p className="text-[var(--color-text-tertiary)] mb-10 sm:mb-12 md:mb-14 leading-snug max-w-[280px] sm:max-w-none [font-size:var(--text-caption)]">
+          MedFlow Care provides reminders and tracking tools. Not medical advice.
         </p>
 
         <Button

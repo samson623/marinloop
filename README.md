@@ -64,11 +64,13 @@ Set these in your Supabase project (Dashboard → Project Settings → Edge Func
 
 ```bash
 supabase secrets set OPENAI_API_KEY=sk-your-openai-api-key
+supabase secrets set ALLOWED_ORIGINS=https://your-app-domain.com,https://www.your-app-domain.com
 supabase secrets set VAPID_PUBLIC_KEY=your-public-key
 supabase secrets set VAPID_PRIVATE_KEY=your-private-key
 supabase secrets set VAPID_SUBJECT=mailto:your-email@example.com
 ```
 
+- **`ALLOWED_ORIGINS`** (required for `openai-chat` in production): comma-separated list of allowed CORS origins. If unset, the API rejects all cross-origin requests (fail-closed). For local dev use e.g. `http://localhost:5173`.
 - `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` are the same pair from step 3.
 - `VAPID_SUBJECT` is a contact email for the push service (e.g. `mailto:you@example.com`).
 
@@ -113,13 +115,15 @@ Deploy the Edge Functions after setting their prerequisites:
 
 | Function | Deploy Command | Prerequisites |
 |----------|----------------|---------------|
-| `openai-chat` | `supabase functions deploy openai-chat` | `supabase secrets set OPENAI_API_KEY=sk-...` |
+| `openai-chat` | `supabase functions deploy openai-chat` | `OPENAI_API_KEY` + `ALLOWED_ORIGINS` (see below) |
 | `send-push` | `supabase functions deploy send-push` | VAPID keys in Supabase (see Push Notifications Setup) |
 
-**Prerequisite for `openai-chat`:**
+**Prerequisites for `openai-chat`:**
 ```bash
 supabase secrets set OPENAI_API_KEY=sk-your-openai-api-key
+supabase secrets set ALLOWED_ORIGINS=https://your-app-domain.com
 ```
+In production, `ALLOWED_ORIGINS` must be set (comma-separated). If unset, the function returns 403 for all requests (CORS fail-closed).
 
 **Prerequisite for `send-push`:** Configure VAPID keys in Supabase secrets (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`). See [Push Notifications Setup](#push-notifications-setup) below.
 
@@ -128,6 +132,23 @@ supabase secrets set OPENAI_API_KEY=sk-your-openai-api-key
 supabase functions deploy openai-chat
 supabase functions deploy send-push
 ```
+
+### Finish deployment after setting ALLOWED_ORIGINS (one-time)
+
+If you set or changed **ALLOWED_ORIGINS** in the Supabase dashboard, the Edge Function must be redeployed so it picks up the secret.
+
+**Option A — From this repo (no Supabase CLI installed):**
+1. In a terminal, run once (opens browser to log in):
+   ```bash
+   npx supabase login
+   ```
+2. Deploy the function:
+   ```bash
+   npm run deploy:openai-chat
+   ```
+
+**Option B — From the dashboard:**  
+Go to [Edge Functions](https://supabase.com/dashboard/project/lcbdafnxwvqbziootvmi/functions) → click **openai-chat** → **Redeploy**.
 
 ---
 

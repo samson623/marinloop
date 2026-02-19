@@ -1,15 +1,17 @@
 # Antigravity Kit Architecture
 
-> **Version 5.0** - Comprehensive AI Agent Capability Expansion Toolkit
+> **Version 5.0** - Development workflow toolkit (prompts and skills for authoring). **Not part of the MedFlow Care shipped product.** No agents or orchestrators run inside the app.
 
 ---
 
 ## 📋 Overview
 
-Antigravity Kit is a modular system consisting of:
-- **16 Specialist Agents** - Role-based AI personas
-- **40 Skills** - Domain-specific knowledge modules
-- **11 Workflows** - Slash command procedures
+This directory describes **optional development prompts and skills** used during authoring. The MedFlow Care application does not ship with any agent system.
+
+Antigravity Kit (dev-only) consists of:
+- **Specialist prompts** - Role-based authoring personas (general + MedFlow risk/compliance prompts)
+- **Skills** - Domain-specific knowledge modules
+- **Workflows** - Slash command procedures
 
 ---
 
@@ -17,21 +19,21 @@ Antigravity Kit is a modular system consisting of:
 
 ```
 .agent/
-├── ARCHITECTURE.md          # This file
-├── agents/                  # 16 Specialist Agents
-├── skills/                  # 40 Skills
-├── workflows/               # 11 Slash Commands
-├── rules/                   # Global Rules
-└── .shared/                 # Shared Resources
+├── ARCHITECTURE.md          # This file (dev workflow only)
+├── agents/                  # Specialist prompts (not shipped)
+├── skills/                  # Skills
+├── workflows/               # Slash commands
+├── rules/                   # Global rules
+└── .shared/                 # Shared resources
 ```
 
 ---
 
-## 🤖 Agents (16)
+## 🤖 Specialist prompts (dev-only)
 
-Specialist AI personas for different domains.
+Optional authoring personas for different domains. The last four are MedFlow-specific (testing, API guardrails, PWA/push UX, legal copy). These are not wired into the application.
 
-| Agent | Focus | Skills Used |
+| Prompt | Focus | Skills Used |
 |-------|-------|-------------|
 | `orchestrator` | Multi-agent coordination | parallel-agents, behavioral-modes |
 | `project-planner` | Discovery, task planning | brainstorming, plan-writing, architecture |
@@ -49,6 +51,10 @@ Specialist AI personas for different domains.
 | `seo-specialist` | Ranking, visibility | seo-fundamentals, geo-fundamentals |
 | `documentation-writer` | Manuals, docs | documentation-templates |
 | `explorer-agent` | Codebase analysis | - |
+| `medflow-testing-ci-specialist` | MedFlow tests & CI | webapp-testing, testing-patterns, tdd-workflow |
+| `medflow-api-cost-guardrails-specialist` | OpenAI edge cost/abuse | api-patterns, security-testing |
+| `medflow-pwa-push-ux-specialist` | PWA/push UX, reliability copy | frontend-design |
+| `medflow-legal-compliance-specialist` | Disclaimers, product positioning | code-review-checklist |
 
 ---
 
@@ -200,14 +206,14 @@ skill-name/
 
 ---
 
-## 📊 Statistics
+## 📊 Statistics (dev toolkit only)
 
 | Metric | Value |
 |--------|-------|
-| **Total Agents** | 16 |
-| **Total Skills** | 40 |
-| **Total Workflows** | 11 |
-| **Coverage** | ~90% web/mobile development |
+| **Specialist prompts** | 16+ |
+| **Skills** | 40 |
+| **Workflows** | 11 |
+| **Coverage** | ~90% web/mobile development (authoring aid only) |
 
 ---
 

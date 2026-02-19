@@ -26,6 +26,7 @@ import { Button, Input } from '@/shared/components/ui'
 import { useInstallPrompt } from '@/shared/hooks/useInstallPrompt'
 import { useServiceWorkerUpdate } from '@/shared/hooks/useServiceWorkerUpdate'
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
+import { getAuthView } from '@/shared/lib/auth-guard'
 
 type SpeechRecognitionResultLike = {
   isFinal: boolean
@@ -168,7 +169,8 @@ function AppInner() {
     return () => clearTimeout(t)
   }, [session, isDemo])
 
-  if (isLoading) {
+  const authView = getAuthView(isLoading, session, isDemo)
+  if (authView === 'loading') {
     return (
       <div className="flex h-screen items-center justify-center bg-[var(--color-bg-primary)]">
         Loading...
@@ -176,7 +178,7 @@ function AppInner() {
     )
   }
 
-  if (!session && !isDemo) {
+  if (authView === 'login') {
     return (
       <>
         {showLoginScreen ? (

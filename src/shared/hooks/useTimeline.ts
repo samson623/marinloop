@@ -6,6 +6,7 @@ import { useSchedules } from '@/shared/hooks/useSchedules'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { useAppStore, type SchedItem } from '@/shared/stores/app-store'
 import { todayLocal, isoToLocalDate, toLocalTimeString } from '@/shared/lib/dates'
+import { timeToMinutes, nowMinutes, sortAndMarkNext } from '@/shared/lib/timeline-utils'
 
 export function useTimeline() {
   const { isDemo } = useAuthStore()
@@ -41,7 +42,7 @@ export function useTimeline() {
         name: med.name,
         dose: med.dosage ?? '',
         time,
-        tm: tM(time),
+        tm: timeToMinutes(time),
         inst: med.instructions ?? '',
         warn: med.warnings ?? '',
         st,
@@ -59,39 +60,18 @@ export function useTimeline() {
         tp: 'appt',
         name: appt.title,
         time,
-        tm: tM(time),
+        tm: timeToMinutes(time),
         inst: appt.notes ?? '',
         loc: appt.location ?? '',
         st: 'appt',
       })
     }
 
-    items.sort((a, b) => a.tm - b.tm)
-
-    const now = nM()
-    let foundNext = false
-    for (const item of items) {
-      if (!foundNext && item.tp === 'med' && item.st === 'pending' && item.tm >= now - 60) {
-        item.nx = true
-        foundNext = true
-      }
-    }
-
-    return items
+    return sortAndMarkNext(items, nowMinutes())
   }, [isDemo, demoSched, meds, scheds, todayLogs, appts])
 
   return {
     timeline: timelineItems,
     isLoading: false,
   }
-}
-
-const tM = (t: string) => {
-  const [h, m] = t.split(':').map(Number)
-  return h * 60 + m
-}
-
-const nM = () => {
-  const d = new Date()
-  return d.getHours() * 60 + d.getMinutes()
 }

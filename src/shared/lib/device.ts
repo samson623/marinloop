@@ -24,3 +24,11 @@ export function isStandalone(): boolean {
 export function needsAddToHomeScreenForPush(): boolean {
   return isIOS() && !isStandalone()
 }
+
+/** Best-effort platform label for push/install UX */
+export function getPlatformLabel(): 'iOS' | 'Android' | 'Desktop' {
+  if (typeof navigator === 'undefined') return 'Desktop'
+  if (/iPhone|iPad|iPod/i.test(ua)) return 'iOS'
+  if (/Android/i.test(ua)) return 'Android'
+  return 'Desktop'
+}

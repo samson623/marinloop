@@ -12,7 +12,7 @@ export interface ChatResponse {
 }
 
 export const AIService = {
-  async chat(messages: ChatMessage[], model?: string): Promise<string> {
+  async chat(messages: ChatMessage[]): Promise<string> {
     if (isDemoApp) {
       return '[Demo mode] Add your OpenAI API key and switch to prod mode for AI features.'
     }
@@ -23,7 +23,7 @@ export const AIService = {
     }
 
     const { data, error } = await supabase.functions.invoke('openai-chat', {
-      body: { messages, model: model || env.openaiModel },
+      body: { messages },
     })
 
     if (error) throw error

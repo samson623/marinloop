@@ -191,7 +191,7 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
         </form>
 
         <p className="mt-8 sm:mt-10 pt-5 sm:pt-6 border-t border-[var(--color-border-primary)] text-[var(--color-text-tertiary)] leading-relaxed [font-size:var(--text-caption)]">
-          This app assists with medication tracking and reminders. It does not provide medical advice. Always follow instructions from your healthcare provider.
+          MedFlow Care provides reminders and tracking tools. Not medical advice. Always follow your healthcare provider&apos;s instructions.
         </p>
       </div>
     </div>

@@ -27,7 +27,7 @@ Edit `.env` and set:
 | `VITE_SUPABASE_ANON_KEY` | Supabase Dashboard → Project Settings → API → anon/public key |
 | `VITE_OAUTH_REDIRECT_URL` | For local dev: `http://localhost:5173` (production uses window origin) |
 | `VITE_VAPID_PUBLIC_KEY` | From step 3 below (VAPID public key) |
-| `VITE_OPENAI_MODEL` | e.g. `gpt-5-nano` |
+| `VITE_OPENAI_MODEL` | Optional — display only; model is set server-side (e.g. `gpt-5-nano`) |
 
 ### 3. Generate VAPID keys (where each key goes)
 
@@ -102,7 +102,7 @@ Before running or deploying, ensure these variables are set. Use `.env` locally 
 | `VITE_SUPABASE_URL` | Yes | Your Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | Yes | Supabase anon/public key |
 | `VITE_OAUTH_REDIRECT_URL` | Optional | For local dev OAuth callback (e.g. `http://localhost:5173`) |
-| `VITE_OPENAI_MODEL` | Yes | Model name only, e.g. `gpt-5-nano` — no API key in frontend |
+| `VITE_OPENAI_MODEL` | Optional | Display only; server uses its own model (see Edge Function) |
 | `VITE_VAPID_PUBLIC_KEY` | Yes | From `npx web-push generate-vapid-keys` (public key only) |
 
 **Note:** `OPENAI_API_KEY` is set in Supabase secrets only, never in `.env` or frontend env.
@@ -156,7 +156,7 @@ Go to [Edge Functions](https://supabase.com/dashboard/project/lcbdafnxwvqbziootv
 
 > See **Quick Start / Full Setup** above for the full deployment flow. This section is reference for GPT/OpenAI configuration.
 
-1. Set the model name in `.env` (no API key in frontend env):
+1. **Model is configured server-side** in the `openai-chat` Edge Function (e.g. `gpt-5-nano`). The client does not choose the model. Optionally set `VITE_OPENAI_MODEL` in `.env` if you want the UI to display the model name:
    ```env
    VITE_OPENAI_MODEL=gpt-5-nano
    ```

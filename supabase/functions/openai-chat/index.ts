@@ -29,7 +29,10 @@ function getCorsHeaders(origin: string | null): Record<string, string> {
   const headers: Record<string, string> = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   }
-  if (allowOrigin != null) headers['Access-Control-Allow-Origin'] = allowOrigin
+  if (allowOrigin != null) {
+    headers['Access-Control-Allow-Origin'] = allowOrigin
+    headers['Vary'] = 'Origin'
+  }
   return headers
 }
 

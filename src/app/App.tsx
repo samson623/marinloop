@@ -7,6 +7,7 @@ import { useAuthStore } from '@/shared/stores/auth-store'
 import { useNotifications } from '@/shared/hooks/useNotifications'
 import { useTimeline } from '@/shared/hooks/useTimeline'
 import { useDoseLogs } from '@/shared/hooks/useDoseLogs'
+import { useNotes } from '@/shared/hooks/useNotes'
 import { VoiceIntentService } from '@/shared/services/voice-intent'
 import { NotificationsService } from '@/shared/services/notifications'
 import type { VoiceIntentResult } from '@/shared/types/contracts'
@@ -112,6 +113,7 @@ function AppInner() {
     openAddApptModal,
     addNote,
     meds,
+    openQuickCaptureModal,
     assistantState,
     setAssistantPendingIntent,
     clearAssistantState,
@@ -120,6 +122,7 @@ function AppInner() {
   const { resolvedTheme, toggleTheme } = useThemeStore()
   const { timeline } = useTimeline()
   const { logDose } = useDoseLogs()
+  const { addNote: addNoteReal } = useNotes()
   const [notifOpen, setNotifOpen] = useState(false)
   const notifTriggerRef = useRef<HTMLButtonElement>(null)
   const [voiceActive, setVoiceActive] = useState(false)
@@ -473,15 +476,14 @@ function AppInner() {
         }
         const medList = meds ?? []
         const medName = intent.entities.note?.medication_name?.trim()
-        const med = medName
-          ? medList.find((m) => m.name.toLowerCase().includes(medName.toLowerCase()))
-          : medList[0]
-        if (!med) {
-          store.toast(medName ? `No medication named "${medName}" found.` : 'Add a medication first, then add a note.', 'tw')
-          return
+        const med = medName ? medList.find((m) => m.name.toLowerCase().includes(medName.toLowerCase())) : null
+        const medicationId = med?.id ?? null
+        if (isDemo) {
+          addNote({ content: noteText, medication_id: medicationId })
+        } else {
+          addNoteReal({ content: noteText, medication_id: medicationId })
         }
-        addNote(med.id, noteText)
-        setVoiceBubble(`Note added for ${med.name}.`)
+        setVoiceBubble(med ? `Note added for ${med.name}.` : 'Note saved.')
         return
       }
       default:
@@ -642,6 +644,18 @@ function AppInner() {
         </div>
       )}
 
+      {tab === 'summary' && (
+        <button
+          type="button"
+          onClick={openQuickCaptureModal}
+          aria-label="Add note for doctor"
+          className="fixed bottom-[calc(88px+env(safe-area-inset-bottom))] right-[calc(max(1rem,env(safe-area-inset-right))+72px)] w-12 h-12 rounded-full flex items-center justify-center border-none text-[var(--color-text-inverse)] cursor-pointer z-[95] bg-[var(--color-accent)] shadow-[0_4px_12px_-2px_var(--color-accent-translucent)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] hover:opacity-95 active:scale-95 transition-transform"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </button>
+      )}
       <button
         type="button"
         onClick={handleVoice}

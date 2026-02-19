@@ -42,6 +42,7 @@ export interface SchedItem {
 export interface NoteEntry {
     id: string; text: string; time: string; mid: string
 }
+export type AddNotePayload = { content: string; medication_id?: string | null; appointment_id?: string | null }
 export type Tab = 'timeline' | 'meds' | 'appts' | 'summary'
 export type ToastType = 'ts' | 'tw' | 'te'
 export interface Toast {
@@ -86,6 +87,7 @@ interface AppState {
     showProfile: boolean
     showAddMedModal: boolean
     showAddApptModal: boolean
+    showQuickCaptureModal: boolean
     draftMed: MedDraft | null
     draftAppt: ApptDraft | null
     assistantState: AssistantState
@@ -97,7 +99,7 @@ interface AppState {
     buildSched: () => void
     markDone: (id: string) => void
     markMissed: (id: string) => void
-    addNote: (mid: string, text: string) => void
+    addNote: (payload: AddNotePayload | { mid: string; text: string }) => void
     addMed: (m: Omit<Med, 'id'>) => void
     addAppt: (a: Omit<Appt, 'id'>) => void
     toast: (msg: string, cls?: ToastType) => void
@@ -107,6 +109,8 @@ interface AppState {
     closeAddMedModal: () => void
     openAddApptModal: (draft?: ApptDraft | null) => void
     closeAddApptModal: () => void
+    openQuickCaptureModal: () => void
+    closeQuickCaptureModal: () => void
     setDraftMed: (draft: MedDraft | null) => void
     clearDraftMed: () => void
     setDraftAppt: (draft: ApptDraft | null) => void
@@ -121,6 +125,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     showProfile: false,
     showAddMedModal: false,
     showAddApptModal: false,
+    showQuickCaptureModal: false,
     draftMed: null,
     draftAppt: null,
     assistantState: {
@@ -160,6 +165,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         showProfile: false,
         showAddMedModal: false,
         showAddApptModal: false,
+        showQuickCaptureModal: false,
         draftMed: null,
         draftAppt: null,
         assistantState: { pendingIntent: null, missing: [], prompt: null },
@@ -171,6 +177,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     closeAddMedModal: () => set({ showAddMedModal: false, draftMed: null }),
     openAddApptModal: (draft = null) => set({ showAddApptModal: true, draftAppt: draft }),
     closeAddApptModal: () => set({ showAddApptModal: false, draftAppt: null }),
+    openQuickCaptureModal: () => set({ showQuickCaptureModal: true }),
+    closeQuickCaptureModal: () => set({ showQuickCaptureModal: false }),
     setDraftMed: (draft) => set({ draftMed: draft }),
     clearDraftMed: () => set({ draftMed: null }),
     setDraftAppt: (draft) => set({ draftAppt: draft }),
@@ -253,10 +261,14 @@ export const useAppStore = create<AppState>((set, get) => ({
         get().toast(`${it.name} marked missed`, 'te')
     },
 
-    addNote: (mid, text) => {
+    addNote: (payload) => {
+        const { content, medication_id } = 'content' in payload
+            ? { content: payload.content, medication_id: payload.medication_id ?? null }
+            : { content: payload.text, medication_id: payload.mid }
+        const mid = medication_id ?? ''
         const n = new Date()
         const note: NoteEntry = {
-            id: uid(), text, mid,
+            id: uid(), text: content, mid,
             time: `${todayLocal()} ${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`,
         }
         set(s => ({ notes: [note, ...s.notes] }))

@@ -18,7 +18,7 @@ const VOICE_INTENT_SYSTEM_PROMPT = [
   'Return only JSON with keys:',
   'intent, entities, confidence, missing, requires_confirmation, assistant_message.',
   'intent must be one of: navigate, open_add_med, open_add_appt, create_reminder, log_dose, query_next_dose, add_note, unknown.',
-  'For add_note, entities.note must have "text" (the note content) and optionally "medication_name".',
+  'For add_note, entities.note must have "text" (the note content) and optionally "medication_name". Medication is optional — notes can be standalone.',
   'confidence must be a number in [0,1].',
   'missing must be an array of field names that are required to complete the intent.',
   'requires_confirmation should be true for write actions (create_reminder, log_dose).',
@@ -166,14 +166,39 @@ function heuristicParse(text: string): VoiceIntentResult {
   }
 
   if (lowered.includes('add') && (lowered.includes('note') || lowered.includes('note for'))) {
-    const forMedMatch = lowered.match(/note\s+for\s+([^:]+):?\s*(.*)/)
+    const forMedMatch = lowered.match(/note\s+for\s+([^:.,]+):?\s*(.*)/)
     const simpleMatch = !forMedMatch ? lowered.match(/add\s+note:?\s*(.*)/) : null
     const medication_name = forMedMatch?.[1]?.trim()
     const noteText = (forMedMatch?.[2] ?? simpleMatch?.[1] ?? '').trim()
     return {
       intent: 'add_note',
       entities: { note: { medication_name: medication_name || undefined, text: noteText } },
-      confidence: 0.7,
+      confidence: 0.75,
+      missing: !noteText ? ['note.text'] : [],
+      requires_confirmation: false,
+    }
+  }
+
+  if (lowered.startsWith('note ') || lowered.startsWith('note:') || lowered === 'note') {
+    const noteText = lowered.replace(/^note:?\s*/, '').trim()
+    return {
+      intent: 'add_note',
+      entities: { note: { text: noteText } },
+      confidence: 0.72,
+      missing: !noteText ? ['note.text'] : [],
+      requires_confirmation: false,
+    }
+  }
+
+  if ((lowered.includes('question') || lowered.includes('ask doctor')) && (lowered.includes('add') || lowered.includes('remind') || lowered.includes('note'))) {
+    const noteText = lowered
+      .replace(/^(add\s+)?(question|ask\s+doctor|remind\s+me\s+to\s+ask):?\s*/i, '')
+      .replace(/^(add\s+)?note:?\s*/i, '')
+      .trim()
+    return {
+      intent: 'add_note',
+      entities: { note: { text: noteText } },
+      confidence: 0.72,
       missing: !noteText ? ['note.text'] : [],
       requires_confirmation: false,
     }

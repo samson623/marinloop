@@ -3,7 +3,7 @@ import { RefillsService } from '@/shared/services/refills'
 import type { RefillUpsertInput } from '@/shared/types/contracts'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { useAppStore } from '@/shared/stores/app-store'
-import { getErrorMessage } from '@/shared/lib/errors'
+import { handleMutationError } from '@/shared/lib/errors'
 
 export function useRefill(medId: string) {
   const queryClient = useQueryClient()
@@ -24,7 +24,7 @@ export function useRefill(medId: string) {
       void queryClient.invalidateQueries({ queryKey: ['refills'] })
       toast('Refill updated', 'ts')
     },
-    onError: (err: unknown) => toast(getErrorMessage(err, 'Failed to update refill'), 'te'),
+    onError: (err: unknown) => handleMutationError(err, 'useRefill', 'Failed to update refill', toast),
   })
 
   return {

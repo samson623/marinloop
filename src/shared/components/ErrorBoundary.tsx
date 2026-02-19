@@ -1,8 +1,10 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { reportError } from '@/shared/lib/errors'
 
 interface Props {
   children: ReactNode
   fallback?: ReactNode
+  onError?: (error: Error, errorInfo: ErrorInfo) => void
 }
 
 interface State {
@@ -22,6 +24,8 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     console.error('[ErrorBoundary]', error, errorInfo)
+    reportError(error, 'ErrorBoundary')
+    this.props.onError?.(error, errorInfo)
   }
 
   render() {

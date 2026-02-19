@@ -44,7 +44,7 @@ function isIntent(value: unknown): value is VoiceIntentType {
     && ['navigate', 'open_add_med', 'open_add_appt', 'create_reminder', 'log_dose', 'query_next_dose', 'add_note', 'unknown'].includes(value)
 }
 
-function coerceResult(raw: unknown): VoiceIntentResult {
+export function coerceResult(raw: unknown): VoiceIntentResult {
   if (!raw || typeof raw !== 'object') return { ...DEFAULT_RESULT }
   const value = raw as Record<string, unknown>
   const intent = isIntent(value.intent) ? value.intent : 'unknown'
@@ -90,7 +90,7 @@ function parseTimeFromText(lowered: string): string | undefined {
   return `${String(hour).padStart(2, '0')}:00`
 }
 
-function heuristicParse(text: string): VoiceIntentResult {
+export function heuristicParse(text: string): VoiceIntentResult {
   const lowered = text.toLowerCase()
 
   if (lowered.includes('next dose')) {

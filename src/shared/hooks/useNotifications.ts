@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { NotificationsService } from '@/shared/services/notifications'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { useAppStore } from '@/shared/stores/app-store'
-import { getErrorMessage } from '@/shared/lib/errors'
+import { handleMutationError } from '@/shared/lib/errors'
 
 export function useNotifications() {
   const queryClient = useQueryClient()
@@ -21,9 +21,7 @@ export function useNotifications() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['notifications'] })
     },
-    onError: (error: unknown) => {
-      toast(getErrorMessage(error, 'Failed to update notification'), 'te')
-    },
+    onError: (error: unknown) => handleMutationError(error, 'useNotifications', 'Failed to update notification', toast),
   })
 
   return {

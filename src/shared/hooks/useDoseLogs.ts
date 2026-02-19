@@ -3,7 +3,7 @@ import { DoseLogsService } from '@/shared/services/dose-logs'
 import type { DoseLogCreateInput } from '@/shared/types/contracts'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { useAppStore } from '@/shared/stores/app-store'
-import { getErrorMessage } from '@/shared/lib/errors'
+import { handleMutationError } from '@/shared/lib/errors'
 
 export function useDoseLogs() {
   const queryClient = useQueryClient()
@@ -24,7 +24,7 @@ export function useDoseLogs() {
       void queryClient.invalidateQueries({ queryKey: ['adherence'] })
       toast('Dose logged', 'ts')
     },
-    onError: (err: unknown) => toast(getErrorMessage(err, 'Failed to log dose'), 'te'),
+    onError: (err: unknown) => handleMutationError(err, 'useDoseLogs', 'Failed to log dose', toast),
   })
 
   return {

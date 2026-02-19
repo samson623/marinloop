@@ -126,10 +126,16 @@ export function ProfileView() {
           {qrCode && (
             <>
               <div className="my-3 [&_svg]:max-w-full [&_svg]:h-auto" dangerouslySetInnerHTML={{ __html: qrCode }} />
+              <label htmlFor="mfa-code" className="block font-bold uppercase tracking-[0.08em] text-[var(--color-text-secondary)] mb-1 [font-size:var(--text-label)]">
+                Verification code
+              </label>
               <Input
+                id="mfa-code"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 placeholder="Enter 6-digit code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
                 className="mb-2"
               />
               <Button

@@ -4,7 +4,7 @@ import type { Database } from '@/shared/types/database.types'
 import type { MedicationBundleCreateInput } from '@/shared/types/contracts'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { useAppStore } from '@/shared/stores/app-store'
-import { getErrorMessage } from '@/shared/lib/errors'
+import { handleMutationError } from '@/shared/lib/errors'
 
 type Medication = Database['public']['Tables']['medications']['Row']
 
@@ -26,7 +26,7 @@ export function useMedications() {
       void queryClient.invalidateQueries({ queryKey: ['medications'] })
       toast('Medication added', 'ts')
     },
-    onError: (err: unknown) => toast(getErrorMessage(err, 'Failed to add medication'), 'te'),
+    onError: (err: unknown) => handleMutationError(err, 'useMedications', 'Failed to add medication', toast),
   })
 
   const createBundleMutation = useMutation({
@@ -37,7 +37,7 @@ export function useMedications() {
       void queryClient.invalidateQueries({ queryKey: ['refills'] })
       toast('Medication and schedule created', 'ts')
     },
-    onError: (err: unknown) => toast(getErrorMessage(err, 'Failed to create medication bundle'), 'te'),
+    onError: (err: unknown) => handleMutationError(err, 'useMedications', 'Failed to create medication bundle', toast),
   })
 
   const updateMutation = useMutation({
@@ -46,7 +46,7 @@ export function useMedications() {
       void queryClient.invalidateQueries({ queryKey: ['medications'] })
       toast('Medication updated', 'ts')
     },
-    onError: (err: unknown) => toast(getErrorMessage(err, 'Failed to update medication'), 'te'),
+    onError: (err: unknown) => handleMutationError(err, 'useMedications', 'Failed to update medication', toast),
   })
 
   const deleteMutation = useMutation({
@@ -55,7 +55,7 @@ export function useMedications() {
       void queryClient.invalidateQueries({ queryKey: ['medications'] })
       toast('Medication deleted', 'ts')
     },
-    onError: (err: unknown) => toast(getErrorMessage(err, 'Failed to delete medication'), 'te'),
+    onError: (err: unknown) => handleMutationError(err, 'useMedications', 'Failed to delete medication', toast),
   })
 
   return {

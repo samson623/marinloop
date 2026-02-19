@@ -4,7 +4,7 @@ import type { Database } from '@/shared/types/database.types'
 import type { AppointmentCreateInput } from '@/shared/types/contracts'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { useAppStore } from '@/shared/stores/app-store'
-import { getErrorMessage } from '@/shared/lib/errors'
+import { handleMutationError } from '@/shared/lib/errors'
 
 type Appointment = Database['public']['Tables']['appointments']['Row']
 
@@ -26,7 +26,7 @@ export function useAppointments() {
       void queryClient.invalidateQueries({ queryKey: ['appointments'] })
       toast('Appointment added', 'ts')
     },
-    onError: (err: unknown) => toast(getErrorMessage(err, 'Failed to add appointment'), 'te'),
+    onError: (err: unknown) => handleMutationError(err, 'useAppointments', 'Failed to add appointment', toast),
   })
 
   const updateMutation = useMutation({
@@ -35,7 +35,7 @@ export function useAppointments() {
       void queryClient.invalidateQueries({ queryKey: ['appointments'] })
       toast('Appointment updated', 'ts')
     },
-    onError: (err: unknown) => toast(getErrorMessage(err, 'Failed to update appointment'), 'te'),
+    onError: (err: unknown) => handleMutationError(err, 'useAppointments', 'Failed to update appointment', toast),
   })
 
   const deleteMutation = useMutation({
@@ -44,7 +44,7 @@ export function useAppointments() {
       void queryClient.invalidateQueries({ queryKey: ['appointments'] })
       toast('Appointment deleted', 'ts')
     },
-    onError: (err: unknown) => toast(getErrorMessage(err, 'Failed to delete appointment'), 'te'),
+    onError: (err: unknown) => handleMutationError(err, 'useAppointments', 'Failed to delete appointment', toast),
   })
 
   return {

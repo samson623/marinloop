@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { NotesService } from '@/shared/services/notes'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { useAppStore } from '@/shared/stores/app-store'
-import { getErrorMessage } from '@/shared/lib/errors'
+import { handleMutationError } from '@/shared/lib/errors'
 
 export function useNotes() {
   const queryClient = useQueryClient()
@@ -22,7 +22,7 @@ export function useNotes() {
       void queryClient.invalidateQueries({ queryKey: ['notes'] })
       toast('Note added', 'ts')
     },
-    onError: (err: unknown) => toast(getErrorMessage(err, 'Failed to add note'), 'te'),
+    onError: (err: unknown) => handleMutationError(err, 'useNotes', 'Failed to add note', toast),
   })
 
   return {

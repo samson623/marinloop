@@ -1,4 +1,3 @@
-﻿-- Rename current_user to auth_user_id in create_medication_bundle to avoid conflict with reserved identifier
 create or replace function public.create_medication_bundle(
   medication_name text,
   medication_dosage text,

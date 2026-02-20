@@ -71,6 +71,7 @@ supabase secrets set VAPID_SUBJECT=mailto:your-email@example.com
 ```
 
 - **`ALLOWED_ORIGINS`** (required for `openai-chat` in production): comma-separated list of allowed CORS origins. If unset, the API rejects all cross-origin requests (fail-closed). For local dev use e.g. `http://localhost:5173`.
+- **`AI_DAILY_LIMIT`** (optional for `openai-chat`): max chat requests per user per calendar day (UTC). Default 50 if unset. Returns 429 with `Retry-After` and `X-RateLimit-*` headers when exceeded; resets at midnight UTC.
 - `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` are the same pair from step 3.
 - `VAPID_SUBJECT` is a contact email for the push service (e.g. `mailto:you@example.com`).
 
@@ -86,7 +87,7 @@ supabase functions deploy send-push
 **Dashboard (no CLI):** Supabase Dashboard → SQL Editor. Run in order:
 
 1. `supabase/schema.sql` (base schema)
-2. `supabase/run-migrations.sql` (001, 002, 003, 004)
+2. `supabase/run-migrations.sql` (001, 002, 003, 004, 005)
 
 **CLI:** `supabase db push` (if Supabase CLI is installed and linked)
 
@@ -122,8 +123,9 @@ Deploy the Edge Functions after setting their prerequisites:
 ```bash
 supabase secrets set OPENAI_API_KEY=sk-your-openai-api-key
 supabase secrets set ALLOWED_ORIGINS=https://your-app-domain.com
+supabase secrets set AI_DAILY_LIMIT=50
 ```
-In production, `ALLOWED_ORIGINS` must be set (comma-separated). If unset, the function returns 403 for all requests (CORS fail-closed).
+In production, `ALLOWED_ORIGINS` must be set (comma-separated). If unset, the function returns 403 for all requests (CORS fail-closed). `AI_DAILY_LIMIT` is optional (default 50); when exceeded, returns 429 with `Retry-After` and `X-RateLimit-*` headers; resets at midnight UTC.
 
 **Prerequisite for `send-push`:** Configure VAPID keys in Supabase secrets (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`). See [Push Notifications Setup](#push-notifications-setup) below.
 
@@ -205,7 +207,7 @@ Without these, push notifications will fail with a generic "Failed to enable pus
 
 **Dashboard (no CLI):** Supabase Dashboard → SQL Editor. Run in order:
 1. `supabase/schema.sql` (base schema)
-2. `supabase/run-migrations.sql` (001, 002, 003, 004 — includes the `create_medication_bundle` fix)
+2. `supabase/run-migrations.sql` (001–005; includes `create_medication_bundle` fix and `ai_daily_usage` for per-user quota)
 
 **CLI:** `supabase db push` (if Supabase CLI is installed and linked)
 

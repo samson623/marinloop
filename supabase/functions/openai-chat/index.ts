@@ -14,6 +14,29 @@ const ALLOWED_MODEL = 'gpt-5-nano'
 const MAX_MESSAGES = 20
 const MAX_CONTENT_LENGTH = 8000
 
+function getAiDailyLimit(): number {
+  const raw = Deno.env.get('AI_DAILY_LIMIT')
+  if (raw == null || raw.trim() === '') return 50
+  const n = parseInt(raw, 10)
+  return Number.isNaN(n) || n < 1 ? 50 : n
+}
+
+function getMidnightUtcNext(): number {
+  const now = new Date()
+  const tomorrow = new Date(now)
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
+  tomorrow.setUTCHours(0, 0, 0, 0)
+  return Math.floor(tomorrow.getTime() / 1000)
+}
+
+function getSecondsUntilMidnightUtc(): number {
+  const now = new Date()
+  const tomorrow = new Date(now)
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
+  tomorrow.setUTCHours(0, 0, 0, 0)
+  return Math.floor((tomorrow.getTime() - now.getTime()) / 1000)
+}
+
 function getAllowedOrigins(): string[] {
   const raw = Deno.env.get('ALLOWED_ORIGINS')
   if (!raw?.trim()) return []
@@ -105,6 +128,44 @@ serve(async (req) => {
       )
     }
 
+    // Per-user daily quota (service-role client bypasses RLS)
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    if (!serviceRoleKey) {
+      return new Response(
+        JSON.stringify({ error: 'Service configuration error' }),
+        { status: 500, headers: corsHeaders },
+      )
+    }
+    const supabaseService = createClient(supabaseUrl, serviceRoleKey)
+    const today = new Date().toISOString().slice(0, 10)
+    const { data: newCount, error: rpcError } = await supabaseService.rpc('increment_ai_daily_usage', {
+      p_user_id: user.id,
+      p_usage_date: today,
+    })
+    if (rpcError) {
+      return new Response(
+        JSON.stringify({ error: scrubError(rpcError) }),
+        { status: 500, headers: corsHeaders },
+      )
+    }
+    const requestCount = typeof newCount === 'number' ? newCount : (newCount as number[])?.[0] ?? 0
+    const limit = getAiDailyLimit()
+    if (requestCount > limit) {
+      const resetAt = getMidnightUtcNext()
+      const retryAfter = getSecondsUntilMidnightUtc()
+      const headers = {
+        ...corsHeaders,
+        'X-RateLimit-Limit': String(limit),
+        'X-RateLimit-Remaining': '0',
+        'X-RateLimit-Reset': String(resetAt),
+        'Retry-After': String(retryAfter),
+      }
+      return new Response(
+        JSON.stringify({ error: 'Daily AI usage limit reached; resets at midnight UTC.' }),
+        { status: 429, headers },
+      )
+    }
+
     let body: ChatPayload
     try {
       body = (await req.json()) as ChatPayload
@@ -180,8 +241,16 @@ serve(async (req) => {
     }
 
     const data = await response.json()
+    const limit = getAiDailyLimit()
+    const remaining = Math.max(0, limit - requestCount)
+    const successHeaders = {
+      ...corsHeaders,
+      'X-RateLimit-Limit': String(limit),
+      'X-RateLimit-Remaining': String(remaining),
+      'X-RateLimit-Reset': String(getMidnightUtcNext()),
+    }
     return new Response(JSON.stringify(data), {
-      headers: corsHeaders,
+      headers: successHeaders,
     })
   } catch (err) {
     return new Response(

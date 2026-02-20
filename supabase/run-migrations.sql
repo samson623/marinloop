@@ -115,3 +115,26 @@ BEGIN
   RETURN med_id;
 END;
 $$;
+
+-- 005: AI daily usage tracking (no RLS - Edge Function uses service role)
+CREATE TABLE IF NOT EXISTS public.ai_daily_usage (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  usage_date date not null,
+  request_count integer not null default 0 check (request_count >= 0),
+  primary key (user_id, usage_date)
+);
+
+-- RPC for atomic increment (Edge Function uses service role)
+CREATE OR REPLACE FUNCTION public.increment_ai_daily_usage(p_user_id uuid, p_usage_date date)
+RETURNS integer
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  SELECT request_count FROM (
+    INSERT INTO public.ai_daily_usage (user_id, usage_date, request_count)
+    VALUES (p_user_id, p_usage_date, 1)
+    ON CONFLICT (user_id, usage_date) DO UPDATE
+    SET request_count = ai_daily_usage.request_count + 1
+    RETURNING request_count
+  ) sub;
+$$;

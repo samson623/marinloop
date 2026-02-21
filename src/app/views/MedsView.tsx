@@ -239,7 +239,7 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
         if (result.warnings) setWarn(result.warnings)
         toast('Medication info loaded ✓', 'ts')
       } else {
-        toast('Medication not found in FDA database. Enter details manually.', 'tw')
+        toast("We couldn't find that in our database. Type the medication name below.", 'tw')
       }
     } catch {
       toast('Lookup failed. Please enter details manually.', 'te')

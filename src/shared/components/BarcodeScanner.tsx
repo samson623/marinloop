@@ -28,6 +28,9 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
   const hasScannedRef = useRef(false)
   const [manualEntry, setManualEntry] = useState(false)
   const [manualCode, setManualCode] = useState('')
+  const [isScanningFile, setIsScanningFile] = useState(false)
+  const [photoScanError, setPhotoScanError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const stopScanner = useCallback(async () => {
     try {
@@ -143,10 +146,37 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
 
   const handleManualSubmit = () => {
     const code = manualCode.trim()
-    if (code.length >= 10) {
+    const digitCount = code.replace(/\D/g, '').length
+    if (code.length >= 8 && digitCount >= 6) {
       hasScannedRef.current = true
       setScannedCode(code)
       onScan(code)
+    }
+  }
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !file.type.startsWith('image/')) return
+    setIsScanningFile(true)
+    setPhotoScanError(null)
+    try {
+      const fileScanner = new Html5Qrcode('barcode-file-scanner', {
+        formatsToSupport: SUPPORTED_FORMATS,
+        verbose: false,
+      })
+      const decoded = await fileScanner.scanFile(file, false)
+      if (decoded && !hasScannedRef.current) {
+        hasScannedRef.current = true
+        if (navigator.vibrate) navigator.vibrate(200)
+        setScannedCode(decoded)
+        onScan(decoded)
+      }
+    } catch (err) {
+      console.warn('Photo scan failed:', err)
+      setPhotoScanError('Could not read barcode from photo. Try manual entry below.')
+    } finally {
+      setIsScanningFile(false)
     }
   }
 
@@ -177,6 +207,7 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
 
       <div className="flex-1 relative overflow-hidden">
         <div id="barcode-scanner-reader" className="w-full h-full object-cover" />
+        <div id="barcode-file-scanner" className="absolute w-[300px] h-[300px] opacity-0 pointer-events-none -left-[9999px]" aria-hidden="true" />
 
         {!isStarting && !error && (
           <div className="absolute inset-0 pointer-events-none">
@@ -227,38 +258,62 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
         )}
 
         {!scannedCode && !error && !isStarting && (
-          <div className="absolute bottom-6 left-0 right-0 flex justify-center z-30 pointer-events-auto">
-            <button
-              type="button"
-              onClick={() => setManualEntry(!manualEntry)}
-              className="px-4 py-2 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-sm font-medium border border-white/20"
-            >
-              {manualEntry ? 'Hide manual entry' : "Can't scan? Enter number manually"}
-            </button>
+          <div className="absolute bottom-6 left-0 right-0 flex flex-col items-center gap-3 z-30 pointer-events-auto px-4">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handlePhotoUpload}
+              aria-label="Upload photo of barcode"
+            />
+            <div className="flex flex-wrap justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isScanningFile}
+                className="px-5 py-2.5 rounded-full bg-[#00E0FF]/20 backdrop-blur-sm text-[#00E0FF] text-base font-semibold border-2 border-[#00E0FF] disabled:opacity-60"
+              >
+                {isScanningFile ? 'Reading...' : 'Take a picture of barcode'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setManualEntry(!manualEntry); setPhotoScanError(null) }}
+                className="px-5 py-2.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-base font-medium border border-white/20"
+              >
+                {manualEntry ? 'Hide manual entry' : 'Enter number manually'}
+              </button>
+            </div>
+            {photoScanError && (
+              <p className="text-amber-400 text-sm text-center" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
+                {photoScanError}
+              </p>
+            )}
           </div>
         )}
 
         {manualEntry && (
-          <div className="absolute bottom-16 left-4 right-4 z-30 bg-black/90 backdrop-blur-md rounded-2xl p-4 border border-white/10 pointer-events-auto">
-            <label className="block text-white/70 text-xs font-semibold mb-2 uppercase tracking-wider">
-              Enter NDC or UPC number from bottle
+          <div className="absolute bottom-24 left-4 right-4 z-30 bg-black/90 backdrop-blur-md rounded-2xl p-4 border border-white/10 pointer-events-auto">
+            <label className="block text-white/80 text-base font-semibold mb-2">
+              Enter barcode or NDC number (e.g. B580-142436-1431 or 0378-4117-01)
             </label>
             <div className="flex gap-2">
               <input
                 type="text"
-                inputMode="numeric"
+                inputMode="text"
                 autoComplete="off"
                 value={manualCode}
                 onChange={(e) => setManualCode(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleManualSubmit()}
-                placeholder="e.g. 0378-4117-01 or 303784117012"
-                className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2.5 text-white placeholder:text-white/30 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#00E0FF]"
+                placeholder="Type the numbers below the barcode"
+                className="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder:text-white/40 text-base font-mono focus:outline-none focus:ring-2 focus:ring-[#00E0FF] min-w-0"
               />
               <button
                 type="button"
                 onClick={handleManualSubmit}
-                disabled={manualCode.replace(/\D/g, '').length < 10}
-                className="px-4 py-2.5 bg-[#00E0FF] text-black font-bold rounded-lg text-sm disabled:opacity-40"
+                disabled={manualCode.trim().length < 8 || manualCode.replace(/\D/g, '').length < 6}
+                className="px-5 py-3 bg-[#00E0FF] text-black font-bold rounded-lg text-base disabled:opacity-40 shrink-0"
               >
                 Look up
               </button>

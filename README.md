@@ -252,6 +252,25 @@ If the app works in production (Vercel) but fails when running locally (`npm run
 3. **Restart the dev server**  
    After changing `.env`, stop the dev server (Ctrl+C) and run `npm run dev` again so Vite picks up the new variables.
 
+---
+
+## Label extraction: "Could not reach the server"
+
+If taking or uploading a photo of a prescription label shows "Could not reach the server", the Edge Function is likely rejecting the request due to CORS. Fix it by:
+
+1. **Add your app URL to `ALLOWED_ORIGINS`** — Include every origin users can access the app from:
+   ```bash
+   supabase secrets set ALLOWED_ORIGINS=https://your-app.vercel.app,https://medflow-care-xxxx.vercel.app,http://localhost:5173
+   ```
+   Replace `your-app.vercel.app` with your actual Vercel domain. Include any preview URLs if users test from those.
+
+2. **Redeploy the extract-label function** (required after changing secrets):
+   ```bash
+   supabase functions deploy extract-label --project-ref <your-project-ref>
+   ```
+
+Without the correct origins, the browser blocks the request before it reaches the function.
+
 ### Tables
 
 | Table | Purpose |

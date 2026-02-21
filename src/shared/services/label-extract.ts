@@ -67,7 +67,7 @@ export async function extractFromImage(file: File): Promise<LabelExtractResult> 
     } else if (error instanceof FunctionsRelayError) {
       msg = 'Network error. Please check your connection and try again.'
     } else if (error instanceof FunctionsFetchError) {
-      msg = 'Could not reach the server. Please try again.'
+      msg = 'Could not reach the server. Check your connection and try again. If the problem continues, the app administrator may need to add this site to allowed origins.'
     }
     throw new Error(mapApiError(msg || error.message || ''))
   }

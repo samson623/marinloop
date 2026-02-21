@@ -466,8 +466,7 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
               ref={labelPhotoInputRef}
               type="file"
               accept="image/*"
-              capture="environment"
-              aria-label="Take photo of prescription label"
+              aria-label="Take or upload photo of prescription label or pill bottle"
               className="absolute opacity-0 w-0 h-0 -left-[9999px] pointer-events-none"
               onChange={(e) => {
                 const f = e.target.files?.[0]
@@ -481,7 +480,7 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
               type="button"
               onClick={() => labelPhotoInputRef.current?.click()}
               disabled={isLooking}
-              aria-label="Take photo of prescription label"
+              aria-label="Take or upload photo of prescription label or pill bottle"
               aria-busy={isLooking}
               aria-live="polite"
               className="w-full py-3 px-6 mb-5 rounded-2xl font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border-primary)] hover:bg-[var(--color-bg-secondary)] cursor-pointer disabled:opacity-60 flex items-center justify-center gap-3 [font-size:var(--text-body)]"
@@ -498,12 +497,12 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
                 <circle cx="8.5" cy="8.5" r="1.5" />
                 <polyline points="21 15 16 10 5 21" />
               </svg>
-              <span>Take photo of label</span>
+              <span>Take or upload photo of label</span>
             </>
           )}
         </button>
             <p className="text-[var(--color-text-tertiary)] text-xs mb-4 -mt-2 px-1">
-              Extracted info is for convenience only. Always verify against your label and follow your healthcare provider&apos;s instructions.
+              Works with prescription labels or pill bottles. Take a photo or choose from your gallery. Extracted info is for convenience only — always verify against your label.
             </p>
           </>
         )}

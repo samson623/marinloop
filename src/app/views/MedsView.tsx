@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useAppStore, fT } from '@/shared/stores/app-store'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { useMedications } from '@/shared/hooks/useMedications'
@@ -157,6 +157,62 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
   const [warn, setWarn] = useState('')
   const [showScanner, setShowScanner] = useState(false)
   const [isLooking, setIsLooking] = useState(false)
+  const scannerInputRef = useRef<HTMLInputElement>(null)
+  const scannerRapidTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (showScanner) return
+    scannerInputRef.current?.focus()
+  }, [showScanner])
+
+  useEffect(() => {
+    return () => {
+      if (scannerRapidTimeoutRef.current) {
+        clearTimeout(scannerRapidTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  const flushScannerInput = (el: HTMLInputElement | null) => {
+    if (!el) return
+    const raw = el.value?.trim() || ''
+    const digits = raw.replace(/\D/g, '')
+    if (digits.length >= 10) {
+      el.value = ''
+      handleScan(raw)
+    }
+  }
+
+  const handleScannerInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      const el = e.currentTarget as HTMLInputElement
+      const raw = el.value?.trim() || ''
+      const digits = raw.replace(/\D/g, '')
+      if (digits.length >= 10) {
+        e.preventDefault()
+        el.value = ''
+        handleScan(raw)
+      }
+      if (scannerRapidTimeoutRef.current) {
+        clearTimeout(scannerRapidTimeoutRef.current)
+        scannerRapidTimeoutRef.current = null
+      }
+      return
+    }
+  }
+
+  const handleScannerInput = (e: React.FormEvent<HTMLInputElement>) => {
+    const el = e.currentTarget
+    if (scannerRapidTimeoutRef.current) clearTimeout(scannerRapidTimeoutRef.current)
+    const raw = el.value?.trim() || ''
+    const digits = raw.replace(/\D/g, '')
+    if (digits.length >= 10) {
+      scannerRapidTimeoutRef.current = setTimeout(() => {
+        scannerRapidTimeoutRef.current = null
+        flushScannerInput(el)
+      }, 150)
+    }
+  }
 
   useEffect(() => {
     if (!initialDraft) return
@@ -232,6 +288,18 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
   return (
     <>
       <Modal open onOpenChange={(o) => !o && onClose()} title="Add Medication" variant="center">
+        {/* Hidden input for USB barcode scanners (keyboard wedge mode) */}
+        <input
+          ref={scannerInputRef}
+          type="text"
+          inputMode="numeric"
+          autoComplete="off"
+          aria-label="Barcode scanner input"
+          className="absolute opacity-0 w-0 h-0 -left-[9999px] pointer-events-none"
+          tabIndex={0}
+          onKeyDown={handleScannerInputKeyDown}
+          onInput={handleScannerInput}
+        />
         <button
           type="button"
           onClick={() => setShowScanner(true)}

@@ -42,11 +42,17 @@ function getAllowedOrigins(): string[] {
   return raw.split(',').map((o) => o.trim()).filter(Boolean)
 }
 
+function isNullOrigin(origin: string | null): boolean {
+  return origin == null || origin === 'null'
+}
+
 function getCorsHeaders(origin: string | null): Record<string, string> {
   const allowed = getAllowedOrigins()
+  const nullOrigin = isNullOrigin(origin)
   const allowOrigin =
-    allowed.includes('*') ? (origin || '*')
-    : (origin && allowed.includes(origin)) ? origin
+    allowed.includes('*') ? (origin && origin !== 'null' ? origin : '*')
+    : (origin && origin !== 'null' && allowed.includes(origin)) ? origin
+    : (nullOrigin && allowed.length > 0) ? '*'
     : null
   const headers: Record<string, string> = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -127,10 +133,11 @@ serve(async (req) => {
   }
 
   const allowed = getAllowedOrigins()
+  const nullOrigin = isNullOrigin(origin)
   const originAllowed =
     allowed.includes('*') ||
-    (origin != null && allowed.includes(origin)) ||
-    (origin == null && allowed.length > 0)
+    (origin != null && origin !== 'null' && allowed.includes(origin)) ||
+    (nullOrigin && allowed.length > 0)
   if (!originAllowed) {
     return new Response(
       JSON.stringify({ error: 'CORS not allowed' }),

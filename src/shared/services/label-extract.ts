@@ -1,3 +1,8 @@
+import {
+  FunctionsHttpError,
+  FunctionsRelayError,
+  FunctionsFetchError,
+} from '@supabase/supabase-js'
 import { supabase } from '@/shared/lib/supabase'
 import { isDemoApp } from '@/shared/lib/env'
 
@@ -51,7 +56,20 @@ export async function extractFromImage(file: File): Promise<LabelExtractResult> 
   })
 
   if (error) {
-    throw new Error(mapApiError(error.message || ''))
+    let msg = ''
+    if (error instanceof FunctionsHttpError) {
+      try {
+        const errBody = (await error.context.json()) as { error?: string } | null
+        msg = errBody?.error ?? ''
+      } catch {
+        msg = ''
+      }
+    } else if (error instanceof FunctionsRelayError) {
+      msg = 'Network error. Please check your connection and try again.'
+    } else if (error instanceof FunctionsFetchError) {
+      msg = 'Could not reach the server. Please try again.'
+    }
+    throw new Error(mapApiError(msg || error.message || ''))
   }
 
   const parsed = data as LabelExtractResult | null | undefined

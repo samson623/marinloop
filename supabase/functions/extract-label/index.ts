@@ -50,6 +50,7 @@ function getCorsHeaders(origin: string | null): Record<string, string> {
     : null
   const headers: Record<string, string> = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
   }
   if (allowOrigin != null) {
     headers['Access-Control-Allow-Origin'] = allowOrigin
@@ -247,7 +248,7 @@ serve(async (req) => {
           { role: 'system', content: EXTRACTION_SYSTEM_PROMPT },
           { role: 'user', content: userContent },
         ],
-        max_tokens: 512,
+        max_tokens: 1024,
       }),
     })
 

@@ -1,4 +1,7 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+
+vi.mock('@/shared/services/ai', () => ({ AIService: { chat: vi.fn(), isConfigured: vi.fn() } }))
+
 import { coerceResult, heuristicParse } from '@/shared/services/voice-intent'
 
 describe('coerceResult', () => {

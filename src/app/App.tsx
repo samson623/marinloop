@@ -16,7 +16,8 @@ import { ApptsView } from '@/app/views/ApptsView'
 import { SummaryView } from '@/app/views/SummaryView'
 import { ProfileView } from '@/app/views/ProfileView'
 import { isMobile, isStandalone } from '@/shared/lib/device'
-import { AddToHomeScreenPrompt, getAddToHomeScreenSeen, setAddToHomeScreenSeen } from '@/shared/components/AddToHomeScreenPrompt'
+import { AddToHomeScreenPrompt } from '@/shared/components/AddToHomeScreenPrompt'
+import { getAddToHomeScreenSeen, setAddToHomeScreenSeen } from '@/shared/lib/add-to-home-screen-storage'
 import { Modal } from '@/shared/components/Modal'
 import { IconButton } from '@/shared/components/IconButton'
 import { Button, Input } from '@/shared/components/ui'
@@ -82,19 +83,17 @@ function AppInner() {
   const voice = useVoiceIntent({ logDose, addNoteReal })
   const [notifOpen, setNotifOpen] = useState(false)
   const notifTriggerRef = useRef<HTMLButtonElement>(null)
-  const [showVoiceTest, setShowVoiceTest] = useState(false)
+  const [showVoiceTest] = useState(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('voiceTest') === '1'
+    } catch {
+      return false
+    }
+  })
   const [showAddToHomeScreenOnboarding, setShowAddToHomeScreenOnboarding] = useState(false)
   const [showLoginScreen, setShowLoginScreen] = useState(false)
   const installPrompt = useInstallPrompt()
   const { updateAvailable, reloadToUpdate } = useServiceWorkerUpdate()
-
-  useEffect(() => {
-    try {
-      setShowVoiceTest(new URLSearchParams(window.location.search).get('voiceTest') === '1')
-    } catch {
-      setShowVoiceTest(false)
-    }
-  }, [])
 
   useEffect(() => {
     void initialize()

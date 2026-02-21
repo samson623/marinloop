@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useAppStore, fD, fT } from '@/shared/stores/app-store'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { todayLocal, isoToLocalDate, toLocalTimeString } from '@/shared/lib/dates'
@@ -101,20 +101,11 @@ function AddApptModal({
 }) {
   const { addAppt: addApptDemo } = useAppStore()
   const today = todayLocal()
-  const [title, setTitle] = useState('')
-  const [date, setDate] = useState(today)
-  const [time, setTime] = useState('14:00')
-  const [loc, setLoc] = useState('')
-  const [notes, setNotes] = useState('')
-
-  useEffect(() => {
-    if (!initialDraft) return
-    if (initialDraft.title) setTitle(initialDraft.title)
-    if (initialDraft.date) setDate(initialDraft.date)
-    if (initialDraft.time) setTime(initialDraft.time)
-    if (initialDraft.loc) setLoc(initialDraft.loc)
-    if (initialDraft.notes) setNotes(initialDraft.notes)
-  }, [initialDraft])
+  const [title, setTitle] = useState(initialDraft?.title ?? '')
+  const [date, setDate] = useState(initialDraft?.date ?? today)
+  const [time, setTime] = useState(initialDraft?.time ?? '14:00')
+  const [loc, setLoc] = useState(initialDraft?.loc ?? '')
+  const [notes, setNotes] = useState(initialDraft?.notes ?? '')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

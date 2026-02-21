@@ -1,5 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import { useRef, type ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 import { cn } from '@/shared/lib/utils'
 import { IconButton } from '@/shared/components/IconButton'
 
@@ -28,7 +28,8 @@ export function Modal({
   triggerRef,
   closeLabel = 'Close',
 }: ModalProps) {
-  const titleId = useRef(`modal-title-${Math.random().toString(36).slice(2, 9)}`).current
+  const id = useId()
+  const titleId = `modal-title-${id.replace(/:/g, '')}`
   const descId = description ? `modal-desc-${titleId}` : undefined
 
   const handleCloseAutoFocus = (e: Event) => {

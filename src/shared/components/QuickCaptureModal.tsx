@@ -15,27 +15,27 @@ type QuickCaptureModalProps = {
   isSubmitting?: boolean
 }
 
-export function QuickCaptureModal({
-  open,
-  onOpenChange,
+function QuickCaptureForm({
   meds,
   appts,
   onSubmit,
-  isSubmitting = false,
-}: QuickCaptureModalProps) {
+  isSubmitting,
+  onOpenChange,
+}: {
+  meds: QuickCaptureMed[]
+  appts: QuickCaptureAppt[]
+  onSubmit: QuickCaptureModalProps['onSubmit']
+  isSubmitting: boolean
+  onOpenChange: (open: boolean) => void
+}) {
   const [content, setContent] = useState('')
   const [medId, setMedId] = useState<string>('')
   const [apptId, setApptId] = useState<string>('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
-    if (open) {
-      setContent('')
-      setMedId('')
-      setApptId('')
-      setTimeout(() => textareaRef.current?.focus(), 100)
-    }
-  }, [open])
+    setTimeout(() => textareaRef.current?.focus(), 100)
+  }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -55,14 +55,7 @@ export function QuickCaptureModal({
     .slice(0, 5)
 
   return (
-    <Modal
-      open={open}
-      onOpenChange={onOpenChange}
-      title="Note for your doctor"
-      description="Jot down side effects or questions to bring to your next visit"
-      variant="center"
-    >
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="quick-capture-content" className="sr-only">
             Note content
@@ -147,6 +140,35 @@ export function QuickCaptureModal({
           {isSubmitting ? 'Saving…' : 'Save note'}
         </Button>
       </form>
+  )
+}
+
+export function QuickCaptureModal({
+  open,
+  onOpenChange,
+  meds,
+  appts,
+  onSubmit,
+  isSubmitting = false,
+}: QuickCaptureModalProps) {
+  return (
+    <Modal
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Note for your doctor"
+      description="Jot down side effects or questions to bring to your next visit"
+      variant="center"
+    >
+      {open && (
+        <QuickCaptureForm
+          key="open"
+          meds={meds}
+          appts={appts}
+          onSubmit={onSubmit}
+          isSubmitting={isSubmitting}
+          onOpenChange={onOpenChange}
+        />
+      )}
     </Modal>
   )
 }

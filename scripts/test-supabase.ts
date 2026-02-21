@@ -9,7 +9,7 @@ const rootDir = path.resolve(__dirname, '..')
 
 // Manually parse .env
 const envPath = path.resolve(rootDir, '.env')
-let env = {}
+const env: Record<string, string> = {}
 if (fs.existsSync(envPath)) {
     const content = fs.readFileSync(envPath, 'utf-8')
     content.split('\n').forEach(line => {

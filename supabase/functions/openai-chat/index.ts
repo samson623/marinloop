@@ -51,6 +51,7 @@ function getCorsHeaders(origin: string | null): Record<string, string> {
     : null
   const headers: Record<string, string> = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
   }
   if (allowOrigin != null) {
     headers['Access-Control-Allow-Origin'] = allowOrigin
@@ -241,7 +242,6 @@ serve(async (req) => {
     }
 
     const data = await response.json()
-    const limit = getAiDailyLimit()
     const remaining = Math.max(0, limit - requestCount)
     const successHeaders = {
       ...corsHeaders,

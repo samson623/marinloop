@@ -5,7 +5,7 @@ import { IconButton } from '@/shared/components/IconButton'
 import { Button } from '@/shared/components/ui/Button'
 
 interface BarcodeScannerProps {
-  onScan: (code: string) => void
+  onScan: (code: string) => Promise<boolean> | boolean
   onClose: () => void
 }
 
@@ -31,6 +31,27 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
   const [isScanningFile, setIsScanningFile] = useState(false)
   const [photoScanError, setPhotoScanError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [lookupError, setLookupError] = useState<string | null>(null)
+
+  const canLookupCode = useCallback((value: string) => {
+    const trimmed = value.trim()
+    const digits = trimmed.replace(/\D/g, '')
+    const hyphenatedNdc = /^\d{4,5}-\d{3,4}-\d{1,2}$/.test(trimmed.replace(/\s/g, ''))
+    return digits.length >= 10 || hyphenatedNdc
+  }, [])
+
+  const submitScan = useCallback(async (rawCode: string) => {
+    const code = rawCode.trim()
+    if (!canLookupCode(code)) return false
+    const ok = await Promise.resolve(onScan(code))
+    if (!ok) {
+      hasScannedRef.current = false
+      setScannedCode(null)
+      setLookupError('Could not match this barcode. Try again or enter it manually.')
+      return false
+    }
+    return true
+  }, [canLookupCode, onScan])
 
   const stopScanner = useCallback(async () => {
     try {
@@ -85,8 +106,10 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
               hasScannedRef.current = true
               if (navigator.vibrate) navigator.vibrate(200)
               setScannedCode(decodedText)
+              setLookupError(null)
               setTimeout(() => {
-                if (mounted) onScan(decodedText)
+                if (!mounted) return
+                void submitScan(decodedText)
               }, 600)
             }
           },
@@ -137,7 +160,7 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
       clearTimeout(timer)
       stopScanner()
     }
-  }, [onScan, stopScanner])
+  }, [stopScanner, submitScan])
 
   const handleClose = async () => {
     await stopScanner()
@@ -146,11 +169,11 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
 
   const handleManualSubmit = (value?: string) => {
     const code = (value ?? manualCode).trim()
-    const digitCount = code.replace(/\D/g, '').length
-    if (code.length >= 6 && digitCount >= 4) {
+    if (canLookupCode(code)) {
       hasScannedRef.current = true
       setScannedCode(code)
-      onScan(code)
+      setLookupError(null)
+      void submitScan(code)
     }
   }
 
@@ -160,9 +183,10 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
     if (!file || !file.type.startsWith('image/')) return
     setIsScanningFile(true)
     setPhotoScanError(null)
+    setLookupError(null)
+    let fileScanner: Html5Qrcode | null = null
     try {
-      await scannerRef.current?.stop().catch(() => {})
-      const fileScanner = new Html5Qrcode('barcode-file-scanner', {
+      fileScanner = new Html5Qrcode('barcode-file-scanner', {
         formatsToSupport: SUPPORTED_FORMATS,
         verbose: false,
       })
@@ -175,12 +199,18 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
         hasScannedRef.current = true
         if (navigator.vibrate) navigator.vibrate(200)
         setScannedCode(decoded)
-        onScan(decoded)
+        setLookupError(null)
+        await submitScan(decoded)
       }
     } catch (err) {
       console.warn('Photo scan failed:', err)
       setPhotoScanError('Could not read barcode from photo. Try manual entry below.')
     } finally {
+      try {
+        fileScanner?.clear()
+      } catch {
+        // no-op
+      }
       setIsScanningFile(false)
     }
   }
@@ -295,6 +325,11 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
                 {photoScanError}
               </p>
             )}
+            {lookupError && (
+              <p className="text-amber-400 text-sm text-center" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
+                {lookupError}
+              </p>
+            )}
           </div>
         )}
 
@@ -314,11 +349,11 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
                   if (e.key !== 'Enter') return
                   e.preventDefault()
                   const value = (e.currentTarget as HTMLInputElement).value?.trim() || ''
-                  const digits = value.replace(/\D/g, '')
-                  if (value.length >= 6 && digits.length >= 4) {
+                  if (canLookupCode(value)) {
                     hasScannedRef.current = true
                     setScannedCode(value)
-                    onScan(value)
+                    setLookupError(null)
+                    void submitScan(value)
                   }
                 }}
                 placeholder="Type the numbers below the barcode"
@@ -327,7 +362,7 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
               <button
                 type="button"
                 onClick={() => handleManualSubmit()}
-                disabled={manualCode.trim().length < 6 || manualCode.replace(/\D/g, '').length < 4}
+                disabled={!canLookupCode(manualCode)}
                 className="px-5 py-3 bg-[#00E0FF] text-black font-bold rounded-lg text-base disabled:opacity-40 shrink-0"
               >
                 Look up

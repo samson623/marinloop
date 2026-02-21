@@ -162,6 +162,12 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
   const scannerInputRef = useRef<HTMLInputElement>(null)
   const barcodeInputRef = useRef<HTMLInputElement>(null)
   const scannerRapidTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const canLookupCode = (value: string) => {
+    const trimmed = value.trim()
+    const digits = trimmed.replace(/\D/g, '')
+    const hyphenatedNdc = /^\d{4,5}-\d{3,4}-\d{1,2}$/.test(trimmed.replace(/\s/g, ''))
+    return digits.length >= 10 || hyphenatedNdc
+  }
 
   useEffect(() => {
     if (showScanner) return
@@ -183,10 +189,9 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
   const flushScannerInput = (el: HTMLInputElement | null) => {
     if (!el) return
     const raw = el.value?.trim() || ''
-    const digits = raw.replace(/\D/g, '')
-    if (digits.length >= 10) {
+    if (canLookupCode(raw)) {
       el.value = ''
-      handleScan(raw)
+      void handleScan(raw)
     }
   }
 
@@ -194,11 +199,10 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
     if (e.key === 'Enter') {
       const el = e.currentTarget as HTMLInputElement
       const raw = el.value?.trim() || ''
-      const digits = raw.replace(/\D/g, '')
-      if (digits.length >= 10) {
+      if (canLookupCode(raw)) {
         e.preventDefault()
         el.value = ''
-        handleScan(raw)
+        void handleScan(raw)
       }
       if (scannerRapidTimeoutRef.current) {
         clearTimeout(scannerRapidTimeoutRef.current)
@@ -212,8 +216,7 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
     const el = e.currentTarget
     if (scannerRapidTimeoutRef.current) clearTimeout(scannerRapidTimeoutRef.current)
     const raw = el.value?.trim() || ''
-    const digits = raw.replace(/\D/g, '')
-    if (digits.length >= 10) {
+    if (canLookupCode(raw)) {
       scannerRapidTimeoutRef.current = setTimeout(() => {
         scannerRapidTimeoutRef.current = null
         flushScannerInput(el)
@@ -232,34 +235,48 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
     if (initialDraft.warn) setWarn(initialDraft.warn)
   }, [initialDraft])
 
-  const handleBarcodeLookup = () => {
+  const handleBarcodeLookup = async () => {
     const code = barcodeInputValue.trim()
-    const digitCount = code.replace(/\D/g, '').length
-    if (code.length >= 6 && digitCount >= 4) {
-      setShowBarcodeInput(false)
-      setBarcodeInputValue('')
-      handleScan(code)
+    if (canLookupCode(code)) {
+      const ok = await handleScan(code)
+      if (ok) {
+        setShowBarcodeInput(false)
+        setBarcodeInputValue('')
+      }
     }
   }
 
-  const handleScan = async (code: string) => {
-    setShowScanner(false)
+  const handleScan = async (code: string): Promise<boolean> => {
+    const normalizedCode = code.trim()
+    if (!canLookupCode(normalizedCode)) {
+      toast('Barcode must include at least 10 digits.', 'tw')
+      return false
+    }
+
     setIsLooking(true)
     toast('Barcode detected! Looking up medication...', 'ts')
 
     try {
-      const result = await lookupByBarcode(code)
-      if (result) {
-        if (result.name) setName(result.name)
-        if (result.dosage) setDose(result.dosage)
-        if (result.instructions) setInst(result.instructions)
-        if (result.warnings) setWarn(result.warnings)
-        toast('Medication info loaded ✓', 'ts')
+      const result = await lookupByBarcode(normalizedCode)
+      const hasUsefulData = Boolean(
+        result &&
+        (result.name?.trim() || result.dosage?.trim() || result.instructions?.trim() || result.warnings?.trim())
+      )
+      if (hasUsefulData && result) {
+        if (result.name?.trim()) setName(result.name)
+        if (result.dosage?.trim()) setDose(result.dosage)
+        if (result.instructions?.trim()) setInst(result.instructions)
+        if (result.warnings?.trim()) setWarn(result.warnings)
+        setShowScanner(false)
+        toast('Medication info loaded', 'ts')
+        return true
       } else {
         toast("We couldn't find that in our database. Type the medication name below.", 'tw')
+        return false
       }
     } catch {
       toast('Lookup failed. Please enter details manually.', 'te')
+      return false
     } finally {
       setIsLooking(false)
     }
@@ -360,7 +377,7 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault()
-                  handleBarcodeLookup()
+                  void handleBarcodeLookup()
                 }
                 if (e.key === 'Escape') setShowBarcodeInput(false)
               }}
@@ -371,8 +388,8 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
               type="button"
               variant="primary"
               size="md"
-              onClick={handleBarcodeLookup}
-              disabled={barcodeInputValue.trim().length < 6 || barcodeInputValue.replace(/\D/g, '').length < 4}
+              onClick={() => { void handleBarcodeLookup() }}
+              disabled={!canLookupCode(barcodeInputValue)}
             >
               Look up
             </Button>

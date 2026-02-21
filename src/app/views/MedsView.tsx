@@ -7,6 +7,8 @@ import { useRefills } from '@/shared/hooks/useRefillsList'
 import { BarcodeScanner } from '@/shared/components/BarcodeScanner'
 import { Modal } from '@/shared/components/Modal'
 import { lookupByBarcode } from '@/shared/services/openfda'
+import { extractFromImage } from '@/shared/services/label-extract'
+import { handleMutationError } from '@/shared/lib/errors'
 import { Button, Input } from '@/shared/components/ui'
 
 type AddMedModalProps = {
@@ -159,7 +161,10 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
   const [showBarcodeInput, setShowBarcodeInput] = useState(false)
   const [barcodeInputValue, setBarcodeInputValue] = useState('')
   const [isLooking, setIsLooking] = useState(false)
+  const [showVerifyModal, setShowVerifyModal] = useState(false)
+  const [pendingExtract, setPendingExtract] = useState<{ name?: string; dosage?: string; freq?: number; time?: string; quantity?: number; instructions?: string; warnings?: string; confidence?: number } | null>(null)
   const scannerInputRef = useRef<HTMLInputElement>(null)
+  const labelPhotoInputRef = useRef<HTMLInputElement>(null)
   const barcodeInputRef = useRef<HTMLInputElement>(null)
   const scannerRapidTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const canLookupCode = (value: string) => {
@@ -244,6 +249,62 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
         setBarcodeInputValue('')
       }
     }
+  }
+
+  const applyExtractToForm = (r: { name?: string; dosage?: string; freq?: number; time?: string; quantity?: number; instructions?: string; warnings?: string }) => {
+    if (r.name?.trim()) setName(r.name)
+    if (r.dosage?.trim()) setDose(r.dosage)
+    if (typeof r.freq === 'number' && [1, 2, 3].includes(r.freq)) setFreq(String(r.freq))
+    if (r.time?.trim()) setTime(r.time)
+    if (typeof r.quantity === 'number') setSup(String(r.quantity))
+    if (r.instructions?.trim()) setInst(r.instructions)
+    if (r.warnings?.trim()) setWarn(r.warnings)
+  }
+
+  const handleLabelPhoto = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast('Please select an image file.', 'tw')
+      return
+    }
+    setIsLooking(true)
+    toast('Reading label...', 'ts')
+    try {
+      const result = await extractFromImage(file)
+      const conf = result.confidence ?? 0.5
+      const hasUsefulData = Boolean(
+        result.name?.trim() || result.dosage?.trim() || result.instructions?.trim() || result.warnings?.trim()
+      )
+      if (!hasUsefulData) {
+        toast("Couldn't read enough from the label. Please enter manually.", 'tw')
+        return
+      }
+      if (conf < 0.6) {
+        setPendingExtract(result)
+        setShowVerifyModal(true)
+      } else {
+        applyExtractToForm(result)
+        toast('Label info loaded. Please verify before saving.', 'ts')
+      }
+    } catch (e) {
+      handleMutationError(e, 'label-extract', "Couldn't read the label. Please enter manually.", toast)
+    } finally {
+      setIsLooking(false)
+    }
+  }
+
+  const handleVerifyConfirm = () => {
+    if (pendingExtract) {
+      applyExtractToForm(pendingExtract)
+      toast('Label info loaded. Please verify before saving.', 'ts')
+    }
+    setShowVerifyModal(false)
+    setPendingExtract(null)
+  }
+
+  const handleVerifyEdit = () => {
+    setShowVerifyModal(false)
+    setPendingExtract(null)
+    toast("Please enter details manually below.", 'tw')
   }
 
   const handleScan = async (code: string): Promise<boolean> => {
@@ -361,7 +422,7 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
             type="button"
             onClick={() => setShowBarcodeInput(true)}
             disabled={isLooking}
-            className="w-full py-3 px-6 mb-5 rounded-2xl font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border-primary)] hover:bg-[var(--color-bg-secondary)] cursor-pointer disabled:opacity-60 [font-size:var(--text-body)]"
+            className="w-full py-3 px-6 mb-2 rounded-2xl font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border-primary)] hover:bg-[var(--color-bg-secondary)] cursor-pointer disabled:opacity-60 [font-size:var(--text-body)]"
           >
             I have the barcode number
           </button>
@@ -397,6 +458,54 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
               Cancel
             </Button>
           </div>
+        )}
+
+        {!isDemo && (
+          <>
+            <input
+              ref={labelPhotoInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              aria-label="Take photo of prescription label"
+              className="absolute opacity-0 w-0 h-0 -left-[9999px] pointer-events-none"
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) {
+                  void handleLabelPhoto(f)
+                  e.target.value = ''
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => labelPhotoInputRef.current?.click()}
+              disabled={isLooking}
+              aria-label="Take photo of prescription label"
+              aria-busy={isLooking}
+              aria-live="polite"
+              className="w-full py-3 px-6 mb-5 rounded-2xl font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border-primary)] hover:bg-[var(--color-bg-secondary)] cursor-pointer disabled:opacity-60 flex items-center justify-center gap-3 [font-size:var(--text-body)]"
+            >
+          {isLooking ? (
+            <>
+              <div className="w-5 h-5 border-2 border-[var(--color-border-primary)] border-t-2 border-t-[var(--color-accent)] rounded-full spin-loading shrink-0" />
+              <span>Reading label...</span>
+            </>
+          ) : (
+            <>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden>
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+              <span>Take photo of label</span>
+            </>
+          )}
+        </button>
+            <p className="text-[var(--color-text-tertiary)] text-xs mb-4 -mt-2 px-1">
+              Extracted info is for convenience only. Always verify against your label and follow your healthcare provider&apos;s instructions.
+            </p>
+          </>
         )}
 
         <div className="flex items-center gap-3 mb-4">
@@ -446,6 +555,31 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
           onScan={handleScan}
           onClose={() => setShowScanner(false)}
         />
+      )}
+
+      {showVerifyModal && pendingExtract && (
+        <Modal open onOpenChange={(o) => !o && handleVerifyEdit()} title="Verify extracted details" variant="center">
+          <p className="text-[var(--color-text-secondary)] mb-4 [font-size:var(--text-body)]">
+            Please verify these details against your label.
+          </p>
+          <div className="bg-[var(--color-bg-secondary)] rounded-xl p-4 mb-4 space-y-2 text-sm" role="region" aria-label="Extracted medication summary">
+            {pendingExtract.name && <p><strong>Name:</strong> {pendingExtract.name}</p>}
+            {pendingExtract.dosage && <p><strong>Dosage:</strong> {pendingExtract.dosage}</p>}
+            {pendingExtract.freq != null && <p><strong>Frequency:</strong> {pendingExtract.freq}x daily</p>}
+            {pendingExtract.time && <p><strong>Time:</strong> {pendingExtract.time}</p>}
+            {pendingExtract.quantity != null && <p><strong>Quantity:</strong> {pendingExtract.quantity}</p>}
+            {pendingExtract.instructions && <p><strong>Instructions:</strong> {pendingExtract.instructions}</p>}
+            {pendingExtract.warnings && <p><strong>Warnings:</strong> {pendingExtract.warnings}</p>}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="primary" size="md" onClick={handleVerifyConfirm}>
+              Confirm
+            </Button>
+            <Button variant="ghost" size="md" onClick={handleVerifyEdit}>
+              Edit manually
+            </Button>
+          </div>
+        </Modal>
       )}
     </>
   )

@@ -80,6 +80,7 @@ supabase secrets set VAPID_SUBJECT=mailto:your-email@example.com
 ```bash
 supabase functions deploy openai-chat
 supabase functions deploy send-push
+supabase functions deploy extract-label
 ```
 
 ### 6. Apply migrations
@@ -87,7 +88,7 @@ supabase functions deploy send-push
 **Dashboard (no CLI):** Supabase Dashboard → SQL Editor. Run in order:
 
 1. `supabase/schema.sql` (base schema)
-2. `supabase/run-migrations.sql` (001, 002, 003, 004, 005)
+2. `supabase/run-migrations.sql` (001–005)
 
 **CLI:** `supabase db push` (if Supabase CLI is installed and linked)
 
@@ -117,6 +118,7 @@ Deploy the Edge Functions after setting their prerequisites:
 | Function | Deploy Command | Prerequisites |
 |----------|----------------|---------------|
 | `openai-chat` | `supabase functions deploy openai-chat` | `OPENAI_API_KEY` + `ALLOWED_ORIGINS` (see below) |
+| `extract-label` | `supabase functions deploy extract-label` | Same as `openai-chat`; shares `AI_DAILY_LIMIT` |
 | `send-push` | `supabase functions deploy send-push` | VAPID keys in Supabase (see Push Notifications Setup) |
 
 **Prerequisites for `openai-chat`:**
@@ -129,11 +131,14 @@ In production, `ALLOWED_ORIGINS` must be set (comma-separated). If unset, the fu
 
 **Prerequisite for `send-push`:** Configure VAPID keys in Supabase secrets (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`). See [Push Notifications Setup](#push-notifications-setup) below.
 
-**Deploy both:**
+**Deploy all:**
 ```bash
 supabase functions deploy openai-chat
+supabase functions deploy extract-label
 supabase functions deploy send-push
 ```
+
+**Prerequisites for `extract-label`:** Reuses `OPENAI_API_KEY` and `ALLOWED_ORIGINS` from `openai-chat`. Counts against the same `AI_DAILY_LIMIT` as chat (no separate quota). Max image size 6MB base64.
 
 ### Finish deployment after setting ALLOWED_ORIGINS (one-time)
 
@@ -256,6 +261,7 @@ If the app works in production (Vercel) but fails when running locally (`npm run
 | appointments, notes, refills, notifications | Supporting data |
 | push_subscriptions | Web Push notifications |
 | ai_conversations | GPT chat history |
+| ai_daily_usage | Per-user rate limit (AI chat and label extraction) |
 
 ---
 

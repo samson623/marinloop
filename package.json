@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "preview": "vite preview",
     "generate-icons": "node scripts/generate-icons.mjs",
-    "deploy:openai-chat": "npx supabase functions deploy openai-chat --project-ref lcbdafnxwvqbziootvmi"
+    "deploy:openai-chat": "npx supabase functions deploy openai-chat --project-ref lcbdafnxwvqbziootvmi",
+    "deploy:extract-label": "npx supabase functions deploy extract-label --project-ref lcbdafnxwvqbziootvmi"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

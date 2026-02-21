@@ -144,10 +144,10 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
     onClose()
   }
 
-  const handleManualSubmit = () => {
-    const code = manualCode.trim()
+  const handleManualSubmit = (value?: string) => {
+    const code = (value ?? manualCode).trim()
     const digitCount = code.replace(/\D/g, '').length
-    if (code.length >= 8 && digitCount >= 6) {
+    if (code.length >= 6 && digitCount >= 4) {
       hasScannedRef.current = true
       setScannedCode(code)
       onScan(code)
@@ -161,12 +161,17 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
     setIsScanningFile(true)
     setPhotoScanError(null)
     try {
+      await scannerRef.current?.stop().catch(() => {})
       const fileScanner = new Html5Qrcode('barcode-file-scanner', {
         formatsToSupport: SUPPORTED_FORMATS,
         verbose: false,
       })
       const decoded = await fileScanner.scanFile(file, false)
-      if (decoded && !hasScannedRef.current) {
+      if (!decoded || !decoded.trim()) {
+        setPhotoScanError('Could not read barcode from photo. Try manual entry below.')
+        return
+      }
+      if (!hasScannedRef.current) {
         hasScannedRef.current = true
         if (navigator.vibrate) navigator.vibrate(200)
         setScannedCode(decoded)
@@ -305,14 +310,24 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
                 autoComplete="off"
                 value={manualCode}
                 onChange={(e) => setManualCode(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleManualSubmit()}
+                onKeyDown={(e) => {
+                  if (e.key !== 'Enter') return
+                  e.preventDefault()
+                  const value = (e.currentTarget as HTMLInputElement).value?.trim() || ''
+                  const digits = value.replace(/\D/g, '')
+                  if (value.length >= 6 && digits.length >= 4) {
+                    hasScannedRef.current = true
+                    setScannedCode(value)
+                    onScan(value)
+                  }
+                }}
                 placeholder="Type the numbers below the barcode"
                 className="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder:text-white/40 text-base font-mono focus:outline-none focus:ring-2 focus:ring-[#00E0FF] min-w-0"
               />
               <button
                 type="button"
-                onClick={handleManualSubmit}
-                disabled={manualCode.trim().length < 8 || manualCode.replace(/\D/g, '').length < 6}
+                onClick={() => handleManualSubmit()}
+                disabled={manualCode.trim().length < 6 || manualCode.replace(/\D/g, '').length < 4}
                 className="px-5 py-3 bg-[#00E0FF] text-black font-bold rounded-lg text-base disabled:opacity-40 shrink-0"
               >
                 Look up

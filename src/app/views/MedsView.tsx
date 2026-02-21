@@ -156,14 +156,21 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
   const [inst, setInst] = useState('')
   const [warn, setWarn] = useState('')
   const [showScanner, setShowScanner] = useState(false)
+  const [showBarcodeInput, setShowBarcodeInput] = useState(false)
+  const [barcodeInputValue, setBarcodeInputValue] = useState('')
   const [isLooking, setIsLooking] = useState(false)
   const scannerInputRef = useRef<HTMLInputElement>(null)
+  const barcodeInputRef = useRef<HTMLInputElement>(null)
   const scannerRapidTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (showScanner) return
-    scannerInputRef.current?.focus()
-  }, [showScanner])
+    if (showBarcodeInput) {
+      barcodeInputRef.current?.focus()
+    } else {
+      scannerInputRef.current?.focus()
+    }
+  }, [showScanner, showBarcodeInput])
 
   useEffect(() => {
     return () => {
@@ -224,6 +231,16 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
     if (initialDraft.inst) setInst(initialDraft.inst)
     if (initialDraft.warn) setWarn(initialDraft.warn)
   }, [initialDraft])
+
+  const handleBarcodeLookup = () => {
+    const code = barcodeInputValue.trim()
+    const digitCount = code.replace(/\D/g, '').length
+    if (code.length >= 6 && digitCount >= 4) {
+      setShowBarcodeInput(false)
+      setBarcodeInputValue('')
+      handleScan(code)
+    }
+  }
 
   const handleScan = async (code: string) => {
     setShowScanner(false)
@@ -304,7 +321,7 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
           type="button"
           onClick={() => setShowScanner(true)}
           disabled={isLooking}
-          className="tap-spring w-full max-w-full py-4 px-6 mb-5 bg-[var(--color-accent-bg)] border-2 border-[var(--color-green-border)] rounded-2xl font-bold text-[var(--color-accent)] cursor-pointer flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-wait outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] min-h-[52px] [font-size:var(--text-body)]"
+          className="tap-spring w-full max-w-full py-4 px-6 mb-3 bg-[var(--color-accent-bg)] border-2 border-[var(--color-green-border)] rounded-2xl font-bold text-[var(--color-accent)] cursor-pointer flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-wait outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] min-h-[52px] [font-size:var(--text-body)]"
         >
           {isLooking ? (
             <>
@@ -321,6 +338,49 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
             </>
           )}
         </button>
+
+        {!showBarcodeInput ? (
+          <button
+            type="button"
+            onClick={() => setShowBarcodeInput(true)}
+            disabled={isLooking}
+            className="w-full py-3 px-6 mb-5 rounded-2xl font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border-primary)] hover:bg-[var(--color-bg-secondary)] cursor-pointer disabled:opacity-60 [font-size:var(--text-body)]"
+          >
+            I have the barcode number
+          </button>
+        ) : (
+          <div className="mb-5 flex gap-2">
+            <Input
+              ref={barcodeInputRef}
+              type="text"
+              inputMode="text"
+              autoComplete="off"
+              value={barcodeInputValue}
+              onChange={(e) => setBarcodeInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  handleBarcodeLookup()
+                }
+                if (e.key === 'Escape') setShowBarcodeInput(false)
+              }}
+              placeholder="e.g. B580-142436-1431"
+              className="flex-1 font-mono"
+            />
+            <Button
+              type="button"
+              variant="primary"
+              size="md"
+              onClick={handleBarcodeLookup}
+              disabled={barcodeInputValue.trim().length < 6 || barcodeInputValue.replace(/\D/g, '').length < 4}
+            >
+              Look up
+            </Button>
+            <Button type="button" variant="ghost" size="md" onClick={() => { setShowBarcodeInput(false); setBarcodeInputValue('') }}>
+              Cancel
+            </Button>
+          </div>
+        )}
 
         <div className="flex items-center gap-3 mb-4">
           <div className="flex-1 h-px bg-[var(--color-border-primary)]" />

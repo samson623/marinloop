@@ -255,9 +255,9 @@ serve(async (req) => {
       ? `Extract and MERGE medication information from these ${imageCount} prescription label photos (different sides of the same bottle). Return only valid JSON.`
       : 'Extract medication information from this prescription label. Return only valid JSON.'
 
-    const userContent: Array<{ type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }> = [
+    const userContent: Array<{ type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string; detail: string } }> = [
       { type: 'text', text: textInstruction },
-      ...imageList.map((img) => ({ type: 'image_url' as const, image_url: { url: img } })),
+      ...imageList.map((img) => ({ type: 'image_url' as const, image_url: { url: img, detail: 'low' } })),
     ]
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {

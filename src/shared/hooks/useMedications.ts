@@ -64,6 +64,7 @@ export function useMedications() {
     error,
     addMed: createMutation.mutate,
     addMedBundle: createBundleMutation.mutate,
+    addMedBundleAsync: createBundleMutation.mutateAsync,
     updateMed: updateMutation.mutate,
     deleteMed: deleteMutation.mutate,
     isAdding: createMutation.isPending || createBundleMutation.isPending,

@@ -2,6 +2,8 @@
 import { supabase } from '@/shared/lib/supabase'
 import { isDemoApp } from '@/shared/lib/env'
 
+const EXTRACT_TIMEOUT_MS = 45_000 // 45s max for label extraction
+
 export interface LabelExtractResult {
   name?: string
   dosage?: string
@@ -50,9 +52,16 @@ export async function extractFromImages(files: File[]): Promise<LabelExtractResu
 
   const images = await Promise.all(files.map(fileToBase64))
 
-  const { data, error } = await supabase.functions.invoke<LabelExtractResult>('extract-label', {
+  // Race between the actual call and a timeout
+  const invokePromise = supabase.functions.invoke<LabelExtractResult>('extract-label', {
     body: { images },
   })
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error('Request timed out. Please try again or enter details manually.')), EXTRACT_TIMEOUT_MS)
+  })
+
+  const { data, error } = await Promise.race([invokePromise, timeoutPromise])
 
   if (error) {
     let msg = ''

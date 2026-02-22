@@ -4,6 +4,17 @@ import type { MedicationBundleCreateInput, MedicationCreateInput, MedicationUpda
 
 type Medication = Database['public']['Tables']['medications']['Row']
 
+const RPC_TIMEOUT_MS = 30_000 // 30s max for RPC calls
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out. Please check your connection and try again.`)), ms)
+    ),
+  ])
+}
+
 export const MedsService = {
   async getAll(): Promise<Medication[]> {
     const { data, error } = await supabase
@@ -30,7 +41,7 @@ export const MedsService = {
     const scheduleTimes = input.schedules.map((s) => s.time)
     const scheduleDays = input.schedules[0]?.days ?? [0, 1, 2, 3, 4, 5, 6]
 
-    const { data, error } = await supabase.rpc('create_medication_bundle', {
+    const rpcPromise = Promise.resolve(supabase.rpc('create_medication_bundle', {
       medication_name: input.medication.name,
       medication_dosage: input.medication.dosage ?? null,
       medication_instructions: input.medication.instructions ?? null,
@@ -44,7 +55,9 @@ export const MedsService = {
       refill_total_quantity: input.refill.total_quantity ?? 30,
       refill_date: input.refill.refill_date ?? null,
       refill_pharmacy: input.refill.pharmacy ?? null,
-    })
+    }))
+
+    const { data, error } = await withTimeout(rpcPromise, RPC_TIMEOUT_MS, 'Adding medication')
 
     if (error) throw error
     return data

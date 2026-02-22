@@ -2,7 +2,9 @@
 import { supabase } from '@/shared/lib/supabase'
 import { isDemoApp } from '@/shared/lib/env'
 
-const EXTRACT_TIMEOUT_MS = 45_000 // 45s max for label extraction
+const EXTRACT_TIMEOUT_MS = 60_000 // 60s max for label extraction
+const MAX_IMAGE_DIMENSION = 1024  // px — more than enough for OCR
+const JPEG_QUALITY = 0.80
 
 export interface LabelExtractResult {
   name?: string
@@ -15,17 +17,41 @@ export interface LabelExtractResult {
   confidence?: number
 }
 
-function fileToBase64(file: File): Promise<string> {
+/**
+ * Load a File into an HTMLImageElement.
+ */
+function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = reader.result
-      if (typeof result === 'string') resolve(result)
-      else reject(new Error('Failed to read file as base64'))
-    }
-    reader.onerror = () => reject(reader.error)
-    reader.readAsDataURL(file)
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img) }
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not load image')) }
+    img.src = url
   })
+}
+
+/**
+ * Compress and resize an image to JPEG at max 1024px, returning a data URL.
+ * Phone photos (3-8MB) become ~50-200KB — dramatically faster to upload and process.
+ */
+async function compressImage(file: File): Promise<string> {
+  const img = await loadImage(file)
+
+  let { width, height } = img
+  if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+    const scale = MAX_IMAGE_DIMENSION / Math.max(width, height)
+    width = Math.round(width * scale)
+    height = Math.round(height * scale)
+  }
+
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Canvas not supported')
+  ctx.drawImage(img, 0, 0, width, height)
+
+  return canvas.toDataURL('image/jpeg', JPEG_QUALITY)
 }
 
 function mapApiError(msg: string): string {
@@ -40,7 +66,7 @@ function mapApiError(msg: string): string {
 
 /**
  * Extract medication info from one or more prescription label photos.
- * Sends all images to the extract-label Edge Function for merged extraction.
+ * Images are compressed client-side before sending to the Edge Function.
  */
 export async function extractFromImages(files: File[]): Promise<LabelExtractResult> {
   if (isDemoApp) {
@@ -50,7 +76,8 @@ export async function extractFromImages(files: File[]): Promise<LabelExtractResu
     throw new Error('At least one image is required.')
   }
 
-  const images = await Promise.all(files.map(fileToBase64))
+  // Compress images before sending (phone photos 5MB → ~100KB each)
+  const images = await Promise.all(files.map(compressImage))
 
   // Race between the actual call and a timeout
   const invokePromise = supabase.functions.invoke<LabelExtractResult>('extract-label', {

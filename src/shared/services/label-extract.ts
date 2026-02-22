@@ -1,8 +1,4 @@
-import {
-  FunctionsHttpError,
-  FunctionsRelayError,
-  FunctionsFetchError,
-} from '@supabase/supabase-js'
+
 import { supabase } from '@/shared/lib/supabase'
 import { isDemoApp } from '@/shared/lib/env'
 
@@ -57,16 +53,22 @@ export async function extractFromImage(file: File): Promise<LabelExtractResult> 
 
   if (error) {
     let msg = ''
-    if (error instanceof FunctionsHttpError) {
+    if (error.name === 'FunctionsHttpError') {
       try {
-        const errBody = (await error.context.json()) as { error?: string } | null
-        msg = errBody?.error ?? ''
+        const errObj = error as Record<string, unknown>
+        if (typeof errObj.context === 'object' && errObj.context !== null) {
+          const ctx = errObj.context as Record<string, unknown>
+          if (typeof ctx.json === 'function') {
+            const errBody = (await ctx.json()) as { error?: string } | null
+            msg = errBody?.error ?? ''
+          }
+        }
       } catch {
         msg = ''
       }
-    } else if (error instanceof FunctionsRelayError) {
+    } else if (error.name === 'FunctionsRelayError') {
       msg = 'Network error. Please check your connection and try again.'
-    } else if (error instanceof FunctionsFetchError) {
+    } else if (error.name === 'FunctionsFetchError') {
       msg = 'Could not reach the server. Check your connection and try again. If the problem continues, the app administrator may need to add this site to allowed origins.'
     }
     throw new Error(mapApiError(msg || error.message || ''))

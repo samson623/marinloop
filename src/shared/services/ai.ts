@@ -26,7 +26,25 @@ export const AIService = {
       body: { messages },
     })
 
-    if (error) throw error
+    if (error) {
+      if (error.name === 'FunctionsHttpError') {
+        const errObj = error as Record<string, unknown>
+        if (typeof errObj.context === 'object' && errObj.context !== null) {
+          const ctx = errObj.context as Record<string, unknown>
+          if (typeof ctx.json === 'function') {
+            try {
+              const body = await ctx.json() as { error?: string } | null
+              if (body && body.error) {
+                throw new Error(body.error)
+              }
+            } catch {
+              // ignore
+            }
+          }
+        }
+      }
+      throw error
+    }
     const resp = data as ChatResponse & { error?: string }
     if (resp?.error) throw new Error(resp.error)
     if (!resp?.choices?.[0]?.message?.content) {

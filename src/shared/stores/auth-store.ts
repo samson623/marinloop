@@ -1,4 +1,4 @@
-      import { create } from 'zustand'
+import { create } from 'zustand'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '@/shared/lib/supabase'
 import { env } from '@/shared/lib/env'
@@ -8,6 +8,7 @@ type Profile = {
   email: string
   name: string | null
   avatar_url: string | null
+  timezone: string
   plan: 'free' | 'pro' | 'family'
 }
 
@@ -49,6 +50,7 @@ const DEMO_PROFILE: Profile = {
   email: 'demo@medflow.app',
   name: 'Demo User',
   avatar_url: null,
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   plan: 'free',
 }
 
@@ -57,7 +59,7 @@ let authSubscription: AuthSubscription | null = null
 async function fetchProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, name, avatar_url, plan')
+    .select('id, email, name, avatar_url, timezone, plan')
     .eq('id', userId)
     .single()
 
@@ -108,6 +110,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       try {
         const profile = await fetchProfile(nextSession.user.id)
         set({ session: nextSession, user: nextSession.user, profile, isDemo: false, isLoading: false })
+
+        // Silently sync IANA timezone to the database so the cron dispatcher fires at the right wall-clock time
+        const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone
+        if (browserTz && (!profile?.timezone || profile.timezone !== browserTz)) {
+          supabase.from('profiles').update({ timezone: browserTz }).eq('id', nextSession.user.id).then(() => { })
+        }
       } catch (err) {
         console.warn('[Auth] failed to fetch profile:', err)
         set({ session: nextSession, user: nextSession.user, profile: null, isDemo: false, isLoading: false })

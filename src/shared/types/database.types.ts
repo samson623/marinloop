@@ -20,6 +20,7 @@ export interface Database {
           email: string
           name: string | null
           avatar_url: string | null
+          timezone: string
           plan: Database['public']['Enums']['plan_type']
           created_at: string
           updated_at: string
@@ -29,6 +30,7 @@ export interface Database {
           email: string
           name?: string | null
           avatar_url?: string | null
+          timezone?: string
           plan?: Database['public']['Enums']['plan_type']
           created_at?: string
           updated_at?: string
@@ -37,6 +39,7 @@ export interface Database {
           email?: string
           name?: string | null
           avatar_url?: string | null
+          timezone?: string
           plan?: Database['public']['Enums']['plan_type']
           updated_at?: string
         }

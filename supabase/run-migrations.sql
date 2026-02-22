@@ -138,3 +138,134 @@ AS $$
     RETURNING request_count
   ) sub;
 $$;
+
+-- 006: Add timezone to profiles so push notifications fire in the patient's local time.
+alter table public.profiles
+  add column if not exists timezone text not null default 'America/Chicago';
+
+comment on column public.profiles.timezone is 'IANA timezone (e.g. America/Chicago). Used by the push notification cron dispatcher to convert schedule HH:MM into real-world wall-clock time.';
+
+-- 007: Deduplication log for push notification dispatches.
+create table if not exists public.notification_dispatch_log (
+  schedule_id   uuid not null references public.schedules(id) on delete cascade,
+  minute_bucket timestamptz not null,
+  created_at    timestamptz not null default timezone('utc', now()),
+  primary key (schedule_id, minute_bucket)
+);
+
+create index if not exists idx_dispatch_log_created_at
+  on public.notification_dispatch_log(created_at);
+
+comment on table public.notification_dispatch_log is 'Ensures each schedule fires at most once per minute. The cron job inserts with ON CONFLICT DO NOTHING; if 0 rows inserted, the notification was already dispatched.';
+
+-- 008: MedFlow Push Notification Cron Dispatcher
+create extension if not exists pg_cron;
+create extension if not exists pg_net;
+create extension if not exists supabase_vault;
+
+create or replace function public.dispatch_due_notifications()
+returns void
+language plpgsql
+security definer
+set search_path = public, extensions, net
+as $$
+declare
+  rec record;
+  supabase_url text;
+  service_role_key text;
+  now_utc timestamptz := now();
+  minute_trunc timestamptz := date_trunc('minute', now_utc);
+  inserted_count int;
+begin
+  -- Read configuration from Supabase vault / env
+  supabase_url := current_setting('app.settings.supabase_url', true);
+  service_role_key := current_setting('app.settings.service_role_key', true);
+
+  -- Fallback: read from supabase_functions.env if app.settings not configured
+  if supabase_url is null or supabase_url = '' then
+    select decrypted_secret into supabase_url
+      from vault.decrypted_secrets
+      where name = 'supabase_url'
+      limit 1;
+  end if;
+
+  if service_role_key is null or service_role_key = '' then
+    select decrypted_secret into service_role_key
+      from vault.decrypted_secrets
+      where name = 'service_role_key'
+      limit 1;
+  end if;
+
+  -- If we still don't have config, abort silently (avoids error spam in logs)
+  if supabase_url is null or service_role_key is null then
+    raise warning '[MedFlow Cron] Missing supabase_url or service_role_key — skipping dispatch';
+    return;
+  end if;
+
+  -- Find all due schedules
+  for rec in
+    select
+      s.id         as schedule_id,
+      s.user_id    as user_id,
+      m.name       as medication_name,
+      m.dosage     as medication_dosage,
+      s.time       as schedule_time
+    from public.schedules s
+    join public.profiles p     on p.id = s.user_id
+    join public.medications m  on m.id = s.medication_id
+    where s.active = true
+      -- Time match: current HH:MM in the user's timezone = schedule time
+      and to_char(now_utc at time zone p.timezone, 'HH24:MI') = s.time
+      -- Day-of-week match: current day in user's timezone is in the schedule's days array
+      and extract(dow from now_utc at time zone p.timezone)::int = any(s.days)
+      -- Only users who have at least one push subscription
+      and exists (
+        select 1 from public.push_subscriptions ps where ps.user_id = s.user_id
+      )
+  loop
+    -- Deduplication: attempt insert. If conflict, this schedule was already dispatched this minute.
+    insert into public.notification_dispatch_log (schedule_id, minute_bucket)
+      values (rec.schedule_id, minute_trunc)
+      on conflict (schedule_id, minute_bucket) do nothing;
+
+    get diagnostics inserted_count = row_count;
+
+    -- Only fire if we actually inserted (= first time this minute)
+    if inserted_count > 0 then
+      -- Fire-and-forget HTTP POST to cron-dispatch-push Edge Function
+      perform net.http_post(
+        url := supabase_url || '/functions/v1/cron-dispatch-push',
+        headers := jsonb_build_object(
+          'Content-Type', 'application/json',
+          'Authorization', 'Bearer ' || service_role_key
+        ),
+        body := jsonb_build_object(
+          'schedule_id', rec.schedule_id,
+          'user_id', rec.user_id,
+          'medication_name', rec.medication_name,
+          'medication_dosage', coalesce(rec.medication_dosage, ''),
+          'schedule_time', rec.schedule_time
+        )
+      );
+    end if;
+  end loop;
+
+  -- Cleanup: remove dispatch log entries older than 48 hours to keep the table small
+  delete from public.notification_dispatch_log
+    where created_at < now_utc - interval '48 hours';
+end;
+$$;
+
+-- Schedule the job: every minute
+select cron.schedule(
+  'medflow-push-dispatcher',
+  '* * * * *',
+  $$ select public.dispatch_due_notifications(); $$
+);
+
+-- Cleanup old dispatch logs weekly as an extra safety net
+select cron.schedule(
+  'medflow-dispatch-log-cleanup',
+  '0 3 * * 0',
+  $$ delete from public.notification_dispatch_log where created_at < now() - interval '7 days'; $$
+);

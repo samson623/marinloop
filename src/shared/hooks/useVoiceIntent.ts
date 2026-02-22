@@ -54,8 +54,6 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
     appts: storeAppts,
     notes: storeNotes,
     adh: storeAdh,
-    storeAppts,
-    storeNotes,
     assistantState,
     setAssistantPendingIntent,
     clearAssistantState,

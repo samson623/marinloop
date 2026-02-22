@@ -9,6 +9,7 @@ create table if not exists public.profiles (
   email text not null,
   name text,
   avatar_url text,
+  timezone text not null default 'America/Chicago',
   plan public.plan_type not null default 'free',
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())

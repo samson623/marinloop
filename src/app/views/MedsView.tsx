@@ -235,7 +235,7 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft, openScanner:
   const [name, setName] = useState('')
   const [dose, setDose] = useState('')
   const [freq, setFreq] = useState('1')
-  const [time, setTime] = useState('08:00')
+  const [times, setTimes] = useState<string[]>(['08:00'])
   const [sup, setSup] = useState('30')
   const [inst, setInst] = useState('')
   const [warn, setWarn] = useState('')
@@ -313,12 +313,46 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft, openScanner:
     }
   }
 
+  const generateEvenlySpacedTimes = (count: number, baseTime?: string): string[] => {
+    const base = baseTime ?? '08:00'
+    const [h] = base.split(':').map(Number)
+    const interval = Math.floor(24 / count)
+    return Array.from({ length: count }, (_, i) => {
+      const hr = (h + i * interval) % 24
+      return `${String(hr).padStart(2, '0')}:00`
+    })
+  }
+
+  const handleFreqChange = (newFreq: string) => {
+    const n = Number.parseInt(newFreq, 10) || 1
+    setFreq(newFreq)
+    setTimes((prev) => {
+      if (prev.length === n) return prev
+      if (prev.length < n) {
+        return generateEvenlySpacedTimes(n, prev[0])
+      }
+      return prev.slice(0, n)
+    })
+  }
+
+  const updateTimeAtIndex = (index: number, value: string) => {
+    setTimes((prev) => prev.map((v, i) => (i === index ? value : v)))
+  }
+
   useEffect(() => {
     if (!initialDraft) return
     if (initialDraft.name) setName(initialDraft.name)
     if (initialDraft.dose) setDose(initialDraft.dose)
-    if (typeof initialDraft.freq === 'number') setFreq(String(initialDraft.freq))
-    if (initialDraft.time) setTime(initialDraft.time)
+    if (typeof initialDraft.freq === 'number') {
+      setFreq(String(initialDraft.freq))
+      if (initialDraft.time) {
+        setTimes(initialDraft.freq > 1 ? generateEvenlySpacedTimes(initialDraft.freq, initialDraft.time) : [initialDraft.time])
+      } else {
+        setTimes(generateEvenlySpacedTimes(initialDraft.freq))
+      }
+    } else if (initialDraft.time) {
+      setTimes([initialDraft.time])
+    }
     if (typeof initialDraft.sup === 'number') setSup(String(initialDraft.sup))
     if (initialDraft.inst) setInst(initialDraft.inst)
     if (initialDraft.warn) setWarn(initialDraft.warn)
@@ -349,8 +383,16 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft, openScanner:
   const applyExtractToForm = (r: { name?: string; dosage?: string; freq?: number; time?: string; quantity?: number; instructions?: string; warnings?: string }) => {
     if (r.name?.trim()) setName(r.name)
     if (r.dosage?.trim()) setDose(r.dosage)
-    if (typeof r.freq === 'number' && [1, 2, 3].includes(r.freq)) setFreq(String(r.freq))
-    if (r.time?.trim()) setTime(r.time)
+    if (typeof r.freq === 'number' && [1, 2, 3].includes(r.freq)) {
+      setFreq(String(r.freq))
+      if (r.freq > 1) {
+        setTimes(generateEvenlySpacedTimes(r.freq, r.time?.trim() || '08:00'))
+      } else if (r.time?.trim()) {
+        setTimes([r.time])
+      }
+    } else if (r.time?.trim()) {
+      setTimes([r.time])
+    }
     if (typeof r.quantity === 'number') setSup(String(r.quantity))
     if (r.instructions?.trim()) setInst(r.instructions)
     if (r.warnings?.trim()) setWarn(r.warnings)
@@ -467,7 +509,7 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft, openScanner:
     const f = Number.parseInt(freq, 10) || 1
 
     if (isDemo) {
-      addMedDemo({ name, dose, freq: f, times: [time], inst, warn, fw: 0, sup: Number.parseInt(sup, 10) || 30, tot: Number.parseInt(sup, 10) || 30, dpd: f })
+      addMedDemo({ name, dose, freq: f, times, inst, warn, fw: 0, sup: Number.parseInt(sup, 10) || 30, tot: Number.parseInt(sup, 10) || 30, dpd: f })
     } else {
       createBundle({
         medication: {
@@ -479,14 +521,12 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft, openScanner:
           color: 'sky',
           icon: 'pill',
         },
-        schedules: [
-          {
-            time,
-            days: [0, 1, 2, 3, 4, 5, 6],
-            food_context_minutes: 0,
-            active: true,
-          },
-        ],
+        schedules: times.map((t) => ({
+          time: t,
+          days: [0, 1, 2, 3, 4, 5, 6],
+          food_context_minutes: 0,
+          active: true,
+        })),
         refill: {
           current_quantity: Number.parseInt(sup, 10) || 30,
           total_quantity: Number.parseInt(sup, 10) || 30,
@@ -693,17 +733,19 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft, openScanner:
               <Input id="med-dosage" value={dose} onChange={(e) => setDose(e.target.value)} placeholder="e.g. 500mg" />
             </FormField>
             <FormField label="Frequency" id="med-freq">
-              <select className="fi" id="med-freq" value={freq} onChange={(e) => setFreq(e.target.value)}>
+              <select className="fi" id="med-freq" value={freq} onChange={(e) => handleFreqChange(e.target.value)}>
                 <option value="1">Once daily</option>
                 <option value="2">Twice daily</option>
                 <option value="3">Three times</option>
               </select>
             </FormField>
           </div>
-          <div className="flex gap-2.5">
-            <FormField label="Time" id="med-time">
-              <Input id="med-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-            </FormField>
+          <div className="flex flex-wrap gap-2.5">
+            {times.map((t, i) => (
+              <FormField key={i} label={times.length > 1 ? `Time ${i + 1}` : 'Time'} id={`med-time-${i}`}>
+                <Input id={`med-time-${i}`} type="time" value={t} onChange={(e) => updateTimeAtIndex(i, e.target.value)} />
+              </FormField>
+            ))}
             <FormField label="Pills in Bottle" id="med-sup">
               <Input id="med-sup" type="number" value={sup} onChange={(e) => setSup(e.target.value)} min={0} />
             </FormField>

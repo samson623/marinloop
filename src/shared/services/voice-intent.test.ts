@@ -104,6 +104,29 @@ describe('heuristicParse', () => {
     expect(out.entities.medication?.freq).toBe(2)
   })
 
+  it('parses "add medication by scanning" with entry_method scan', () => {
+    const out = heuristicParse('add medication by scanning barcode')
+    expect(out.intent).toBe('open_add_med')
+    expect(out.entities.medication?.entry_method).toBe('scan')
+  })
+
+  it('parses "add medication from photo" with entry_method photo', () => {
+    const out = heuristicParse('add medication from a photo of the label')
+    expect(out.intent).toBe('open_add_med')
+    expect(out.entities.medication?.entry_method).toBe('photo')
+  })
+
+  it('parses schedule/agenda questions as query', () => {
+    const out = heuristicParse("what's my schedule for today")
+    expect(out.intent).toBe('query')
+    expect(out.entities.query?.question).toBe("what's my schedule for today")
+  })
+
+  it('parses "what meds do I have" as query', () => {
+    const out = heuristicParse('what meds do I have')
+    expect(out.intent).toBe('query')
+  })
+
   it('parses "add appointment" as open_add_appt', () => {
     const out = heuristicParse('add appointment tomorrow at 3pm')
     expect(out.intent).toBe('open_add_appt')

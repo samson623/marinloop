@@ -1,9 +1,15 @@
 import { useRef, useState } from 'react'
-import { useAppStore } from '@/shared/stores/app-store'
+import { useAppStore, fT, fD } from '@/shared/stores/app-store'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { useTimeline } from '@/shared/hooks/useTimeline'
+import { useMedications } from '@/shared/hooks/useMedications'
+import { useSchedules } from '@/shared/hooks/useSchedules'
+import { useAppointments } from '@/shared/hooks/useAppointments'
+import { useNotes } from '@/shared/hooks/useNotes'
 import { VoiceIntentService } from '@/shared/services/voice-intent'
+import { AIService } from '@/shared/services/ai'
 import { NotificationsService } from '@/shared/services/notifications'
+import { todayLocal, isoToLocalDate, toLocalTimeString } from '@/shared/lib/dates'
 import type { VoiceIntentResult } from '@/shared/types/contracts'
 import type { DoseLogCreateInput } from '@/shared/types/contracts'
 import type {
@@ -44,13 +50,54 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
     openAddMedModal,
     openAddApptModal,
     addNote,
-    meds,
+    meds: storeMeds,
+    appts: storeAppts,
+    notes: storeNotes,
+    adh: storeAdh,
+    storeAppts,
+    storeNotes,
     assistantState,
     setAssistantPendingIntent,
     clearAssistantState,
   } = useAppStore()
   const { session, isDemo } = useAuthStore()
   const { timeline } = useTimeline()
+  const { meds: realMeds } = useMedications()
+  const { scheds } = useSchedules()
+  const { appts: realAppts } = useAppointments()
+  const { notes: realNotes } = useNotes()
+  const medsForContext = isDemo
+    ? storeMeds
+    : (realMeds ?? []).map((m) => {
+        const medScheds = (scheds ?? []).filter((s) => s.medication_id === m.id)
+        const times = medScheds.map((s) => s.time?.slice(0, 5) ?? '').filter(Boolean)
+        return {
+          id: m.id,
+          name: m.name,
+          dose: m.dosage ?? '',
+          freq: m.freq ?? 1,
+          times,
+        }
+      })
+  const apptsForContext = isDemo
+    ? storeAppts
+    : (realAppts ?? []).map((a) => ({
+        id: a.id,
+        title: a.title,
+        date: isoToLocalDate(a.start_time),
+        time: toLocalTimeString(a.start_time),
+        loc: a.location ?? '',
+        notes: a.notes ? [a.notes] : [],
+      }))
+  const notesForContext = isDemo
+    ? storeNotes
+    : (realNotes ?? []).map((n) => ({
+        id: n.id,
+        text: n.content,
+        time: n.created_at,
+        mid: n.medication_id ?? '',
+      }))
+  const meds = isDemo ? storeMeds : medsForContext
 
   const [voiceActive, setVoiceActive] = useState(false)
   const [voiceBubble, setVoiceBubble] = useState('')
@@ -173,19 +220,36 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
           store.toast(`"${text}" - command not recognized`, 'tw')
         }
         return
-      case 'open_add_med':
+      case 'open_add_med': {
+        const entryMethod = intent.entities.medication?.entry_method
+        const options =
+          entryMethod === 'scan'
+            ? { openScanner: true, openPhoto: false }
+            : entryMethod === 'photo'
+              ? { openScanner: false, openPhoto: true }
+              : null
         setTab('meds')
-        openAddMedModal({
-          name: intent.entities.medication?.name,
-          dose: intent.entities.medication?.dosage,
-          freq: intent.entities.medication?.freq,
-          time: intent.entities.medication?.time,
-          inst: intent.entities.medication?.instructions,
-          warn: intent.entities.medication?.warnings,
-          sup: intent.entities.medication?.supply,
-        })
-        store.toast('Opening add medication form', 'ts')
+        openAddMedModal(
+          {
+            name: intent.entities.medication?.name,
+            dose: intent.entities.medication?.dosage,
+            freq: intent.entities.medication?.freq,
+            time: intent.entities.medication?.time,
+            inst: intent.entities.medication?.instructions,
+            warn: intent.entities.medication?.warnings,
+            sup: intent.entities.medication?.supply,
+          },
+          options
+        )
+        const msg =
+          entryMethod === 'scan'
+            ? 'Scan the barcode — I\'ll fill in the form'
+            : entryMethod === 'photo'
+              ? 'Take or upload a photo of the label'
+              : 'Opening add medication form'
+        store.toast(msg, 'ts')
         return
+      }
       case 'open_add_appt':
         setTab('appts')
         openAddApptModal({
@@ -264,6 +328,82 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
           addNoteReal({ content: noteText, medication_id: medicationId })
         }
         setVoiceBubble(med ? `Note added for ${med.name}.` : 'Note saved.')
+        return
+      }
+      case 'query': {
+        const question = intent.entities.query?.question ?? transcript
+        const timelineStr = timeline
+          .map((i) => {
+            const status = i.st === 'done' ? '✓' : i.st === 'missed' ? 'missed' : i.st === 'late' ? 'late' : 'pending'
+            return `- ${i.tp === 'med' ? 'Med' : 'Appt'}: ${i.name}${i.dose ? ` ${i.dose}` : ''} at ${i.time} (${status})`
+          })
+          .join('\n')
+        const medsStr = (isDemo ? storeMeds : medsForContext)
+          .map((m) => {
+            const t = (m as { times?: string[] }).times ?? []
+            const times = t.length ? t.map(fT).join(', ') : ''
+            return `- ${m.name}${m.dose ? ` ${m.dose}` : ''}${times ? ` at ${times}` : ''} (${m.freq ?? 1}x daily)`
+          })
+          .join('\n')
+        const apptsStr = (isDemo ? storeAppts : apptsForContext)
+          .map((a) => `- ${a.title} on ${fD(a.date)} at ${fT(a.time)}${a.loc ? ` — ${a.loc}` : ''}`)
+          .join('\n')
+        const notesStr = (isDemo ? storeNotes : notesForContext)
+          .map((n) => `- ${n.text}${n.mid ? ` (med link)` : ''}`)
+          .join('\n')
+        const adhStr =
+          Object.keys(storeAdh).length > 0
+            ? Object.entries(storeAdh)
+                .slice(-7)
+                .map(([d, v]) => `${d}: ${v.d}/${v.t} doses`)
+                .join('\n')
+            : ''
+        const context = `Today is ${todayLocal()}.
+
+## Today's schedule (timeline)
+${timelineStr || 'No items for today.'}
+
+## Medications
+${medsStr || 'No medications.'}
+
+## Appointments
+${apptsStr || 'No appointments.'}
+
+## Notes
+${notesStr || 'No notes.'}
+${adhStr ? `\n## Recent adherence\n${adhStr}` : ''}`
+
+        if (!AIService.isConfigured()) {
+          const fallback =
+            question.toLowerCase().includes('schedule') || question.toLowerCase().includes('agenda')
+              ? timelineStr || 'Nothing on your schedule for today.'
+              : question.toLowerCase().includes('med')
+                ? medsStr || 'You have no medications listed.'
+                : question.toLowerCase().includes('appointment') || question.toLowerCase().includes('appt')
+                  ? apptsStr || 'No appointments.'
+                  : question.toLowerCase().includes('note')
+                    ? notesStr || 'No notes.'
+                    : `I can answer questions about your schedule, medications, appointments, and notes. Try: "What's on my schedule?" or "What meds do I have?"`
+          setVoiceBubble(fallback)
+          store.toast(fallback, 'ts')
+          return
+        }
+        setVoiceBubble('Thinking...')
+        try {
+          const response = await AIService.chat([
+            {
+              role: 'system',
+              content: `You are MedFlow Care's clinical voice assistant. Answer the user's question using ONLY the data below. Be concise (1-3 sentences). Cite specifics. Do not make up data. If the data doesn't contain the answer, say so clearly. Do not give medical advice.`,
+            },
+            { role: 'user', content: `Data:\n${context}\n\nUser question: ${question}\n\nAnswer briefly:` },
+          ])
+          setVoiceBubble(response)
+          store.toast(response, 'ts')
+        } catch (e) {
+          const errMsg = e instanceof Error ? e.message : 'Could not answer. Please try again.'
+          setVoiceBubble(errMsg)
+          store.toast(errMsg, 'te')
+        }
         return
       }
       default:

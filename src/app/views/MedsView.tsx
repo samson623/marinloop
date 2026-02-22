@@ -23,6 +23,8 @@ type AddMedModalProps = {
     inst?: string
     warn?: string
   } | null
+  openScanner?: boolean
+  openPhoto?: boolean
   createBundle: (input: {
     medication: { name: string; dosage: string; freq: number; instructions: string; warnings: string; color: string; icon: string }
     schedules: Array<{ time: string; days: number[]; food_context_minutes: number; active: boolean }>
@@ -48,6 +50,7 @@ export function MedsView() {
     meds: demoMeds,
     showAddMedModal,
     draftMed,
+    addMedModalOptions,
     openAddMedModal,
     closeAddMedModal,
   } = useAppStore()
@@ -159,6 +162,8 @@ export function MedsView() {
           createBundle={addMedBundle}
           isDemo={isDemo}
           initialDraft={draftMed}
+          openScanner={addMedModalOptions?.openScanner}
+          openPhoto={addMedModalOptions?.openPhoto}
         />
       )}
     </div>
@@ -225,7 +230,7 @@ function MedDetailModal({ med, onClose }: { med: DisplayMed; onClose: () => void
   )
 }
 
-function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModalProps) {
+function AddMedModal({ onClose, createBundle, isDemo, initialDraft, openScanner: openScannerProp, openPhoto: openPhotoProp }: AddMedModalProps) {
   const { addMed: addMedDemo, toast } = useAppStore()
   const [name, setName] = useState('')
   const [dose, setDose] = useState('')
@@ -316,6 +321,17 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
     if (initialDraft.inst) setInst(initialDraft.inst)
     if (initialDraft.warn) setWarn(initialDraft.warn)
   }, [initialDraft])
+
+  useEffect(() => {
+    if (openScannerProp) setShowScanner(true)
+  }, [openScannerProp])
+
+  useEffect(() => {
+    if (openPhotoProp && !isDemo) {
+      const timer = setTimeout(() => labelPhotoInputRef.current?.click(), 150)
+      return () => clearTimeout(timer)
+    }
+  }, [openPhotoProp, isDemo])
 
   const handleBarcodeLookup = async () => {
     const code = barcodeInputValue.trim()

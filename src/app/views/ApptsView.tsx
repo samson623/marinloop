@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAppStore, fD, fT } from '@/shared/stores/app-store'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { todayLocal, isoToLocalDate, toLocalTimeString } from '@/shared/lib/dates'
@@ -106,6 +106,15 @@ function AddApptModal({
   const [time, setTime] = useState(initialDraft?.time ?? '14:00')
   const [loc, setLoc] = useState(initialDraft?.loc ?? '')
   const [notes, setNotes] = useState(initialDraft?.notes ?? '')
+
+  useEffect(() => {
+    if (!initialDraft) return
+    if (initialDraft.title) setTitle(initialDraft.title)
+    if (initialDraft.date) setDate(initialDraft.date)
+    if (initialDraft.time) setTime(initialDraft.time)
+    if (initialDraft.loc) setLoc(initialDraft.loc)
+    if (initialDraft.notes) setNotes(initialDraft.notes)
+  }, [initialDraft])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

@@ -54,7 +54,10 @@ export type VoiceIntentType =
   | 'log_dose'
   | 'query_next_dose'
   | 'add_note'
+  | 'query'
   | 'unknown'
+
+export type VoiceAddMedEntryMethod = 'scan' | 'photo' | 'manual'
 
 export type VoiceNavigateTarget = 'timeline' | 'meds' | 'appts' | 'summary'
 export type VoiceDoseStatus = 'taken' | 'missed'
@@ -67,6 +70,7 @@ export interface VoiceMedicationDraft {
   instructions?: string
   warnings?: string
   supply?: number
+  entry_method?: VoiceAddMedEntryMethod
 }
 
 export interface VoiceAppointmentDraft {
@@ -95,6 +99,10 @@ export interface VoiceNoteDraft {
   text: string
 }
 
+export interface VoiceQueryDraft {
+  question?: string
+}
+
 export interface VoiceIntentEntities {
   navigate?: { target?: VoiceNavigateTarget }
   medication?: VoiceMedicationDraft
@@ -102,6 +110,7 @@ export interface VoiceIntentEntities {
   reminder?: VoiceReminderDraft
   dose?: VoiceDoseDraft
   note?: VoiceNoteDraft
+  query?: VoiceQueryDraft
 }
 
 export interface VoiceIntentResult {

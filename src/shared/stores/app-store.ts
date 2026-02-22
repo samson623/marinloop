@@ -67,6 +67,11 @@ export interface ApptDraft {
     notes?: string
 }
 
+export interface AddMedModalOptions {
+    openScanner?: boolean
+    openPhoto?: boolean
+}
+
 export interface AssistantState {
     pendingIntent: string | null
     missing: string[]
@@ -90,6 +95,7 @@ interface AppState {
     showQuickCaptureModal: boolean
     draftMed: MedDraft | null
     draftAppt: ApptDraft | null
+    addMedModalOptions: AddMedModalOptions | null
     assistantState: AssistantState
     // actions
     login: () => void
@@ -105,7 +111,7 @@ interface AppState {
     toast: (msg: string, cls?: ToastType) => void
     removeToast: (id: string) => void
     setVoice: (v: boolean) => void
-    openAddMedModal: (draft?: MedDraft | null) => void
+    openAddMedModal: (draft?: MedDraft | null, options?: AddMedModalOptions | null) => void
     closeAddMedModal: () => void
     openAddApptModal: (draft?: ApptDraft | null) => void
     closeAddApptModal: () => void
@@ -128,6 +134,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     showQuickCaptureModal: false,
     draftMed: null,
     draftAppt: null,
+    addMedModalOptions: null,
     assistantState: {
         pendingIntent: null,
         missing: [],
@@ -168,13 +175,14 @@ export const useAppStore = create<AppState>((set, get) => ({
         showQuickCaptureModal: false,
         draftMed: null,
         draftAppt: null,
+        addMedModalOptions: null,
         assistantState: { pendingIntent: null, missing: [], prompt: null },
     }),
     setTab: (t) => set({ tab: t, showProfile: false }),
     setShowProfile: (v) => set({ showProfile: v }),
     setVoice: (v) => set({ voice: v }),
-    openAddMedModal: (draft = null) => set({ showAddMedModal: true, draftMed: draft }),
-    closeAddMedModal: () => set({ showAddMedModal: false, draftMed: null }),
+    openAddMedModal: (draft = null, options = null) => set({ showAddMedModal: true, draftMed: draft, addMedModalOptions: options }),
+    closeAddMedModal: () => set({ showAddMedModal: false, draftMed: null, addMedModalOptions: null }),
     openAddApptModal: (draft = null) => set({ showAddApptModal: true, draftAppt: draft }),
     closeAddApptModal: () => set({ showAddApptModal: false, draftAppt: null }),
     openQuickCaptureModal: () => set({ showQuickCaptureModal: true }),

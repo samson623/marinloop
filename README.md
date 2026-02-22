@@ -81,9 +81,18 @@ supabase secrets set VAPID_SUBJECT=mailto:your-email@example.com
 supabase functions deploy openai-chat
 supabase functions deploy send-push
 supabase functions deploy extract-label
+supabase functions deploy cron-dispatch-push
 ```
 
-### 6. Apply migrations
+### 6. Setup Push Notification Cron (one-time, after deploy)
+
+Open **Supabase Dashboard → SQL Editor** and run `supabase/setup-push.sql`.
+
+> **⚠️ IMPORTANT:** Edit the `\set SERVICE_ROLE_KEY` line in the script with your actual service role key (from Dashboard → Settings → API → service_role). Without this, the cron dispatcher will silently skip every minute and **no push notifications will be sent**.
+
+If notifications stop working, run `supabase/diagnose-push.sql` to identify the exact failure point.
+
+### 7. Apply migrations
 
 **Dashboard (no CLI):** Supabase Dashboard → SQL Editor. Run in order:
 

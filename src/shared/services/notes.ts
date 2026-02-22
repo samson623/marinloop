@@ -25,4 +25,25 @@ export const NotesService = {
     if (error) throw error
     return data
   },
+
+  async update(id: string, content: string): Promise<Note> {
+    const { data, error } = await supabase
+      .from('notes')
+      .update({ content })
+      .eq('id', id)
+      .select('*')
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('notes')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  },
 }

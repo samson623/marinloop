@@ -9,6 +9,8 @@ vi.mock('@/shared/services/notes', () => ({
   NotesService: {
     getAll: vi.fn(),
     create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
   },
 }))
 vi.mock('@/shared/stores/auth-store', () => ({
@@ -46,6 +48,8 @@ describe('useNotes', () => {
     })
     expect(result.current.notes).toEqual([])
     expect(typeof result.current.addNote).toBe('function')
+    expect(typeof result.current.updateNote).toBe('function')
+    expect(typeof result.current.deleteNote).toBe('function')
   })
 
   it('addNote calls NotesService.create with content and medication_id', async () => {
@@ -64,4 +68,39 @@ describe('useNotes', () => {
       expect(vi.mocked(NotesService.create).mock.calls[0][0]).toEqual({ content: 'felt fine', medication_id: null })
     })
   })
+
+  it('updateNote calls NotesService.update with id and content', async () => {
+    const updated = { id: 'n1', content: 'updated text', medication_id: null, created_at: '', updated_at: '' } as never
+    vi.mocked(NotesService.update).mockResolvedValue(updated)
+
+    const { result } = renderHook(() => useNotes(), { wrapper: wrapper() })
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    result.current.updateNote({ id: 'n1', content: 'updated text' })
+
+    await waitFor(() => {
+      expect(NotesService.update).toHaveBeenCalledWith('n1', 'updated text')
+    })
+  })
+
+  it('deleteNote calls NotesService.delete with correct id', async () => {
+    vi.mocked(NotesService.delete).mockResolvedValue(undefined)
+
+    const w = wrapper()
+    const { result } = renderHook(() => useNotes(), { wrapper: w })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+    // Trigger delete mutation
+    await waitFor(() => {
+      result.current.deleteNote('n1')
+    })
+
+    // Wait for mutation to complete
+    await waitFor(() => {
+      expect(vi.mocked(NotesService.delete)).toHaveBeenCalledWith('n1')
+    })
+  })
 })
+

@@ -1,9 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { RefillsService } from '@/shared/services/refills'
 import type { RefillUpsertInput } from '@/shared/types/contracts'
+import type { Database } from '@/shared/types/database.types'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { useAppStore } from '@/shared/stores/app-store'
 import { handleMutationError } from '@/shared/lib/errors'
+
+type Refill = Database['public']['Tables']['refills']['Row']
 
 export function useRefills() {
   const queryClient = useQueryClient()
@@ -26,10 +29,31 @@ export function useRefills() {
     onError: (err: unknown) => handleMutationError(err, 'useRefillsList', 'Failed to update refill', toast),
   })
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<Refill> }) => RefillsService.update(id, updates),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['refills'] })
+      toast('Supply updated', 'ts')
+    },
+    onError: (err: unknown) => handleMutationError(err, 'useRefillsList', 'Failed to update supply', toast),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: RefillsService.delete,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['refills'] })
+      toast('Refill deleted', 'ts')
+    },
+    onError: (err: unknown) => handleMutationError(err, 'useRefillsList', 'Failed to delete refill', toast),
+  })
+
   return {
     refills: data ?? [],
     isLoading: isLoading && !isDemo,
     upsertRefill: upsertMutation.mutate,
-    isUpdating: upsertMutation.isPending,
+    updateRefill: updateMutation.mutate,
+    deleteRefill: deleteMutation.mutate,
+    isUpdating: upsertMutation.isPending || updateMutation.isPending,
+    isDeleting: deleteMutation.isPending,
   }
 }

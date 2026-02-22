@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useAppStore } from '@/shared/stores/app-store'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { toLocalDateString } from '@/shared/lib/dates'
@@ -8,6 +9,7 @@ import { useAppointments } from '@/shared/hooks/useAppointments'
 import { useAdherenceHistory } from '@/shared/hooks/useAdherenceHistory'
 import { Card, Button } from '@/shared/components/ui'
 import { QuickCaptureModal } from '@/shared/components/QuickCaptureModal'
+import { ConfirmDeleteModal } from '@/shared/components/ConfirmDeleteModal'
 
 export function SummaryView() {
   const { isDemo } = useAuthStore()
@@ -24,9 +26,14 @@ export function SummaryView() {
   } = useAppStore()
   const { adh: realAdh } = useAdherenceHistory(7)
   const { timeline } = useTimeline()
-  const { notes: realNotes, addNote: addNoteReal, isAdding } = useNotes()
+  const { notes: realNotes, addNote: addNoteReal, isAdding, updateNote, deleteNote, isDeleting } = useNotes()
   const { meds: realMeds } = useMedications()
   const { appts: realAppts } = useAppointments()
+
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
+  const [editingNoteText, setEditingNoteText] = useState('')
+  const [deleteNoteId, setDeleteNoteId] = useState<string | null>(null)
+  const [deleteNoteName, setDeleteNoteName] = useState('')
 
   const meds = isDemo ? demoMeds.map((m) => ({ id: m.id, name: m.name })) : realMeds.map((m) => ({ id: m.id, name: m.name }))
   const appts = isDemo
@@ -71,17 +78,17 @@ export function SummaryView() {
 
   const notes = isDemo
     ? demoNotes.map((n) => ({
-        id: n.id,
-        title: n.mid ? (demoMeds.find((m) => m.id === n.mid)?.name ?? 'Note') : 'Note',
-        text: n.text,
-        created: n.time,
-      }))
+      id: n.id,
+      title: n.mid ? (demoMeds.find((m) => m.id === n.mid)?.name ?? 'Note') : 'Note',
+      text: n.text,
+      created: n.time,
+    }))
     : realNotes.map((n) => ({
-        id: n.id,
-        title: n.medication_id ? (realMeds.find((m) => m.id === n.medication_id)?.name ?? 'Note') : 'Note',
-        text: n.content,
-        created: n.created_at,
-      }))
+      id: n.id,
+      title: n.medication_id ? (realMeds.find((m) => m.id === n.medication_id)?.name ?? 'Note') : 'Note',
+      text: n.content,
+      created: n.created_at,
+    }))
 
   return (
     <div className="animate-view-in w-full max-w-[480px] mx-auto">
@@ -126,14 +133,86 @@ export function SummaryView() {
           </p>
         ) : (
           notes.slice(0, 8).map((n) => (
-            <div key={n.id} className="mb-4 pb-4 border-b border-[var(--color-border-secondary)] last:border-0 last:mb-0 last:pb-0">
+            <div key={n.id} className="mb-4 pb-4 border-b border-[var(--color-border-secondary)] last:border-0 last:mb-0 last:pb-0 group">
               <div className="flex justify-between gap-3 mb-1">
                 <span className="font-semibold text-[var(--color-text-primary)] [font-size:var(--text-body)] shrink-0">{n.title}</span>
-                <span className="text-[var(--color-text-tertiary)] [font-family:var(--font-mono)] [font-size:var(--text-caption)] shrink-0">
-                  {new Date(n.created).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-[var(--color-text-tertiary)] [font-family:var(--font-mono)] [font-size:var(--text-caption)]">
+                    {new Date(n.created).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  {!isDemo && (
+                    <>
+                      {/* Edit button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingNoteId(n.id)
+                          setEditingNoteText(n.text)
+                        }}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--color-text-tertiary)] hover:text-[var(--color-accent)] hover:bg-[var(--color-bg-tertiary)] cursor-pointer transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                        aria-label={`Edit note: ${n.text.slice(0, 20)}`}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </button>
+                      {/* Delete button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDeleteNoteId(n.id)
+                          setDeleteNoteName(n.text.slice(0, 30) + (n.text.length > 30 ? '…' : ''))
+                        }}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--color-text-tertiary)] hover:text-[var(--color-red)] hover:bg-[color-mix(in_srgb,var(--color-red)_8%,transparent)] cursor-pointer transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                        aria-label={`Delete note: ${n.text.slice(0, 20)}`}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                          <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
-              <div className="text-[var(--color-text-secondary)] [font-size:var(--text-label)] break-words max-w-[60ch]">{n.text}</div>
+
+              {/* Inline edit mode */}
+              {editingNoteId === n.id ? (
+                <div className="mt-1">
+                  <textarea
+                    value={editingNoteText}
+                    onChange={(e) => setEditingNoteText(e.target.value)}
+                    className="fi w-full resize-y min-h-[2.5rem] py-2 px-3 [font-size:var(--text-label)]"
+                    rows={2}
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') setEditingNoteId(null)
+                    }}
+                  />
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditingNoteId(null)}
+                      className="py-1.5 px-3 rounded-lg text-[var(--color-text-secondary)] [font-size:var(--text-caption)] font-semibold cursor-pointer hover:bg-[var(--color-bg-tertiary)] transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (editingNoteText.trim()) {
+                          updateNote({ id: n.id, content: editingNoteText.trim() })
+                        }
+                        setEditingNoteId(null)
+                      }}
+                      className="py-1.5 px-3 rounded-lg bg-[var(--color-accent)] text-white [font-size:var(--text-caption)] font-semibold cursor-pointer hover:brightness-110 transition-all"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-[var(--color-text-secondary)] [font-size:var(--text-label)] break-words max-w-[60ch]">{n.text}</div>
+              )}
             </div>
           ))
         )}
@@ -161,6 +240,21 @@ export function SummaryView() {
         onSubmit={handleAddNote}
         isSubmitting={isAdding}
       />
+
+      {/* Delete note confirmation */}
+      <ConfirmDeleteModal
+        open={!!deleteNoteId}
+        onOpenChange={(open) => { if (!open) setDeleteNoteId(null) }}
+        itemName={deleteNoteName}
+        description="This note will be permanently removed."
+        onConfirm={() => {
+          if (deleteNoteId) {
+            deleteNote(deleteNoteId)
+            setDeleteNoteId(null)
+          }
+        }}
+        isPending={isDeleting}
+      />
     </div>
   )
 }
@@ -173,3 +267,4 @@ function StatCard({ n, label, color }: { n: number; label: string; color: string
     </Card>
   )
 }
+

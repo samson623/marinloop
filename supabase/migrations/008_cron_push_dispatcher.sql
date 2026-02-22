@@ -12,7 +12,7 @@
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 
--- The core dispatch function
+-- The core dispatch function (enhanced with structured logging)
 create or replace function public.dispatch_due_notifications()
 returns void
 language plpgsql
@@ -26,12 +26,14 @@ declare
   now_utc timestamptz := now();
   minute_trunc timestamptz := date_trunc('minute', now_utc);
   inserted_count int;
+  total_due int := 0;
+  total_dispatched int := 0;
 begin
-  -- Read configuration from Supabase vault / env
+  -- Read configuration from app.settings (set via ALTER ROLE ... SET)
   supabase_url := current_setting('app.settings.supabase_url', true);
   service_role_key := current_setting('app.settings.service_role_key', true);
 
-  -- Fallback: read from supabase_functions.env if app.settings not configured
+  -- Fallback: read from Vault
   if supabase_url is null or supabase_url = '' then
     select decrypted_secret into supabase_url
       from vault.decrypted_secrets
@@ -46,9 +48,11 @@ begin
       limit 1;
   end if;
 
-  -- If we still don't have config, abort silently (avoids error spam in logs)
+  -- Abort with visible warning if config missing
   if supabase_url is null or service_role_key is null then
-    raise warning '[MedFlow Cron] Missing supabase_url or service_role_key — skipping dispatch';
+    raise warning '[MedFlow Cron] Missing vault secrets (supabase_url=%, service_role_key=%) — run setup-push.sql to configure.',
+      case when supabase_url is null then 'NULL' else 'SET' end,
+      case when service_role_key is null then 'NULL' else 'SET' end;
     return;
   end if;
 
@@ -59,30 +63,32 @@ begin
       s.user_id    as user_id,
       m.name       as medication_name,
       m.dosage     as medication_dosage,
-      s.time       as schedule_time
+      s.time       as schedule_time,
+      p.timezone   as user_timezone
     from public.schedules s
     join public.profiles p     on p.id = s.user_id
     join public.medications m  on m.id = s.medication_id
     where s.active = true
       -- Time match: current HH:MM in the user's timezone = schedule time
-      and to_char(now_utc at time zone p.timezone, 'HH24:MI') = s.time
-      -- Day-of-week match: current day in user's timezone is in the schedule's days array
-      and extract(dow from now_utc at time zone p.timezone)::int = any(s.days)
+      and to_char(now_utc at time zone coalesce(p.timezone, 'America/Chicago'), 'HH24:MI') = s.time
+      -- Day-of-week match
+      and extract(dow from now_utc at time zone coalesce(p.timezone, 'America/Chicago'))::int = any(s.days)
       -- Only users who have at least one push subscription
       and exists (
         select 1 from public.push_subscriptions ps where ps.user_id = s.user_id
       )
   loop
-    -- Deduplication: attempt insert. If conflict, this schedule was already dispatched this minute.
+    total_due := total_due + 1;
+
+    -- Deduplication
     insert into public.notification_dispatch_log (schedule_id, minute_bucket)
       values (rec.schedule_id, minute_trunc)
       on conflict (schedule_id, minute_bucket) do nothing;
 
     get diagnostics inserted_count = row_count;
 
-    -- Only fire if we actually inserted (= first time this minute)
     if inserted_count > 0 then
-      -- Fire-and-forget HTTP POST to cron-dispatch-push Edge Function
+      -- Fire HTTP POST to cron-dispatch-push Edge Function
       perform net.http_post(
         url := supabase_url || '/functions/v1/cron-dispatch-push',
         headers := jsonb_build_object(
@@ -97,10 +103,19 @@ begin
           'schedule_time', rec.schedule_time
         )
       );
+      total_dispatched := total_dispatched + 1;
+
+      raise log '[MedFlow Cron] Dispatched push for "%" to user % (tz=%, time=%)',
+        rec.medication_name, rec.user_id, rec.user_timezone, rec.schedule_time;
     end if;
   end loop;
 
-  -- Cleanup: remove dispatch log entries older than 48 hours to keep the table small
+  if total_due > 0 then
+    raise log '[MedFlow Cron] Due=%, Dispatched=%, Skipped(dedup)=%',
+      total_due, total_dispatched, total_due - total_dispatched;
+  end if;
+
+  -- Cleanup old dispatch log entries
   delete from public.notification_dispatch_log
     where created_at < now_utc - interval '48 hours';
 end;

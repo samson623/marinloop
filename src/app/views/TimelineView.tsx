@@ -236,7 +236,7 @@ function DoseModal({ item: it, onClose, nowMin, triggerRef }: { item: SchedItem;
       open
       onOpenChange={(o) => !o && onClose()}
       title="Medication"
-      variant="bottom"
+      variant="responsive"
       triggerRef={triggerRef}
     >
       <div className="text-[var(--color-text-tertiary)] mb-1 [font-family:var(--font-mono)] [font-size:var(--text-caption)]">{fT(it.time)}</div>

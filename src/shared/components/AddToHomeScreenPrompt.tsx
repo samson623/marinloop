@@ -33,7 +33,7 @@ export function AddToHomeScreenPrompt({
   }
 
   return (
-    <Modal open onOpenChange={(o) => !o && onDismiss()} title={title} variant={variant === 'push-failed' ? 'bottom' : 'center'}>
+    <Modal open onOpenChange={(o) => !o && onDismiss()} title={title} variant={variant === 'push-failed' ? 'responsive' : 'center'}>
       <div className="flex flex-col gap-4">
         {isIOSDevice ? (
           <>

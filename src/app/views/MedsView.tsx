@@ -30,15 +30,28 @@ type AddMedModalProps = {
   }) => void
 }
 
+type DisplayMed = {
+  id: string
+  name: string
+  dose: string
+  freq: number
+  times: string[]
+  inst: string
+  warn: string
+  sup: number
+  tot: number
+  dpd: number
+}
+
 export function MedsView() {
   const {
     meds: demoMeds,
-    toast,
     showAddMedModal,
     draftMed,
     openAddMedModal,
     closeAddMedModal,
   } = useAppStore()
+  const [selectedMed, setSelectedMed] = useState<DisplayMed | null>(null)
   const { isDemo } = useAuthStore()
   const { meds: realMeds, addMedBundle } = useMedications()
   const { scheds } = useSchedules()
@@ -94,7 +107,7 @@ export function MedsView() {
               type="button"
               className="animate-slide-r card-interactive w-full text-left bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] rounded-2xl p-5 mb-4 min-h-[88px] cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
               style={{ animationDelay: `${i * 0.04}s` }}
-              onClick={() => toast(`${m.name} - ${m.inst}`, 'ts')}
+              onClick={() => setSelectedMed(m)}
             >
               <div className="flex items-start justify-between gap-4 mb-3">
                 <span className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-body)] leading-snug">{m.name}</span>
@@ -136,6 +149,10 @@ export function MedsView() {
         Add Medication
       </Button>
 
+      {selectedMed && (
+        <MedDetailModal med={selectedMed} onClose={() => setSelectedMed(null)} />
+      )}
+
       {showAddMedModal && (
         <AddMedModal
           onClose={closeAddMedModal}
@@ -145,6 +162,66 @@ export function MedsView() {
         />
       )}
     </div>
+  )
+}
+
+function MedDetailModal({ med, onClose }: { med: DisplayMed; onClose: () => void }) {
+  const p = med.tot > 0 ? (med.sup / med.tot) * 100 : 0
+  const days = med.dpd > 0 ? Math.floor(med.sup / med.dpd) : 0
+  const barColor = p < 20 ? 'var(--color-red)' : p < 40 ? 'var(--color-amber)' : 'var(--color-green)'
+  return (
+    <Modal open onOpenChange={(o) => !o && onClose()} title={med.name} variant="center" closeLabel="Close">
+      <div className="rounded-2xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)] p-6 sm:p-8 -mt-2 -mx-2 sm:-mx-4">
+        <div className="text-[var(--color-text-secondary)] [font-size:var(--text-body)] font-semibold mb-6">
+          {med.dose || 'No dosage specified'}
+        </div>
+
+        <div className="space-y-5 [font-size:var(--text-body)]">
+          <div className="flex items-start gap-3">
+            <span className="text-[var(--color-text-tertiary)] shrink-0 w-28">Schedule</span>
+            <span className="text-[var(--color-text-primary)]">
+              {med.times.length > 0 ? med.times.map((t) => fT(t)).join(', ') : 'No time set'}
+            </span>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="text-[var(--color-text-tertiary)] shrink-0 w-28">Frequency</span>
+            <span className="text-[var(--color-text-primary)]">{med.freq}x daily</span>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="text-[var(--color-text-tertiary)] shrink-0 w-28">Supply</span>
+            <span className="text-[var(--color-text-primary)]">
+              {med.sup} of {med.tot} pills · {days} days left
+              {days <= 5 && <span className="text-[var(--color-red)] font-bold"> — Refill soon</span>}
+            </span>
+          </div>
+          {med.inst && (
+            <div className="flex items-start gap-3">
+              <span className="text-[var(--color-text-tertiary)] shrink-0 w-28">Instructions</span>
+              <p className="text-[var(--color-text-primary)] leading-relaxed">{med.inst}</p>
+            </div>
+          )}
+          {med.warn && (
+            <div className="flex items-start gap-3">
+              <span className="text-[var(--color-text-tertiary)] shrink-0 w-28">Warnings</span>
+              <p className="text-[var(--color-red)] font-medium leading-relaxed">{med.warn}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 pt-5 border-t border-[var(--color-border-primary)]">
+          <div className="h-3 bg-[var(--color-ring-track)] rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-[width] duration-300"
+              style={{ width: `${p}%`, background: barColor }}
+            />
+          </div>
+          <div className="flex justify-between mt-2 [font-size:var(--text-caption)] text-[var(--color-text-secondary)] [font-family:var(--font-mono)]">
+            <span>Supply remaining</span>
+            <span>{Math.round(p)}%</span>
+          </div>
+        </div>
+      </div>
+    </Modal>
   )
 }
 

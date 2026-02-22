@@ -1,9 +1,10 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import { useId, type ReactNode } from 'react'
+import { useId, useMemo, type ReactNode } from 'react'
 import { cn } from '@/shared/lib/utils'
 import { IconButton } from '@/shared/components/IconButton'
+import { isMobile } from '@/shared/lib/device'
 
-export type ModalVariant = 'center' | 'bottom'
+export type ModalVariant = 'center' | 'bottom' | 'responsive'
 
 type ModalProps = {
   open: boolean
@@ -32,6 +33,11 @@ export function Modal({
   const titleId = `modal-title-${id.replace(/:/g, '')}`
   const descId = description ? `modal-desc-${titleId}` : undefined
 
+  const resolvedVariant = useMemo(
+    () => (variant === 'responsive' ? (isMobile() ? 'bottom' : 'center') : variant),
+    [variant]
+  )
+
   const handleCloseAutoFocus = (e: Event) => {
     if (triggerRef?.current) {
       e.preventDefault()
@@ -48,16 +54,16 @@ export function Modal({
         <Dialog.Content
           className={cn(
             'fixed z-[501] bg-[var(--color-bg-primary)] shadow-[0_20px_40px_rgba(0,0,0,0.15)]',
-            variant === 'center'
-              ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[400px] w-[calc(100%-48px)] max-h-[90vh] overflow-y-auto overscroll-contain rounded-2xl border border-[var(--color-border-primary)] p-6'
-              : 'animate-slide-up-sheet bottom-0 left-0 right-0 w-full max-w-[480px] max-h-[88vh] mx-auto overflow-y-auto overscroll-contain rounded-t-2xl border-none p-0 pt-[env(safe-area-inset-top)]'
+            resolvedVariant === 'center'
+              ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[min(520px,calc(100vw-2rem))] w-[calc(100%-48px)] max-h-[90vh] overflow-y-auto overscroll-contain rounded-2xl border border-[var(--color-border-primary)] p-6'
+              : 'animate-slide-up-sheet bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] max-h-[88vh] overflow-y-auto overscroll-contain rounded-t-2xl border-none p-0 pt-[env(safe-area-inset-top)]'
           )}
           aria-labelledby={titleId}
           aria-describedby={descId || undefined}
           onCloseAutoFocus={handleCloseAutoFocus}
           onEscapeKeyDown={() => onOpenChange(false)}
         >
-          {variant === 'bottom' && (
+          {resolvedVariant === 'bottom' && (
             <div
               className="w-10 h-1 bg-[var(--color-text-tertiary)] opacity-30 mt-2 mb-3 mx-auto rounded-full"
               aria-hidden
@@ -66,7 +72,7 @@ export function Modal({
           <div
             className={cn(
               'flex items-center justify-between gap-3',
-              variant === 'bottom'
+              resolvedVariant === 'bottom'
                 ? 'py-1 px-5 pb-4 border-b border-[var(--color-border-primary)]'
                 : 'mb-4'
             )}
@@ -92,7 +98,7 @@ export function Modal({
               </IconButton>
             </Dialog.Close>
           </div>
-          <div className={variant === 'center' ? undefined : 'px-5 pt-1 pb-[max(1.5rem,env(safe-area-inset-bottom))]'}>{children}</div>
+          <div className={resolvedVariant === 'center' ? undefined : 'px-5 pt-1 pb-[max(1.5rem,env(safe-area-inset-bottom))]'}>{children}</div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

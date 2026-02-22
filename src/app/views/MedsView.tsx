@@ -60,7 +60,7 @@ export function MedsView() {
   const { isDemo } = useAuthStore()
   const { toast } = useAppStore()
   const { meds: realMeds, addMedBundleAsync, updateMed, deleteMed, isAdding, isDeleting } = useMedications()
-  const { scheds } = useSchedules()
+  const { scheds, addSchedAsync, updateSched, deleteSched } = useSchedules()
   const { refills, updateRefill } = useRefills()
 
   const displayMeds = isDemo
@@ -176,6 +176,10 @@ export function MedsView() {
             updateRefill({ id: refillId, updates: { current_quantity: qty } })
           }}
           refills={refills}
+          scheds={scheds}
+          addSchedAsync={addSchedAsync}
+          updateSched={updateSched}
+          deleteSched={deleteSched}
         />
       )}
 
@@ -194,7 +198,7 @@ export function MedsView() {
   )
 }
 
-function MedDetailModal({ med, isDemo, isDeleting, onClose, onUpdate, onDelete, onUpdateSupply, refills }: {
+function MedDetailModal({ med, isDemo, isDeleting, onClose, onUpdate, onDelete, onUpdateSupply, refills, scheds, addSchedAsync, updateSched, deleteSched }: {
   med: DisplayMed
   isDemo: boolean
   isDeleting: boolean
@@ -203,15 +207,23 @@ function MedDetailModal({ med, isDemo, isDeleting, onClose, onUpdate, onDelete, 
   onDelete: (id: string) => void
   onUpdateSupply: (refillId: string, qty: number) => void
   refills: Array<{ id: string; medication_id: string; current_quantity: number; total_quantity: number }>
+  scheds: Array<{ id: string; medication_id: string; time: string; days: number[]; food_context_minutes: number; active: boolean }>
+  addSchedAsync: (input: { medication_id: string; time: string; days: number[]; food_context_minutes: number; active: boolean }) => Promise<unknown>
+  updateSched: (input: { id: string; updates: Record<string, unknown> }) => void
+  deleteSched: (id: string) => void
 }) {
+  const { toast } = useAppStore()
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [editingSupply, setEditingSupply] = useState(false)
   const [supplyVal, setSupplyVal] = useState(String(med.sup))
 
-  // Edit form state
+  // Edit form state — initialized from current medication data
   const [editName, setEditName] = useState(med.name)
   const [editDose, setEditDose] = useState(med.dose)
+  const [editFreq, setEditFreq] = useState(String(med.freq))
+  const [editTimes, setEditTimes] = useState<string[]>(med.times.length > 0 ? med.times : ['08:00'])
+  const [editSup, setEditSup] = useState(String(med.sup))
   const [editInst, setEditInst] = useState(med.inst)
   const [editWarn, setEditWarn] = useState(med.warn)
 
@@ -220,14 +232,75 @@ function MedDetailModal({ med, isDemo, isDeleting, onClose, onUpdate, onDelete, 
   const barColor = p < 20 ? 'var(--color-red)' : p < 40 ? 'var(--color-amber)' : 'var(--color-green)'
 
   const refill = refills.find((r) => r.medication_id === med.id)
+  const medScheds = scheds.filter((s) => s.medication_id === med.id).sort((a, b) => a.time.localeCompare(b.time))
 
-  const handleSaveEdit = () => {
+  const generateEvenlySpacedTimes = (count: number, baseTime?: string): string[] => {
+    const base = baseTime ?? '08:00'
+    const [h] = base.split(':').map(Number)
+    const interval = Math.floor(24 / count)
+    return Array.from({ length: count }, (_, i) => {
+      const hr = (h + i * interval) % 24
+      return `${String(hr).padStart(2, '0')}:00`
+    })
+  }
+
+  const handleEditFreqChange = (newFreq: string) => {
+    const n = Number.parseInt(newFreq, 10) || 1
+    setEditFreq(newFreq)
+    setEditTimes((prev) => {
+      if (prev.length === n) return prev
+      if (prev.length < n) return generateEvenlySpacedTimes(n, prev[0])
+      return prev.slice(0, n)
+    })
+  }
+
+  const updateEditTimeAtIndex = (index: number, value: string) => {
+    setEditTimes((prev) => prev.map((v, i) => (i === index ? value : v)))
+  }
+
+  const handleSaveEdit = async () => {
+    const newFreq = Number.parseInt(editFreq, 10) || 1
+    const newSup = Math.max(0, parseInt(editSup, 10) || 0)
+
+    // 1. Update medication record
     onUpdate(med.id, {
       name: editName,
       dosage: editDose,
+      freq: newFreq,
       instructions: editInst,
       warnings: editWarn,
     })
+
+    // 2. Update schedules: match existing schedules to new times
+    try {
+      // Update existing schedules that still have a matching time slot
+      for (let i = 0; i < Math.min(medScheds.length, editTimes.length); i++) {
+        if (medScheds[i].time.slice(0, 5) !== editTimes[i]) {
+          updateSched({ id: medScheds[i].id, updates: { time: editTimes[i] } })
+        }
+      }
+      // Create new schedules if frequency increased
+      for (let i = medScheds.length; i < editTimes.length; i++) {
+        await addSchedAsync({
+          medication_id: med.id,
+          time: editTimes[i],
+          days: [0, 1, 2, 3, 4, 5, 6],
+          food_context_minutes: 0,
+          active: true,
+        })
+      }
+      // Delete extra schedules if frequency decreased
+      for (let i = editTimes.length; i < medScheds.length; i++) {
+        deleteSched(medScheds[i].id)
+      }
+    } catch {
+      toast('Failed to update some schedules', 'te')
+    }
+
+    // 3. Update supply/refill
+    if (refill && newSup !== med.sup) {
+      onUpdateSupply(refill.id, newSup)
+    }
   }
 
   const handleSaveSupply = () => {
@@ -239,20 +312,48 @@ function MedDetailModal({ med, isDemo, isDeleting, onClose, onUpdate, onDelete, 
 
   if (isEditing) {
     return (
-      <Modal open onOpenChange={(o) => !o && setIsEditing(false)} title="Edit Medication" variant="center">
-        <form onSubmit={(e) => { e.preventDefault(); handleSaveEdit() }}>
+      <Modal open onOpenChange={(o) => !o && setIsEditing(false)} title="Edit Medication" variant="responsive">
+        <form onSubmit={(e) => { e.preventDefault(); void handleSaveEdit() }}>
           <FormField label="Name" id="edit-med-name">
             <Input id="edit-med-name" value={editName} onChange={(e) => setEditName(e.target.value)} required />
           </FormField>
-          <FormField label="Dosage" id="edit-med-dose">
-            <Input id="edit-med-dose" value={editDose} onChange={(e) => setEditDose(e.target.value)} placeholder="e.g. 500mg" />
-          </FormField>
+
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="Dosage" id="edit-med-dose">
+              <Input id="edit-med-dose" value={editDose} onChange={(e) => setEditDose(e.target.value)} placeholder="e.g. 500mg" />
+            </FormField>
+            <FormField label="Frequency" id="edit-med-freq">
+              <select
+                id="edit-med-freq"
+                value={editFreq}
+                onChange={(e) => handleEditFreqChange(e.target.value)}
+                className="fi w-full cursor-pointer"
+              >
+                <option value="1">Once daily</option>
+                <option value="2">Twice daily</option>
+                <option value="3">Three times daily</option>
+              </select>
+            </FormField>
+          </div>
+
+          <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(Number(editFreq) || 1, 3)}, 1fr)${Number(editFreq) <= 2 ? ' 1fr' : ''}` }}>
+            {editTimes.map((t, i) => (
+              <FormField key={i} label={editTimes.length > 1 ? `Time ${i + 1}` : 'Time'} id={`edit-med-time-${i}`}>
+                <Input type="time" id={`edit-med-time-${i}`} value={t} onChange={(e) => updateEditTimeAtIndex(i, e.target.value)} />
+              </FormField>
+            ))}
+            <FormField label="Pills in Bottle" id="edit-med-sup">
+              <Input type="number" id="edit-med-sup" value={editSup} onChange={(e) => setEditSup(e.target.value)} min={0} />
+            </FormField>
+          </div>
+
           <FormField label="Instructions" id="edit-med-inst">
-            <textarea id="edit-med-inst" value={editInst} onChange={(e) => setEditInst(e.target.value)} rows={3} className="fi w-full resize-y min-h-[2.5rem]" />
+            <textarea id="edit-med-inst" value={editInst} onChange={(e) => setEditInst(e.target.value)} rows={3} className="fi w-full resize-y min-h-[2.5rem]" placeholder="e.g. Take with food" />
           </FormField>
           <FormField label="Warnings" id="edit-med-warn">
-            <textarea id="edit-med-warn" value={editWarn} onChange={(e) => setEditWarn(e.target.value)} rows={3} className="fi w-full resize-y min-h-[2.5rem]" />
+            <textarea id="edit-med-warn" value={editWarn} onChange={(e) => setEditWarn(e.target.value)} rows={3} className="fi w-full resize-y min-h-[2.5rem]" placeholder="e.g. May cause drowsiness" />
           </FormField>
+
           <div className="flex gap-3 mt-2">
             <Button type="button" variant="ghost" size="md" className="flex-1" onClick={() => setIsEditing(false)}>Cancel</Button>
             <Button type="submit" variant="primary" size="md" className="flex-1">Save Changes</Button>

@@ -25,10 +25,29 @@ export function useSchedules() {
     onError: (err: unknown) => handleMutationError(err, 'useSchedules', 'Failed to update schedule', toast),
   })
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Record<string, unknown> }) => SchedulesService.update(id, updates),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['schedules'] })
+    },
+    onError: (err: unknown) => handleMutationError(err, 'useSchedules', 'Failed to update schedule', toast),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: SchedulesService.delete,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['schedules'] })
+    },
+    onError: (err: unknown) => handleMutationError(err, 'useSchedules', 'Failed to delete schedule', toast),
+  })
+
   return {
     scheds: data ?? [],
     isLoading: isLoading && !isDemo,
     addSched: createMutation.mutate,
+    addSchedAsync: createMutation.mutateAsync,
+    updateSched: updateMutation.mutate,
+    deleteSched: deleteMutation.mutate,
     isAdding: createMutation.isPending,
   }
 }

@@ -89,15 +89,15 @@ export function SummaryView() {
         Daily Summary
       </h2>
 
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-3 gap-4 mb-6">
         <StatCard n={dn} label="Completed" color="var(--color-green)" />
         <StatCard n={lt} label="Late" color="var(--color-amber)" />
         <StatCard n={ms} label="Missed" color="var(--color-red)" />
       </div>
 
-      <Card className="mb-5">
-        <h3 className="font-bold mb-4 text-[var(--color-text-primary)] text-base sm:[font-size:var(--text-label)]">7-Day Adherence</h3>
-        <div className="flex items-end gap-2 h-[100px] pb-6 relative">
+      <Card className="mb-6">
+        <h3 className="font-bold mb-5 text-[var(--color-text-primary)] [font-size:var(--text-label)]">7-Day Adherence</h3>
+        <div className="flex items-end gap-3 h-[110px] pb-7 relative">
           {days.map((d, i) => {
             const bc = d.pct >= 80 ? 'var(--color-green)' : d.pct >= 50 ? 'var(--color-amber)' : d.pct > 0 ? 'var(--color-red)' : 'var(--color-ring-track)'
             return (
@@ -117,23 +117,23 @@ export function SummaryView() {
       </Card>
 
       <Card className="relative">
-        <h3 className="font-bold mb-3 text-[var(--color-text-primary)] text-base sm:[font-size:var(--text-label)]">
+        <h3 className="font-bold mb-4 text-[var(--color-text-primary)] [font-size:var(--text-label)]">
           Notes for your doctor
         </h3>
         {notes.length === 0 ? (
-          <p className="text-[var(--color-text-tertiary)] text-base sm:[font-size:var(--text-body)]">
+          <p className="text-[var(--color-text-tertiary)] [font-size:var(--text-body)]">
             Jot down side effects or questions for your doctor
           </p>
         ) : (
           notes.slice(0, 8).map((n) => (
-            <div key={n.id} className="mb-3 pb-3 border-b border-[var(--color-border-secondary)] last:border-0 last:mb-0 last:pb-0">
-              <div className="flex justify-between gap-2 mb-0.5">
-                <span className="font-semibold text-[var(--color-text-primary)] text-base sm:[font-size:var(--text-body)] shrink-0">{n.title}</span>
-                <span className="text-[var(--color-text-tertiary)] [font-family:var(--font-mono)] text-sm sm:[font-size:var(--text-caption)] shrink-0">
+            <div key={n.id} className="mb-4 pb-4 border-b border-[var(--color-border-secondary)] last:border-0 last:mb-0 last:pb-0">
+              <div className="flex justify-between gap-3 mb-1">
+                <span className="font-semibold text-[var(--color-text-primary)] [font-size:var(--text-body)] shrink-0">{n.title}</span>
+                <span className="text-[var(--color-text-tertiary)] [font-family:var(--font-mono)] [font-size:var(--text-caption)] shrink-0">
                   {new Date(n.created).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
-              <div className="text-[var(--color-text-secondary)] text-sm sm:[font-size:var(--text-label)] break-words">{n.text}</div>
+              <div className="text-[var(--color-text-secondary)] [font-size:var(--text-label)] break-words max-w-[60ch]">{n.text}</div>
             </div>
           ))
         )}
@@ -167,9 +167,9 @@ export function SummaryView() {
 
 function StatCard({ n, label, color }: { n: number; label: string; color: string }) {
   return (
-    <Card className="text-center p-4">
-      <div className="font-extrabold tracking-[-0.03em] text-2xl sm:[font-size:var(--text-subtitle)]" style={{ color }}>{n}</div>
-      <div className="font-semibold text-[var(--color-text-secondary)] uppercase tracking-[0.08em] mt-0.5 text-sm sm:[font-size:var(--text-caption)]">{label}</div>
+    <Card className="text-center p-5">
+      <div className="font-extrabold tracking-[-0.03em] [font-size:var(--text-subtitle)]" style={{ color }}>{n}</div>
+      <div className="font-semibold text-[var(--color-text-secondary)] mt-1.5 [font-size:var(--text-caption)]">{label}</div>
     </Card>
   )
 }

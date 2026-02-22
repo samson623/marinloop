@@ -49,8 +49,8 @@ export function Modal({
           className={cn(
             'fixed z-[501] bg-[var(--color-bg-primary)] shadow-[0_20px_40px_rgba(0,0,0,0.15)]',
             variant === 'center'
-              ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[400px] w-[calc(100%-48px)] max-h-[90vh] overflow-y-auto rounded-2xl border border-[var(--color-border-primary)] p-6'
-              : 'animate-slide-up-sheet bottom-0 left-0 right-0 w-full max-w-[480px] max-h-[88vh] mx-auto overflow-y-auto rounded-t-2xl border-none p-0 pt-[env(safe-area-inset-top)]'
+              ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[400px] w-[calc(100%-48px)] max-h-[90vh] overflow-y-auto overscroll-contain rounded-2xl border border-[var(--color-border-primary)] p-6'
+              : 'animate-slide-up-sheet bottom-0 left-0 right-0 w-full max-w-[480px] max-h-[88vh] mx-auto overflow-y-auto overscroll-contain rounded-t-2xl border-none p-0 pt-[env(safe-area-inset-top)]'
           )}
           aria-labelledby={titleId}
           aria-describedby={descId || undefined}
@@ -92,7 +92,7 @@ export function Modal({
               </IconButton>
             </Dialog.Close>
           </div>
-          <div className={variant === 'center' ? undefined : 'px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]'}>{children}</div>
+          <div className={variant === 'center' ? undefined : 'px-5 pt-1 pb-[max(1.5rem,env(safe-area-inset-bottom))]'}>{children}</div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

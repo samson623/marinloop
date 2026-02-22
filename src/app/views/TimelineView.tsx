@@ -88,7 +88,7 @@ export function TimelineView() {
             />
           </svg>
           <div className="font-extrabold tracking-[-0.03em] -mt-[82px] relative z-[1] text-[var(--color-text-primary)] text-xl sm:[font-size:var(--text-subtitle)]">{pct}%</div>
-          <div className="text-[var(--color-text-tertiary)] font-medium uppercase tracking-[0.08em] mt-0.5 text-xs sm:[font-size:var(--text-caption)]">Adherence</div>
+          <div className="text-[var(--color-text-tertiary)] font-medium mt-0.5 [font-size:var(--text-caption)]">Adherence</div>
         </div>
       </div>
 
@@ -157,21 +157,21 @@ function TimelineItem({ item: it, nowMin }: { item: SchedItem; nowMin: number })
       <button
         type="button"
         ref={triggerRef}
-        className="animate-slide-r card-interactive relative mb-2 min-h-[56px] py-4 px-4 w-full text-left rounded-xl cursor-pointer border border-[var(--color-border-secondary)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+        className="animate-slide-r card-interactive relative mb-3 min-h-[64px] py-5 px-5 w-full text-left rounded-xl cursor-pointer border border-[var(--color-border-secondary)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
         style={{ background: bg, borderLeft, opacity }}
         onClick={handleClick}
         aria-label={ariaLabel}
       >
         <div
-          className="absolute -left-6 top-5 w-[10px] h-[10px] border-2 border-[var(--color-bg-primary)] z-[1]"
+          className="absolute -left-6 top-6 w-[10px] h-[10px] border-2 border-[var(--color-bg-primary)] z-[1]"
           style={{ background: dotColor, borderRadius: dotRadius }}
           aria-hidden
         />
-        <div className="flex items-start gap-3">
-          <span className="text-[var(--color-text-secondary)] font-bold min-w-[64px] pt-0.5 [font-family:var(--font-mono)] text-sm sm:[font-size:var(--text-caption)]">{fT(it.time)}</span>
-          <div className="flex-1 min-w-0">
-            <div className="font-bold mb-0.5 truncate text-[var(--color-text-primary)] text-base sm:[font-size:var(--text-body)]">{it.name}</div>
-            <div className="text-[var(--color-text-secondary)] truncate text-sm sm:[font-size:var(--text-label)]">{it.inst || ''}</div>
+        <div className="flex items-start gap-4">
+          <span className="text-[var(--color-text-secondary)] font-bold min-w-[64px] pt-0.5 [font-family:var(--font-mono)] [font-size:var(--text-caption)]">{fT(it.time)}</span>
+          <div className="flex-1 min-w-0 max-w-[60ch]">
+            <div className="font-bold mb-1 truncate text-[var(--color-text-primary)] [font-size:var(--text-body)]">{it.name}</div>
+            <div className="text-[var(--color-text-secondary)] truncate [font-size:var(--text-label)]">{it.inst || ''}</div>
           </div>
           {tag}
         </div>
@@ -184,7 +184,7 @@ function TimelineItem({ item: it, nowMin }: { item: SchedItem; nowMin: number })
 function Tag({ bg, color, border, label, dashed, icon }: { bg: string; color: string; border: string; label: string; dashed?: boolean; icon?: React.ReactNode }) {
   return (
     <span
-      className="font-bold uppercase tracking-[0.08em] py-1 px-2.5 rounded-lg whitespace-nowrap shrink-0 self-start inline-flex items-center gap-1.5 [font-size:var(--text-caption)]"
+      className="font-bold py-1.5 px-3 rounded-lg whitespace-nowrap shrink-0 self-start inline-flex items-center gap-2 [font-size:var(--text-caption)]"
       style={{ background: bg, color, border: `1px ${dashed ? 'dashed' : 'solid'} ${border}` }}
     >
       {icon}

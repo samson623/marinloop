@@ -98,7 +98,7 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-5" autoComplete="off">
           {error && (
             <div
-              className="animate-fade-in bg-[var(--color-red-bg)] border border-[var(--color-red-border)] text-[var(--color-red)] py-3 px-4 rounded-lg text-[13px] sm:text-sm font-medium"
+              className="animate-fade-in bg-[var(--color-red-bg)] border border-[var(--color-red-border)] text-[var(--color-red)] py-3 px-4 rounded-lg [font-size:var(--text-body)] font-medium"
               role="alert"
             >
               {error}
@@ -107,7 +107,7 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
 
           {isSignUp && (
             <div>
-              <label htmlFor="login-name" className="block font-semibold text-[var(--color-text-secondary)] mb-1.5 sm:mb-2 uppercase tracking-[0.08em] [font-size:var(--text-label)]">
+              <label htmlFor="login-name" className="block font-semibold text-[var(--color-text-secondary)] mb-1.5 sm:mb-2 [font-size:var(--text-label)]">
                 Name
               </label>
               <Input
@@ -123,7 +123,7 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
           )}
 
           <div>
-            <label htmlFor="login-email" className="block font-semibold text-[var(--color-text-secondary)] mb-1.5 sm:mb-2 uppercase tracking-[0.08em] [font-size:var(--text-label)]">
+            <label htmlFor="login-email" className="block font-semibold text-[var(--color-text-secondary)] mb-1.5 sm:mb-2 [font-size:var(--text-label)]">
               Email
             </label>
             <Input
@@ -138,7 +138,7 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
           </div>
 
           <div>
-            <label htmlFor="login-password" className="block font-semibold text-[var(--color-text-secondary)] mb-1.5 sm:mb-2 uppercase tracking-[0.08em] [font-size:var(--text-label)]">
+            <label htmlFor="login-password" className="block font-semibold text-[var(--color-text-secondary)] mb-1.5 sm:mb-2 [font-size:var(--text-label)]">
               Password
             </label>
             <Input
@@ -163,9 +163,9 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
             {loading ? 'Processing...' : isSignUp ? 'Create Account' : 'Sign In'}
           </Button>
 
-          <div className="flex items-center gap-3 my-3 sm:my-4 text-[var(--color-text-tertiary)] uppercase tracking-[0.1em] [font-size:var(--text-caption)]">
+          <div className="flex items-center gap-3 my-3 sm:my-4 text-[var(--color-text-tertiary)] [font-size:var(--text-caption)]">
             <span className="flex-1 h-px bg-[var(--color-border-primary)]" />
-            <span>or</span>
+            <span>Or</span>
             <span className="flex-1 h-px bg-[var(--color-border-primary)]" />
           </div>
 
@@ -183,7 +183,7 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
             <button
               type="button"
               onClick={() => setIsSignUp(!isSignUp)}
-              className="border-none bg-transparent cursor-pointer text-[13px] sm:text-sm text-[var(--color-accent)] font-semibold outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] rounded min-h-[44px] inline-flex items-center justify-center"
+              className="border-none bg-transparent cursor-pointer [font-size:var(--text-body)] text-[var(--color-accent)] font-semibold outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] rounded min-h-[44px] min-w-[44px] inline-flex items-center justify-center"
             >
               {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
             </button>

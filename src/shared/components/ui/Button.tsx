@@ -22,9 +22,9 @@ const variantClasses: Record<ButtonVariant, string> = {
 }
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'px-3 py-2.5 min-h-[44px] rounded-xl',
+  sm: 'px-4 py-3 min-h-[44px] rounded-xl',
   md: 'px-5 py-3.5 min-h-[48px] rounded-xl',
-  lg: 'px-5 py-4 min-h-[52px] rounded-xl',
+  lg: 'px-6 py-4 min-h-[52px] rounded-xl',
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -47,7 +47,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           'w-full inline-flex items-center justify-center font-semibold cursor-pointer outline-none transition-all duration-120',
           '[font-size:var(--text-body)]',
           'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]',
-          'active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100',
+          'tap-spring active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100',
           variantClasses[variant],
           sizeClasses[size],
           className

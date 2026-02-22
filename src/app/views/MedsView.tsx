@@ -77,9 +77,9 @@ export function MedsView() {
 
       <div className="stagger-children">
         {displayMeds.length === 0 && !isDemo && (
-          <div className="py-8 px-5 text-center border-2 border-dashed border-[var(--color-border-secondary)] rounded-2xl sm:py-6 sm:px-4">
-            <p className="text-[var(--color-text-secondary)] text-lg font-medium sm:text-base">No medications found. Add one below.</p>
-            <p className="mt-2 text-[var(--color-text-tertiary)] text-sm sm:[font-size:var(--text-caption)]">Add your first medication to get started</p>
+          <div className="py-10 px-6 text-center border-2 border-dashed border-[var(--color-border-secondary)] rounded-2xl">
+            <p className="text-[var(--color-text-secondary)] [font-size:var(--text-body)] font-medium">No medications found. Add one below.</p>
+            <p className="mt-3 text-[var(--color-text-tertiary)] [font-size:var(--text-caption)]">Add your first medication to get started</p>
           </div>
         )}
 
@@ -92,33 +92,33 @@ export function MedsView() {
             <button
               key={m.id}
               type="button"
-              className="animate-slide-r card-interactive w-full text-left bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] rounded-2xl p-4 mb-3 min-h-[72px] cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+              className="animate-slide-r card-interactive w-full text-left bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] rounded-2xl p-5 mb-4 min-h-[88px] cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
               style={{ animationDelay: `${i * 0.04}s` }}
               onClick={() => toast(`${m.name} - ${m.inst}`, 'ts')}
             >
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <span className="font-bold text-[var(--color-text-primary)] text-base sm:[font-size:var(--text-body)]">{m.name}</span>
-                <span className="text-[var(--color-text-tertiary)] bg-[var(--color-bg-tertiary)] py-1 px-2.5 rounded-lg [font-family:var(--font-mono)] text-sm sm:[font-size:var(--text-caption)] shrink-0">{m.dose}</span>
+              <div className="flex items-start justify-between gap-4 mb-3">
+                <span className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-body)] leading-snug">{m.name}</span>
+                <span className="text-[var(--color-text-secondary)] bg-[var(--color-bg-tertiary)] py-1.5 px-3 rounded-lg [font-family:var(--font-mono)] [font-size:var(--text-caption)] shrink-0 font-semibold">{m.dose}</span>
               </div>
-              <div className="flex flex-wrap gap-4 text-[var(--color-text-secondary)] text-sm sm:[font-size:var(--text-label)]">
-                <span className="flex items-center gap-1.5">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+              <div className="flex flex-wrap gap-5 text-[var(--color-text-secondary)] [font-size:var(--text-label)]">
+                <span className="flex items-center gap-2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
                   {m.times.length > 0 ? m.times.map((t) => fT(t)).join(', ') : 'No time set'}
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 20V10" /><path d="M12 20V4" /><path d="M6 20v-6" /></svg>
+                <span className="flex items-center gap-2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M18 20V10" /><path d="M12 20V4" /><path d="M6 20v-6" /></svg>
                   {m.freq}x daily
                 </span>
               </div>
-              <div className="mt-3 h-1.5 bg-[var(--color-ring-track)] rounded-full overflow-hidden">
+              <div className="mt-4 h-2 bg-[var(--color-ring-track)] rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-[width] duration-300"
                   style={{ width: `${p}%`, background: sc }}
                 />
               </div>
-              <div className="text-[var(--color-text-tertiary)] mt-1.5 flex justify-between [font-family:var(--font-mono)] text-sm sm:[font-size:var(--text-caption)]">
+              <div className="text-[var(--color-text-secondary)] mt-2 flex justify-between [font-family:var(--font-mono)] [font-size:var(--text-caption)] font-medium">
                 <span>{m.sup} pills left</span>
-                <span>{days} days{days <= 5 ? ' — Refill soon' : ''}</span>
+                <span className={days <= 5 ? 'text-[var(--color-red)] font-bold' : ''}>{days} days{days <= 5 ? ' — Refill soon' : ''}</span>
               </div>
             </button>
           )
@@ -509,7 +509,7 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
 
         <div className="flex items-center gap-3 mb-4">
           <div className="flex-1 h-px bg-[var(--color-border-primary)]" />
-          <span className="font-semibold text-[var(--color-text-tertiary)] uppercase tracking-[0.08em] [font-size:var(--text-caption)]">or enter manually</span>
+          <span className="font-semibold text-[var(--color-text-tertiary)] [font-size:var(--text-caption)]">Or enter manually</span>
           <div className="flex-1 h-px bg-[var(--color-border-primary)]" />
         </div>
 
@@ -586,8 +586,8 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft }: AddMedModa
 
 function FormField({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
   return (
-    <div className="mb-3.5 flex-1">
-      <label htmlFor={id} className="block font-bold text-[var(--color-text-secondary)] mb-1 uppercase tracking-[0.08em] [font-size:var(--text-label)]">
+    <div className="mb-4 flex-1">
+      <label htmlFor={id} className="block font-bold text-[var(--color-text-secondary)] mb-1.5 [font-size:var(--text-label)]">
         {label}
       </label>
       {children}

@@ -12,9 +12,9 @@ type IconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 }
 
 const sizeClasses: Record<IconButtonSize, string> = {
-  sm: 'w-9 h-9 rounded-[10px] min-w-[36px] min-h-[36px]',
+  sm: 'w-11 h-11 rounded-xl min-w-[44px] min-h-[44px]',
   md: 'w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl',
-  lg: 'w-12 h-12 min-w-[48px] min-h-[48px] rounded-[50%]',
+  lg: 'w-12 h-12 min-w-[48px] min-h-[48px] rounded-xl',
 }
 
 /**

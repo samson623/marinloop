@@ -30,25 +30,28 @@ function mapApiError(msg: string): string {
   if (msg.toLowerCase().includes('daily limit') || msg.includes('tomorrow') || msg.includes('429')) {
     return 'Daily limit reached. Try again tomorrow.'
   }
-  if (msg.toLowerCase().includes('too large') || msg.toLowerCase().includes('smaller') || msg.includes('6mb')) {
-    return 'Photo too large. Try a smaller image.'
+  if (msg.toLowerCase().includes('too large') || msg.toLowerCase().includes('smaller') || msg.includes('6mb') || msg.includes('18mb')) {
+    return 'Photos too large. Try smaller images.'
   }
   return msg || "Couldn't read the label. Please enter manually."
 }
 
 /**
- * Extract medication info from a prescription label photo.
- * Calls extract-label Edge Function with base64 image.
+ * Extract medication info from one or more prescription label photos.
+ * Sends all images to the extract-label Edge Function for merged extraction.
  */
-export async function extractFromImage(file: File): Promise<LabelExtractResult> {
+export async function extractFromImages(files: File[]): Promise<LabelExtractResult> {
   if (isDemoApp) {
     throw new Error('Label extraction is not available in demo mode. Please sign in.')
   }
+  if (files.length === 0) {
+    throw new Error('At least one image is required.')
+  }
 
-  const imageBase64 = await fileToBase64(file)
+  const images = await Promise.all(files.map(fileToBase64))
 
   const { data, error } = await supabase.functions.invoke<LabelExtractResult>('extract-label', {
-    body: { imageBase64 },
+    body: { images },
   })
 
   if (error) {
@@ -80,4 +83,9 @@ export async function extractFromImage(file: File): Promise<LabelExtractResult> 
   }
 
   return parsed
+}
+
+/** Single-file convenience wrapper (backwards compatible). */
+export async function extractFromImage(file: File): Promise<LabelExtractResult> {
+  return extractFromImages([file])
 }

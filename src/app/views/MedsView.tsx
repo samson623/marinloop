@@ -7,7 +7,7 @@ import { useRefills } from '@/shared/hooks/useRefillsList'
 import { BarcodeScanner } from '@/shared/components/BarcodeScanner'
 import { Modal } from '@/shared/components/Modal'
 import { lookupByBarcode } from '@/shared/services/openfda'
-import { extractFromImage } from '@/shared/services/label-extract'
+import { extractFromImages } from '@/shared/services/label-extract'
 import { handleMutationError } from '@/shared/lib/errors'
 import { Button, Input } from '@/shared/components/ui'
 
@@ -245,6 +245,8 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft, openScanner:
   const [isLooking, setIsLooking] = useState(false)
   const [showVerifyModal, setShowVerifyModal] = useState(false)
   const [pendingExtract, setPendingExtract] = useState<{ name?: string; dosage?: string; freq?: number; time?: string; quantity?: number; instructions?: string; warnings?: string; confidence?: number } | null>(null)
+  const [labelPhotos, setLabelPhotos] = useState<File[]>([])
+  const [photoThumbs, setPhotoThumbs] = useState<string[]>([])
   const scannerInputRef = useRef<HTMLInputElement>(null)
   const labelPhotoInputRef = useRef<HTMLInputElement>(null)
   const barcodeInputRef = useRef<HTMLInputElement>(null)
@@ -354,15 +356,35 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft, openScanner:
     if (r.warnings?.trim()) setWarn(r.warnings)
   }
 
-  const handleLabelPhoto = async (file: File) => {
+  const addLabelPhoto = (file: File) => {
     if (!file.type.startsWith('image/')) {
       toast('Please select an image file.', 'tw')
       return
     }
+    if (labelPhotos.length >= 5) {
+      toast('Maximum 5 images allowed.', 'tw')
+      return
+    }
+    setLabelPhotos((prev) => [...prev, file])
+    const url = URL.createObjectURL(file)
+    setPhotoThumbs((prev) => [...prev, url])
+  }
+
+  const removeLabelPhoto = (index: number) => {
+    URL.revokeObjectURL(photoThumbs[index])
+    setLabelPhotos((prev) => prev.filter((_, i) => i !== index))
+    setPhotoThumbs((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const processAllPhotos = async () => {
+    if (labelPhotos.length === 0) {
+      toast('Add at least one photo first.', 'tw')
+      return
+    }
     setIsLooking(true)
-    toast('Reading label...', 'ts')
+    toast(labelPhotos.length > 1 ? `Reading ${labelPhotos.length} label photos...` : 'Reading label...', 'ts')
     try {
-      const result = await extractFromImage(file)
+      const result = await extractFromImages(labelPhotos)
       const conf = result.confidence ?? 0.5
       const hasUsefulData = Boolean(
         result.name?.trim() || result.dosage?.trim() || result.instructions?.trim() || result.warnings?.trim()
@@ -378,6 +400,10 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft, openScanner:
         applyExtractToForm(result)
         toast('Label info loaded. Please verify before saving.', 'ts')
       }
+      // Clear photos after successful processing
+      photoThumbs.forEach((url) => URL.revokeObjectURL(url))
+      setLabelPhotos([])
+      setPhotoThumbs([])
     } catch (e) {
       handleMutationError(e, 'label-extract', "Couldn't read the label. Please enter manually.", toast)
     } finally {
@@ -475,7 +501,7 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft, openScanner:
 
   return (
     <>
-      <Modal open onOpenChange={(o) => !o && onClose()} title="Add Medication" variant="center">
+      <Modal open onOpenChange={(o) => !o && onClose()} title="Add Medication" variant="responsive">
         {/* Hidden input for USB barcode scanners (keyboard wedge mode) */}
         <input
           ref={scannerInputRef}
@@ -559,43 +585,95 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft, openScanner:
               ref={labelPhotoInputRef}
               type="file"
               accept="image/*"
-              aria-label="Take or upload photo of prescription label or pill bottle"
+              multiple
+              aria-label="Take or upload photos of prescription label or pill bottle"
               className="absolute opacity-0 w-0 h-0 -left-[9999px] pointer-events-none"
               onChange={(e) => {
-                const f = e.target.files?.[0]
-                if (f) {
-                  void handleLabelPhoto(f)
+                const files = e.target.files
+                if (files) {
+                  Array.from(files).forEach((f) => addLabelPhoto(f))
                   e.target.value = ''
                 }
               }}
             />
-            <button
-              type="button"
-              onClick={() => labelPhotoInputRef.current?.click()}
-              disabled={isLooking}
-              aria-label="Take or upload photo of prescription label or pill bottle"
-              aria-busy={isLooking}
-              aria-live="polite"
-              className="w-full py-3 px-6 mb-5 rounded-2xl font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border-primary)] hover:bg-[var(--color-bg-secondary)] cursor-pointer disabled:opacity-60 flex items-center justify-center gap-3 [font-size:var(--text-body)]"
-            >
-          {isLooking ? (
-            <>
-              <div className="w-5 h-5 border-2 border-[var(--color-border-primary)] border-t-2 border-t-[var(--color-accent)] rounded-full spin-loading shrink-0" />
-              <span>Reading label...</span>
-            </>
-          ) : (
-            <>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden>
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <polyline points="21 15 16 10 5 21" />
-              </svg>
-              <span>Take or upload photo of label</span>
-            </>
-          )}
-        </button>
-            <p className="text-[var(--color-text-tertiary)] text-xs mb-4 -mt-2 px-1">
-              Works with prescription labels or pill bottles. Take a photo or choose from your gallery. Extracted info is for convenience only — always verify against your label.
+
+            {/* Photo thumbnails */}
+            {photoThumbs.length > 0 && (
+              <div className="mb-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
+                    {labelPhotos.length} photo{labelPhotos.length !== 1 ? 's' : ''} added
+                  </span>
+                  <span className="text-xs text-[var(--color-text-tertiary)]">
+                    (up to 5 — add multiple sides of the bottle)
+                  </span>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {photoThumbs.map((thumb, i) => (
+                    <div key={i} className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] shrink-0">
+                      <img src={thumb} alt={`Label photo ${i + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeLabelPhoto(i)}
+                        className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-[var(--color-red)] text-white rounded-full flex items-center justify-center text-xs font-bold cursor-pointer shadow-sm"
+                        aria-label={`Remove photo ${i + 1}`}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  {labelPhotos.length < 5 && (
+                    <button
+                      type="button"
+                      onClick={() => labelPhotoInputRef.current?.click()}
+                      className="w-16 h-16 rounded-xl border-2 border-dashed border-[var(--color-border-secondary)] flex items-center justify-center text-[var(--color-text-tertiary)] cursor-pointer hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
+                      aria-label="Add another photo"
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                    </button>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { void processAllPhotos() }}
+                  disabled={isLooking || labelPhotos.length === 0}
+                  className="mt-2 w-full py-3 px-6 rounded-2xl font-bold text-white bg-[var(--color-accent)] cursor-pointer disabled:opacity-60 disabled:cursor-wait flex items-center justify-center gap-2 [font-size:var(--text-body)]"
+                >
+                  {isLooking ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-2 border-t-white rounded-full spin-loading shrink-0" />
+                      <span>Reading {labelPhotos.length > 1 ? `${labelPhotos.length} photos` : 'label'}...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                      <span>Process {labelPhotos.length > 1 ? `${labelPhotos.length} photos` : 'photo'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {labelPhotos.length === 0 && (
+              <button
+                type="button"
+                onClick={() => labelPhotoInputRef.current?.click()}
+                disabled={isLooking}
+                aria-label="Take or upload photos of prescription label or pill bottle"
+                aria-busy={isLooking}
+                aria-live="polite"
+                className="w-full py-3 px-6 mb-3 rounded-2xl font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border-primary)] hover:bg-[var(--color-bg-secondary)] cursor-pointer disabled:opacity-60 flex items-center justify-center gap-3 [font-size:var(--text-body)]"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden>
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+                <span>📸 Photo label (multiple sides)</span>
+              </button>
+            )}
+            <p className="text-[var(--color-text-tertiary)] text-xs mb-4 -mt-1 px-1">
+              Photograph all sides of your pill bottle for best results. You can add up to 5 photos.
             </p>
           </>
         )}
@@ -631,10 +709,24 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft, openScanner:
             </FormField>
           </div>
           <FormField label="Instructions" id="med-inst">
-            <Input id="med-inst" value={inst} onChange={(e) => setInst(e.target.value)} placeholder="e.g. Take with food" />
+            <textarea
+              id="med-inst"
+              value={inst}
+              onChange={(e) => setInst(e.target.value)}
+              placeholder="e.g. Take with food"
+              rows={inst.length > 80 ? 4 : 2}
+              className="fi w-full resize-y min-h-[2.5rem]"
+            />
           </FormField>
           <FormField label="Warnings" id="med-warn">
-            <Input id="med-warn" value={warn} onChange={(e) => setWarn(e.target.value)} placeholder="e.g. May cause drowsiness" />
+            <textarea
+              id="med-warn"
+              value={warn}
+              onChange={(e) => setWarn(e.target.value)}
+              placeholder="e.g. May cause drowsiness"
+              rows={warn.length > 80 ? 4 : 2}
+              className="fi w-full resize-y min-h-[2.5rem]"
+            />
           </FormField>
           <Button type="submit" variant="primary" size="md" className="mt-1.5">
             Add Medication

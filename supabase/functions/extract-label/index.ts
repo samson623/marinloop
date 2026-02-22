@@ -1,17 +1,18 @@
 // Supabase Edge Function: extract-label
-// Extracts medication info from a label photo using OpenAI vision. Auth, rate limits, CORS mirror openai-chat.
+// Extracts medication info from label photos using OpenAI vision. Supports multiple images.
 //
 // Usage: POST with Authorization: Bearer <user-jwt>
-// Body: { imageBase64: "data:image/jpeg;base64,..." }
+// Body: { images: ["data:image/jpeg;base64,...", ...] }  (or legacy: { imageBase64: "..." })
 //
 // Requires: OPENAI_API_KEY, ALLOWED_ORIGINS. Reuses AI_DAILY_LIMIT (shared with openai-chat).
-// Max image: 6MB base64 (~4.5MB raw). Returns 400 if larger.
+// Max total payload: 18MB base64. Max 5 images. Returns 400 if exceeded.
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const ALLOWED_MODEL = 'gpt-4o-mini'
-const MAX_IMAGE_BASE64_BYTES = 6 * 1024 * 1024 // 6MB
+const MAX_TOTAL_BASE64_BYTES = 18 * 1024 * 1024 // 18MB total across all images
+const MAX_IMAGES = 5
 
 function getAiDailyLimit(): number {
   const raw = Deno.env.get('AI_DAILY_LIMIT')
@@ -42,37 +43,34 @@ function getAllowedOrigins(): string[] {
   return raw.split(',').map((o) => o.trim()).filter(Boolean)
 }
 
-function isNullOrigin(origin: string | null): boolean {
-  return origin == null || origin === 'null'
-}
-
 function getCorsHeaders(origin: string | null): Record<string, string> {
   const allowed = getAllowedOrigins()
-  const nullOrigin = isNullOrigin(origin)
-  const allowOrigin =
-    allowed.includes('*') ? (origin && origin !== 'null' ? origin : '*')
-      : (origin && origin !== 'null' && allowed.includes(origin)) ? origin
-        : (nullOrigin && allowed.length > 0) ? '*'
-          : null
-  const headers: Record<string, string> = {
+  const effectiveOrigin =
+    origin && origin !== 'null'
+      ? (allowed.includes('*') || allowed.includes(origin) || allowed.length === 0)
+        ? origin
+        : '*'
+      : '*'
+  return {
+    'Access-Control-Allow-Origin': effectiveOrigin,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Vary': 'Origin',
   }
-  if (allowOrigin != null) {
-    headers['Access-Control-Allow-Origin'] = allowOrigin
-    headers['Vary'] = 'Origin'
-  }
-  return headers
 }
 
-const EXTRACTION_SYSTEM_PROMPT = `You extract medication information from prescription label photos. Return ONLY valid JSON, no markdown, no code blocks.
+const EXTRACTION_SYSTEM_PROMPT = `You extract medication information from prescription label photos. You may receive MULTIPLE images showing different sides of the same bottle — merge all visible information into ONE result. Return ONLY valid JSON, no markdown, no code blocks.
 
 Rules:
-- Extract only what is clearly visible on the label. Never invent or guess medication names or doses.
-- Omit or use null for fields you cannot read.
+- MERGE info across all images. The medication name may appear on one side, warnings on another, pharmacy info on another.
+- Extract only what is clearly visible. Never invent or guess medication names or doses.
+- Omit or use null for fields you cannot read from ANY image.
 - freq: 1 = once daily, 2 = twice daily, 3 = three times daily. Infer from "morning and evening", "every 12 hours", etc.
 - time: use "08:00" for morning, "20:00" for evening when exact time is not given.
-- confidence: 0–1 based on text clarity and completeness of extraction.
+- instructions: combine all dosage instructions visible across images (e.g. "Take with food", "Take with plenty of water").
+- warnings: combine ALL warnings visible across images into one string, separated by ". ". Include drug interaction warnings, side effects, storage instructions.
+- quantity: look for QTY on the pharmacy label.
+- confidence: 0–1 based on text clarity and completeness of extraction across all images.
 
 Output JSON schema:
 {
@@ -96,6 +94,7 @@ function scrubError(err: unknown): string {
 
 interface LabelExtractPayload {
   imageBase64?: unknown
+  images?: unknown
 }
 
 interface LabelExtractResult {
@@ -132,12 +131,12 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  // Check origin: allow if ALLOWED_ORIGINS contains '*', is empty (open), or includes the origin.
   const allowed = getAllowedOrigins()
-  const nullOrigin = isNullOrigin(origin)
   const originAllowed =
+    allowed.length === 0 ||
     allowed.includes('*') ||
-    (origin != null && origin !== 'null' && allowed.includes(origin)) ||
-    (nullOrigin && allowed.length > 0)
+    (origin != null && origin !== 'null' && allowed.includes(origin))
   if (!originAllowed) {
     return new Response(
       JSON.stringify({ error: 'CORS not allowed' }),
@@ -222,25 +221,43 @@ serve(async (req) => {
       )
     }
 
-    const imageBase64 = body.imageBase64
-    if (typeof imageBase64 !== 'string' || imageBase64.length === 0) {
+    // Support both `images` array (new) and `imageBase64` string (legacy)
+    let imageList: string[] = []
+    if (Array.isArray(body.images)) {
+      imageList = (body.images as unknown[]).filter((i): i is string => typeof i === 'string' && i.length > 0)
+    } else if (typeof body.imageBase64 === 'string' && body.imageBase64.length > 0) {
+      imageList = [body.imageBase64]
+    }
+
+    if (imageList.length === 0) {
       return new Response(
-        JSON.stringify({ error: 'imageBase64 is required' }),
+        JSON.stringify({ error: 'At least one image is required (images[] or imageBase64)' }),
+        { status: 400, headers: corsHeaders },
+      )
+    }
+    if (imageList.length > MAX_IMAGES) {
+      return new Response(
+        JSON.stringify({ error: `Maximum ${MAX_IMAGES} images allowed` }),
         { status: 400, headers: corsHeaders },
       )
     }
 
-    const sizeBytes = new TextEncoder().encode(imageBase64).length
-    if (sizeBytes > MAX_IMAGE_BASE64_BYTES) {
+    const totalSize = imageList.reduce((sum, img) => sum + new TextEncoder().encode(img).length, 0)
+    if (totalSize > MAX_TOTAL_BASE64_BYTES) {
       return new Response(
-        JSON.stringify({ error: 'Photo too large. Try a smaller image.' }),
+        JSON.stringify({ error: 'Photos too large. Try smaller images.' }),
         { status: 400, headers: corsHeaders },
       )
     }
+
+    const imageCount = imageList.length
+    const textInstruction = imageCount > 1
+      ? `Extract and MERGE medication information from these ${imageCount} prescription label photos (different sides of the same bottle). Return only valid JSON.`
+      : 'Extract medication information from this prescription label. Return only valid JSON.'
 
     const userContent: Array<{ type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }> = [
-      { type: 'text', text: 'Extract medication information from this prescription label. Return only valid JSON.' },
-      { type: 'image_url', image_url: { url: imageBase64 } },
+      { type: 'text', text: textInstruction },
+      ...imageList.map((img) => ({ type: 'image_url' as const, image_url: { url: img } })),
     ]
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {

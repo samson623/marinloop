@@ -43,27 +43,21 @@ function getAllowedOrigins(): string[] {
   return raw.split(',').map((o) => o.trim()).filter(Boolean)
 }
 
-function isNullOrigin(origin: string | null): boolean {
-  return origin == null || origin === 'null'
-}
-
 function getCorsHeaders(origin: string | null): Record<string, string> {
   const allowed = getAllowedOrigins()
-  const nullOrigin = isNullOrigin(origin)
-  const allowOrigin =
-    allowed.includes('*') ? (origin && origin !== 'null' ? origin : '*')
-      : (origin && origin !== 'null' && allowed.includes(origin)) ? origin
-        : (nullOrigin && allowed.length > 0) ? '*'
-          : null
-  const headers: Record<string, string> = {
+  // If wildcard or the origin is in the list, reflect it. Otherwise use '*'.
+  const effectiveOrigin =
+    origin && origin !== 'null'
+      ? (allowed.includes('*') || allowed.includes(origin) || allowed.length === 0)
+        ? origin
+        : '*'
+      : '*'
+  return {
+    'Access-Control-Allow-Origin': effectiveOrigin,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Vary': 'Origin',
   }
-  if (allowOrigin != null) {
-    headers['Access-Control-Allow-Origin'] = allowOrigin
-    headers['Vary'] = 'Origin'
-  }
-  return headers
 }
 
 interface ChatMessage {
@@ -91,13 +85,12 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  // Fail closed: reject requests from disallowed origins (no auth/OpenAI for them).
+  // Check origin: allow if ALLOWED_ORIGINS contains '*', is empty (open), or includes the origin.
   const allowed = getAllowedOrigins()
-  const nullOrigin = isNullOrigin(origin)
   const originAllowed =
+    allowed.length === 0 ||
     allowed.includes('*') ||
-    (origin != null && origin !== 'null' && allowed.includes(origin)) ||
-    (nullOrigin && allowed.length > 0)
+    (origin != null && origin !== 'null' && allowed.includes(origin))
   if (!originAllowed) {
     return new Response(
       JSON.stringify({ error: 'CORS not allowed' }),

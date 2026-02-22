@@ -10,7 +10,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const ALLOWED_MODEL = 'gpt-5-nano'
+const ALLOWED_MODEL = 'gpt-4o-mini'
 const MAX_MESSAGES = 20
 const MAX_CONTENT_LENGTH = 8000
 
@@ -52,9 +52,9 @@ function getCorsHeaders(origin: string | null): Record<string, string> {
   const nullOrigin = isNullOrigin(origin)
   const allowOrigin =
     allowed.includes('*') ? (origin && origin !== 'null' ? origin : '*')
-    : (origin && origin !== 'null' && allowed.includes(origin)) ? origin
-    : (nullOrigin && allowed.length > 0) ? '*'
-    : null
+      : (origin && origin !== 'null' && allowed.includes(origin)) ? origin
+        : (nullOrigin && allowed.length > 0) ? '*'
+          : null
   const headers: Record<string, string> = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',

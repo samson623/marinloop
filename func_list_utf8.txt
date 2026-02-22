@@ -1,0 +1,8 @@
+﻿
+  
+   ID                                   | NAME          | SLUG          | STATUS | VERSION | UPDATED_AT (UTC)    
+  --------------------------------------|---------------|---------------|--------|---------|---------------------
+   726c4027-90dc-408c-87a8-4fb2ee962eb5 | send-push     | send-push     | ACTIVE | 8       | 2026-02-22 03:09:31 
+   e1c2615b-9a34-4ee2-bd90-b344c8b573d6 | openai-chat   | openai-chat   | ACTIVE | 9       | 2026-02-22 03:59:42 
+   dab43c5a-dbe1-48b0-a549-eca8d2253a71 | extract-label | extract-label | ACTIVE | 8       | 2026-02-22 03:59:28 
+

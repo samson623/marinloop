@@ -14,4 +14,18 @@ export default defineConfig({
     port: 5173,
     open: true,
   },
+  build: {
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': ['framer-motion', 'lucide-react', '@radix-ui/react-dialog'],
+          'supabase-vendor': ['@supabase/supabase-js'],
+          'scanner-vendor': ['html5-qrcode'],
+          'query-vendor': ['@tanstack/react-query'],
+        },
+      },
+    },
+  },
 })

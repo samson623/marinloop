@@ -15,6 +15,7 @@ import { Button, Input } from '@/shared/components/ui'
 type AddMedModalProps = {
   onClose: () => void
   isDemo: boolean
+  isSaving: boolean
   initialDraft: {
     name?: string
     dose?: string
@@ -26,11 +27,11 @@ type AddMedModalProps = {
   } | null
   openScanner?: boolean
   openPhoto?: boolean
-  createBundle: (input: {
+  createBundleAsync: (input: {
     medication: { name: string; dosage: string; freq: number; instructions: string; warnings: string; color: string; icon: string }
     schedules: Array<{ time: string; days: number[]; food_context_minutes: number; active: boolean }>
     refill: { current_quantity: number; total_quantity: number; refill_date: string | null; pharmacy: string | null }
-  }) => void
+  }) => Promise<string>
 }
 
 type DisplayMed = {
@@ -58,7 +59,7 @@ export function MedsView() {
   const [selectedMed, setSelectedMed] = useState<DisplayMed | null>(null)
   const { isDemo } = useAuthStore()
   const { toast } = useAppStore()
-  const { meds: realMeds, addMedBundle, updateMed, deleteMed, isDeleting } = useMedications()
+  const { meds: realMeds, addMedBundleAsync, updateMed, deleteMed, isAdding, isDeleting } = useMedications()
   const { scheds } = useSchedules()
   const { refills, updateRefill } = useRefills()
 
@@ -181,7 +182,8 @@ export function MedsView() {
       {showAddMedModal && (
         <AddMedModal
           onClose={closeAddMedModal}
-          createBundle={addMedBundle}
+          createBundleAsync={addMedBundleAsync}
+          isSaving={isAdding}
           isDemo={isDemo}
           initialDraft={draftMed}
           openScanner={addMedModalOptions?.openScanner}
@@ -389,7 +391,7 @@ function MedDetailModal({ med, isDemo, isDeleting, onClose, onUpdate, onDelete, 
   )
 }
 
-function AddMedModal({ onClose, createBundle, isDemo, initialDraft, openScanner: openScannerProp, openPhoto: openPhotoProp }: AddMedModalProps) {
+function AddMedModal({ onClose, createBundleAsync, isDemo, isSaving, initialDraft, openScanner: openScannerProp, openPhoto: openPhotoProp }: AddMedModalProps) {
   const { addMed: addMedDemo, toast } = useAppStore()
   const [name, setName] = useState('')
   const [dose, setDose] = useState('')
@@ -663,14 +665,18 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft, openScanner:
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const f = Number.parseInt(freq, 10) || 1
 
     if (isDemo) {
       addMedDemo({ name, dose, freq: f, times, inst, warn, fw: 0, sup: Number.parseInt(sup, 10) || 30, tot: Number.parseInt(sup, 10) || 30, dpd: f })
-    } else {
-      createBundle({
+      onClose()
+      return
+    }
+
+    try {
+      await createBundleAsync({
         medication: {
           name,
           dosage: dose,
@@ -693,9 +699,11 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft, openScanner:
           pharmacy: null,
         },
       })
+      onClose()
+    } catch {
+      // Error already handled by mutation's onError callback (toast shown)
+      // Don't close modal so user can retry
     }
-
-    onClose()
   }
 
   return (
@@ -929,8 +937,15 @@ function AddMedModal({ onClose, createBundle, isDemo, initialDraft, openScanner:
               className="fi w-full resize-y min-h-[2.5rem]"
             />
           </FormField>
-          <Button type="submit" variant="primary" size="md" className="mt-1.5">
-            Add Medication
+          <Button type="submit" variant="primary" size="md" className="mt-1.5" disabled={isSaving || isLooking}>
+            {isSaving ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-white/30 border-t-2 border-t-white rounded-full spin-loading shrink-0" />
+                Saving...
+              </span>
+            ) : (
+              'Add Medication'
+            )}
           </Button>
         </form>
       </Modal>

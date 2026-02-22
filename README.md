@@ -88,7 +88,7 @@ supabase functions deploy extract-label
 **Dashboard (no CLI):** Supabase Dashboard → SQL Editor. Run in order:
 
 1. `supabase/schema.sql` (base schema)
-2. `supabase/run-migrations.sql` (001–005)
+2. `supabase/run-migrations.sql` (001–008)
 
 **CLI:** `supabase db push` (if Supabase CLI is installed and linked)
 
@@ -120,6 +120,7 @@ Deploy the Edge Functions after setting their prerequisites:
 | `openai-chat` | `supabase functions deploy openai-chat` | `OPENAI_API_KEY` + `ALLOWED_ORIGINS` (see below) |
 | `extract-label` | `supabase functions deploy extract-label` | Same as `openai-chat`; shares `AI_DAILY_LIMIT` |
 | `send-push` | `supabase functions deploy send-push` | VAPID keys in Supabase (see Push Notifications Setup) |
+| `cron-dispatch-push` | `supabase functions deploy cron-dispatch-push` | Supabase URL & Service Role Key in Vault (see Push Notifications Setup) |
 
 **Prerequisites for `openai-chat`:**
 ```bash
@@ -136,6 +137,7 @@ In production, `ALLOWED_ORIGINS` must be set (comma-separated). If unset, the fu
 supabase functions deploy openai-chat
 supabase functions deploy extract-label
 supabase functions deploy send-push
+supabase functions deploy cron-dispatch-push
 ```
 
 **Prerequisites for `extract-label`:** Reuses `OPENAI_API_KEY` and `ALLOWED_ORIGINS` from `openai-chat`. Counts against the same `AI_DAILY_LIMIT` as chat (no separate quota). Max image size 6MB base64.
@@ -175,7 +177,7 @@ Go to [Edge Functions](https://supabase.com/dashboard/project/lcbdafnxwvqbziootv
 
 ---
 
-## Push Notifications Setup
+### Push Notifications Setup
 
 > See **Quick Start / Full Setup** above for the full flow and VAPID key placement. This section is reference.
 
@@ -191,16 +193,27 @@ Go to [Edge Functions](https://supabase.com/dashboard/project/lcbdafnxwvqbziootv
    ```
    The public key is safe to expose in the client bundle.
 
-3. **Add secrets to Supabase** (for the `send-push` Edge Function):
+3. **Add secrets to Supabase Edge Functions** (for the `send-push` function):
    ```bash
    supabase secrets set VAPID_PUBLIC_KEY=your-public-key
    supabase secrets set VAPID_PRIVATE_KEY=your-private-key
    supabase secrets set VAPID_SUBJECT=mailto:your-email@example.com
    ```
 
-4. **Deploy the send-push function** — see [Edge Functions Deployment](#edge-functions-deployment).
+4. **Add Supabase URL and Service Role Key to Postgres Vault** (for the Cron job to trigger `cron-dispatch-push`):
+   
+   The database cron job runs strictly within PostgreSQL and needs explicit access to your Supabase URL and Service Role Key. 
+   Go to **Supabase Dashboard → SQL Editor** and run:
+   ```sql
+   create extension if not exists supabase_vault;
+   
+   select vault.create_secret('https://<your-project>.supabase.co', 'supabase_url', 'Supabase URL for Cron');
+   select vault.create_secret('<your-service-role-key>', 'service_role_key', 'Service Role Key for Cron');
+   ```
 
-Without these, push notifications will fail with a generic "Failed to enable push notifications" message.
+5. **Deploy the Edge Functions** (`send-push` and `cron-dispatch-push`) — see [Edge Functions Deployment](#edge-functions-deployment).
+
+Without these, push notifications will fail with a generic "Failed to enable push notifications", and the cron automatic dispatcher will be unable to trigger notifications.
 
 ---
 
@@ -212,7 +225,7 @@ Without these, push notifications will fail with a generic "Failed to enable pus
 
 **Dashboard (no CLI):** Supabase Dashboard → SQL Editor. Run in order:
 1. `supabase/schema.sql` (base schema)
-2. `supabase/run-migrations.sql` (001–005; includes `create_medication_bundle` fix and `ai_daily_usage` for per-user quota)
+2. `supabase/run-migrations.sql` (001–008; includes `create_medication_bundle` fix, `ai_daily_usage` for per-user quota, and cron push dispatcher)
 
 **CLI:** `supabase db push` (if Supabase CLI is installed and linked)
 

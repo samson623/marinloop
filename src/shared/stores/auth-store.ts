@@ -38,6 +38,7 @@ interface AuthState {
   signOut: () => Promise<AuthResult>
   enrollMfa: () => Promise<{ data: MfaEnrollResult; error: Error | null }>
   verifyMfa: (factorId: string, code: string) => Promise<AuthResult>
+  updatePlan: (plan: 'free' | 'pro' | 'family') => Promise<AuthResult>
 }
 
 const DEMO_USER = {
@@ -263,5 +264,20 @@ export const useAuthStore = create<AuthState>((set) => ({
     })
 
     return { error: verify.error ? new Error(verify.error.message) : null }
+  },
+
+  updatePlan: async (plan) => {
+    if (env.isDemoApp) return { error: null }
+
+    const { data } = await supabase.auth.getSession()
+    if (!data.session?.user?.id) return { error: new Error('Not authenticated') }
+
+    const { error } = await supabase.from('profiles').update({ plan }).eq('id', data.session.user.id)
+
+    if (error) return { error: new Error(error.message) }
+
+    const refreshed = await fetchProfile(data.session.user.id)
+    set({ profile: refreshed })
+    return { error: null }
   },
 }))

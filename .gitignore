@@ -35,3 +35,4 @@ dist-ssr
 tsconfig.tsbuildinfo
 
 .vercel
+.env*.local

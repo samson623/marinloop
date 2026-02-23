@@ -178,6 +178,7 @@ declare
   inserted_count int;
   total_due int := 0;
   total_dispatched int := 0;
+  total_skipped int := 0;
 begin
   -- Read configuration from app.settings (set via ALTER ROLE ... SET)
   supabase_url := current_setting('app.settings.supabase_url', true);
@@ -200,11 +201,13 @@ begin
 
   -- Abort with visible warning if config missing
   if supabase_url is null or service_role_key is null then
-    raise warning '[MedFlow Cron] Missing vault secrets (supabase_url=%, service_role_key=%) — run setup-push.sql to configure.',
+    raise warning '[MedFlow Cron] ❌ MISSING vault secrets! supabase_url=%, service_role_key=%. Run setup-push.sql.',
       case when supabase_url is null then 'NULL' else 'SET' end,
       case when service_role_key is null then 'NULL' else 'SET' end;
     return;
   end if;
+
+  raise log '[MedFlow Cron] ▶ Starting dispatch at % UTC', to_char(now_utc, 'HH24:MI:SS');
 
   -- Find all due schedules
   for rec in
@@ -219,11 +222,8 @@ begin
     join public.profiles p     on p.id = s.user_id
     join public.medications m  on m.id = s.medication_id
     where s.active = true
-      -- Time match: current HH:MM in the user's timezone = schedule time
       and to_char(now_utc at time zone coalesce(p.timezone, 'America/Chicago'), 'HH24:MI') = s.time
-      -- Day-of-week match
       and extract(dow from now_utc at time zone coalesce(p.timezone, 'America/Chicago'))::int = any(s.days)
-      -- Only users who have at least one push subscription
       and exists (
         select 1 from public.push_subscriptions ps where ps.user_id = s.user_id
       )
@@ -238,7 +238,6 @@ begin
     get diagnostics inserted_count = row_count;
 
     if inserted_count > 0 then
-      -- Fire HTTP POST to cron-dispatch-push Edge Function
       perform net.http_post(
         url := supabase_url || '/functions/v1/cron-dispatch-push',
         headers := jsonb_build_object(
@@ -255,14 +254,20 @@ begin
       );
       total_dispatched := total_dispatched + 1;
 
-      raise log '[MedFlow Cron] Dispatched push for "%" to user % (tz=%, time=%)',
+      raise log '[MedFlow Cron] ✅ Dispatched "%" to user % (tz=%, time=%)',
         rec.medication_name, rec.user_id, rec.user_timezone, rec.schedule_time;
+    else
+      total_skipped := total_skipped + 1;
+      raise log '[MedFlow Cron] ⏭ Already dispatched "%" for user % — skipping',
+        rec.medication_name, rec.user_id;
     end if;
   end loop;
 
-  if total_due > 0 then
-    raise log '[MedFlow Cron] Due=%, Dispatched=%, Skipped(dedup)=%',
-      total_due, total_dispatched, total_due - total_dispatched;
+  if total_due = 0 then
+    raise debug '[MedFlow Cron] No due schedules at % UTC', to_char(now_utc, 'HH24:MI');
+  else
+    raise log '[MedFlow Cron] 📊 Due=%, Dispatched=%, Skipped=%',
+      total_due, total_dispatched, total_skipped;
   end if;
 
   -- Cleanup old dispatch log entries
@@ -270,6 +275,10 @@ begin
     where created_at < now_utc - interval '48 hours';
 end;
 $$;
+
+-- Remove old cron jobs safely (ignore errors if they don't exist yet)
+DO $$ BEGIN PERFORM cron.unschedule('medflow-push-dispatcher'); EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN PERFORM cron.unschedule('medflow-dispatch-log-cleanup'); EXCEPTION WHEN OTHERS THEN NULL; END $$;
 
 -- Schedule the job: every minute
 select cron.schedule(

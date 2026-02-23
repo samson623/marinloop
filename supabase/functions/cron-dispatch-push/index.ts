@@ -25,126 +25,227 @@ serve(async (req) => {
         return new Response('ok', { headers: corsHeaders })
     }
 
+    // Collect diagnostic logs for the response
+    const logs: string[] = []
+    const log = (msg: string) => { logs.push(`[${new Date().toISOString()}] ${msg}`); console.log(`[cron-dispatch-push] ${msg}`) }
+
+    // GET = health check
+    if (req.method === 'GET') {
+        const envCheck = {
+            SUPABASE_URL: !!Deno.env.get('SUPABASE_URL'),
+            SUPABASE_SERVICE_ROLE_KEY: !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
+            SUPABASE_ANON_KEY: !!Deno.env.get('SUPABASE_ANON_KEY'),
+            VAPID_PUBLIC_KEY: !!Deno.env.get('VAPID_PUBLIC_KEY'),
+            VAPID_PRIVATE_KEY: !!Deno.env.get('VAPID_PRIVATE_KEY'),
+            VAPID_SUBJECT: !!Deno.env.get('VAPID_SUBJECT'),
+        }
+        return new Response(
+            JSON.stringify({ status: 'ok', env: envCheck, timestamp: new Date().toISOString() }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+    }
+
     try {
-        const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-        const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-        const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')!
-        const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')!
+        // ── Step 1: Check environment variables ──
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')
+        const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+        const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')
+        const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')
         const vapidSubject = Deno.env.get('VAPID_SUBJECT') || 'mailto:admin@medflowcare.app'
 
-        // ── Auth: validate service-role key ──
+        log(`ENV CHECK: SUPABASE_URL=${supabaseUrl ? 'SET' : '❌ MISSING'}, SERVICE_ROLE_KEY=${serviceRoleKey ? 'SET' : '❌ MISSING'}, VAPID_PUBLIC=${vapidPublicKey ? 'SET' : '❌ MISSING'}, VAPID_PRIVATE=${vapidPrivateKey ? 'SET' : '❌ MISSING'}`)
+
+        if (!supabaseUrl || !serviceRoleKey) {
+            log('ABORT: Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
+            return new Response(
+                JSON.stringify({ error: 'Server misconfigured: missing Supabase env vars', logs }),
+                { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+        }
+
+        if (!vapidPublicKey || !vapidPrivateKey) {
+            log('ABORT: Missing VAPID keys')
+            return new Response(
+                JSON.stringify({ error: 'Server misconfigured: missing VAPID keys', logs }),
+                { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+        }
+
+        // ── Step 2: Auth — validate service-role key or user JWT ──
         const authHeader = req.headers.get('Authorization')
         if (!authHeader?.startsWith('Bearer ')) {
+            log('ABORT: No Authorization header')
             return new Response(
-                JSON.stringify({ error: 'Missing Authorization header' }),
+                JSON.stringify({ error: 'Missing Authorization header', logs }),
                 { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
         }
         const token = authHeader.replace('Bearer ', '')
 
-        // Accept EITHER the service-role key (from pg_cron) or a valid user JWT
         let isServiceRole = false
         if (token === serviceRoleKey) {
             isServiceRole = true
+            log('AUTH: Service role key matched ✅')
         }
 
         if (!isServiceRole) {
-            // Try user JWT validation as fallback
+            log('AUTH: Token is not service role key, trying user JWT...')
             const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
             const userClient = createClient(supabaseUrl, anonKey, {
                 global: { headers: { Authorization: authHeader } },
             })
             const { data: { user }, error: authError } = await userClient.auth.getUser()
             if (authError || !user) {
+                log(`AUTH FAILED: ${authError?.message || 'no user returned'}`)
                 return new Response(
-                    JSON.stringify({ error: 'Unauthorized' }),
+                    JSON.stringify({ error: 'Unauthorized', details: authError?.message, logs }),
                     { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
                 )
             }
+            log(`AUTH: User JWT validated for user=${user.id} ✅`)
         }
 
-        const { user_id, medication_name, medication_dosage, schedule_time } = (await req.json()) as CronPayload
-
-        if (!user_id || !medication_name) {
+        // ── Step 3: Parse payload ──
+        let payload: CronPayload
+        try {
+            payload = await req.json()
+        } catch (e) {
+            log(`ABORT: Failed to parse request body: ${(e as Error).message}`)
             return new Response(
-                JSON.stringify({ error: 'user_id and medication_name are required' }),
+                JSON.stringify({ error: 'Invalid JSON body', logs }),
                 { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
         }
 
-        // ── Build notification content ──
+        const { user_id, medication_name, medication_dosage, schedule_time } = payload
+        log(`PAYLOAD: user_id=${user_id}, med=${medication_name}, dosage=${medication_dosage || '(none)'}, time=${schedule_time}`)
+
+        if (!user_id || !medication_name) {
+            log('ABORT: Missing required fields (user_id or medication_name)')
+            return new Response(
+                JSON.stringify({ error: 'user_id and medication_name are required', logs }),
+                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+        }
+
+        // ── Step 4: Build notification content ──
         const dosageStr = medication_dosage ? ` (${medication_dosage})` : ''
         const title = `💊 Time for ${medication_name}`
         const body = `Take ${medication_name}${dosageStr} — scheduled at ${formatTime12h(schedule_time)}`
+        log(`NOTIFICATION: title="${title}", body="${body}"`)
 
-        // ── Fetch all push subscriptions for this user ──
+        // ── Step 5: Fetch push subscriptions ──
         const supabase = createClient(supabaseUrl, serviceRoleKey)
         const { data: subscriptions, error } = await supabase
             .from('push_subscriptions')
             .select('*')
             .eq('user_id', user_id)
 
-        if (error) throw error
+        if (error) {
+            log(`DB ERROR fetching subscriptions: ${error.message}`)
+            throw error
+        }
+
         if (!subscriptions || subscriptions.length === 0) {
+            log(`NO SUBSCRIPTIONS found for user=${user_id}. Push cannot be delivered.`)
             return new Response(
-                JSON.stringify({ sent: 0, message: 'No subscriptions' }),
+                JSON.stringify({ sent: 0, message: 'No subscriptions for this user', logs }),
                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
         }
 
-        const payload = JSON.stringify({
+        log(`SUBSCRIPTIONS: Found ${subscriptions.length} device(s) for user=${user_id}`)
+
+        const pushPayload = JSON.stringify({
             title,
             body,
             url: '/meds',
             tag: `med-reminder-${schedule_time}`,
         })
 
+        // ── Step 6: Send to each device ──
         let sent = 0
         const staleEndpoints: string[] = []
+        const pushResults: Array<{ endpoint: string; status: number | string; ok: boolean }> = []
 
         for (const sub of subscriptions) {
+            const shortEndpoint = sub.endpoint.slice(0, 60) + '...'
             try {
+                log(`PUSHING to ${shortEndpoint}`)
                 const response = await sendWebPush(
                     { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-                    payload,
+                    pushPayload,
                     vapidPublicKey,
                     vapidPrivateKey,
                     vapidSubject,
                 )
 
-                if (response.status === 201 || response.status === 200) {
+                const statusCode = response.status
+                log(`PUSH RESULT: ${shortEndpoint} → HTTP ${statusCode}`)
+
+                if (statusCode === 201 || statusCode === 200) {
                     sent++
-                } else if (response.status === 404 || response.status === 410) {
+                    pushResults.push({ endpoint: shortEndpoint, status: statusCode, ok: true })
+                } else if (statusCode === 404 || statusCode === 410) {
                     staleEndpoints.push(sub.endpoint)
+                    pushResults.push({ endpoint: shortEndpoint, status: statusCode, ok: false })
+                    log(`STALE: ${shortEndpoint} returned ${statusCode} — will remove`)
+                } else {
+                    let responseBody = ''
+                    try { responseBody = await response.text() } catch { /* ignore */ }
+                    log(`PUSH FAILED: ${shortEndpoint} HTTP ${statusCode}: ${responseBody.slice(0, 200)}`)
+                    pushResults.push({ endpoint: shortEndpoint, status: `${statusCode}: ${responseBody.slice(0, 100)}`, ok: false })
                 }
-            } catch {
-                // Individual push failure — continue with next device
+            } catch (pushErr) {
+                const errMsg = (pushErr as Error).message
+                log(`PUSH EXCEPTION for ${shortEndpoint}: ${errMsg}`)
+                pushResults.push({ endpoint: shortEndpoint, status: `error: ${errMsg}`, ok: false })
             }
         }
 
-        // Also create an in-app notification record
-        await supabase.from('notifications').insert({
+        // ── Step 7: Create in-app notification record ──
+        const { error: notifError } = await supabase.from('notifications').insert({
             user_id,
             title,
             message: body,
             type: 'info',
         })
+        if (notifError) {
+            log(`WARNING: Failed to create in-app notification: ${notifError.message}`)
+        } else {
+            log('IN-APP notification created ✅')
+        }
 
-        // Cleanup stale subscriptions
+        // ── Step 8: Cleanup stale subscriptions ──
         if (staleEndpoints.length > 0) {
-            await supabase
+            const { error: cleanupError } = await supabase
                 .from('push_subscriptions')
                 .delete()
                 .in('endpoint', staleEndpoints)
+            if (cleanupError) {
+                log(`WARNING: Failed to cleanup stale subscriptions: ${cleanupError.message}`)
+            } else {
+                log(`CLEANUP: Removed ${staleEndpoints.length} stale subscription(s)`)
+            }
         }
 
+        log(`DONE: sent=${sent}/${subscriptions.length}, cleaned=${staleEndpoints.length}`)
+
         return new Response(
-            JSON.stringify({ sent, total: subscriptions.length, cleaned: staleEndpoints.length }),
+            JSON.stringify({
+                sent,
+                total: subscriptions.length,
+                cleaned: staleEndpoints.length,
+                pushResults,
+                logs,
+            }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
     } catch (err) {
+        const errMsg = (err as Error).message
+        log(`FATAL ERROR: ${errMsg}`)
         return new Response(
-            JSON.stringify({ error: (err as Error).message }),
+            JSON.stringify({ error: errMsg, logs }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
     }
@@ -153,13 +254,14 @@ serve(async (req) => {
 // ── Helpers ──
 
 function formatTime12h(time24: string): string {
+    if (!time24 || !time24.includes(':')) return time24 || ''
     const [h, m] = time24.split(':').map(Number)
     const period = h >= 12 ? 'PM' : 'AM'
     const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h
     return `${h12}:${String(m).padStart(2, '0')} ${period}`
 }
 
-// ---- Web Push Implementation (same crypto as send-push) ----
+// ---- Web Push Implementation ----
 
 async function sendWebPush(
     subscription: { endpoint: string; keys: { p256dh: string; auth: string } },

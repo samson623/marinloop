@@ -1,14 +1,10 @@
 // Supabase Edge Function: send-push
 // Sends Web Push notifications to a user's subscribed devices.
-//
 // Usage: invoke with { user_id, title, body, url?, tag? }
 // Requires Supabase secrets: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-// Web Push VAPID signing is handled via the `web-push` compatible approach
-// using the Deno crypto API for JWT + ECDSA signing.
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -29,78 +25,130 @@ serve(async (req) => {
         return new Response('ok', { headers: corsHeaders })
     }
 
+    const logs: string[] = []
+    const log = (msg: string) => { logs.push(`[${new Date().toISOString()}] ${msg}`); console.log(`[send-push] ${msg}`) }
+
+    // GET = health check
+    if (req.method === 'GET') {
+        const envCheck = {
+            SUPABASE_URL: !!Deno.env.get('SUPABASE_URL'),
+            SUPABASE_SERVICE_ROLE_KEY: !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
+            SUPABASE_ANON_KEY: !!Deno.env.get('SUPABASE_ANON_KEY'),
+            VAPID_PUBLIC_KEY: !!Deno.env.get('VAPID_PUBLIC_KEY'),
+            VAPID_PRIVATE_KEY: !!Deno.env.get('VAPID_PRIVATE_KEY'),
+            VAPID_SUBJECT: !!Deno.env.get('VAPID_SUBJECT'),
+        }
+        return new Response(
+            JSON.stringify({ status: 'ok', env: envCheck, timestamp: new Date().toISOString() }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+    }
+
     try {
-        const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-        const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-        const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')!
-        const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')!
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')
+        const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+        const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')
+        const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')
         const vapidSubject = Deno.env.get('VAPID_SUBJECT') || 'mailto:admin@medflowcare.app'
 
+        log(`ENV: URL=${supabaseUrl ? 'SET' : '❌'}, SRK=${serviceRoleKey ? 'SET' : '❌'}, VAPID_PUB=${vapidPublicKey ? 'SET' : '❌'}, VAPID_PRIV=${vapidPrivateKey ? 'SET' : '❌'}`)
+
+        if (!supabaseUrl || !serviceRoleKey || !vapidPublicKey || !vapidPrivateKey) {
+            log('ABORT: Missing environment variables')
+            return new Response(
+                JSON.stringify({ error: 'Server misconfigured: missing env vars', logs }),
+                { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+        }
+
+        // Auth: validate user JWT
         const authHeader = req.headers.get('Authorization')
         if (!authHeader?.startsWith('Bearer ')) {
+            log('ABORT: No Authorization header')
             return new Response(
-                JSON.stringify({ error: 'Missing or invalid Authorization header' }),
+                JSON.stringify({ error: 'Missing or invalid Authorization header', logs }),
                 { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
         }
 
-        const userClient = createClient(
-            supabaseUrl,
-            Deno.env.get('SUPABASE_ANON_KEY')!,
-            { global: { headers: { Authorization: authHeader } } },
-        )
+        const token = authHeader.replace('Bearer ', '')
+        let authenticatedUserId: string | null = null
 
-        const {
-            data: { user },
-            error: authError,
-        } = await userClient.auth.getUser()
-
-        if (authError || !user) {
-            return new Response(
-                JSON.stringify({ error: 'Unauthorized' }),
-                { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        // Accept service role key OR user JWT
+        if (token === serviceRoleKey) {
+            log('AUTH: Service role key ✅')
+        } else {
+            const userClient = createClient(
+                supabaseUrl,
+                Deno.env.get('SUPABASE_ANON_KEY')!,
+                { global: { headers: { Authorization: authHeader } } },
             )
+
+            const { data: { user }, error: authError } = await userClient.auth.getUser()
+            if (authError || !user) {
+                log(`AUTH FAILED: ${authError?.message || 'no user'}`)
+                return new Response(
+                    JSON.stringify({ error: 'Unauthorized', logs }),
+                    { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                )
+            }
+            authenticatedUserId = user.id
+            log(`AUTH: User JWT validated, user=${user.id} ✅`)
         }
 
         const supabase = createClient(supabaseUrl, serviceRoleKey)
 
         const { user_id, title, body, url, tag } = (await req.json()) as PushPayload
+        log(`PAYLOAD: user_id=${user_id}, title="${title}", body="${body?.slice(0, 50)}"`)
 
         if (!user_id || !title || !body) {
+            log('ABORT: Missing required fields')
             return new Response(
-                JSON.stringify({ error: 'user_id, title, and body are required' }),
+                JSON.stringify({ error: 'user_id, title, and body are required', logs }),
                 { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
         }
 
-        if (user.id !== user_id) {
+        // If authenticated as a user (not service role), enforce ownership
+        if (authenticatedUserId && authenticatedUserId !== user_id) {
+            log(`FORBIDDEN: authenticated user ${authenticatedUserId} tried to push to ${user_id}`)
             return new Response(
-                JSON.stringify({ error: 'Forbidden: cannot send push notifications for another user' }),
+                JSON.stringify({ error: 'Forbidden: cannot send push notifications for another user', logs }),
                 { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
         }
 
-        // Fetch all active subscriptions for the user
+        // Fetch subscriptions
         const { data: subscriptions, error } = await supabase
             .from('push_subscriptions')
             .select('*')
             .eq('user_id', user_id)
 
-        if (error) throw error
+        if (error) {
+            log(`DB ERROR: ${error.message}`)
+            throw error
+        }
+
         if (!subscriptions || subscriptions.length === 0) {
+            log(`NO SUBSCRIPTIONS for user=${user_id}`)
             return new Response(
-                JSON.stringify({ sent: 0, message: 'No subscriptions found' }),
+                JSON.stringify({ sent: 0, message: 'No subscriptions found', logs }),
                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
         }
+
+        log(`Found ${subscriptions.length} subscription(s)`)
 
         const payload = JSON.stringify({ title, body, url: url || '/', tag: tag || 'medflow' })
 
         let sent = 0
         const staleEndpoints: string[] = []
+        const pushResults: Array<{ endpoint: string; status: number | string; ok: boolean }> = []
 
         for (const sub of subscriptions) {
+            const shortEndpoint = sub.endpoint.slice(0, 60) + '...'
             try {
+                log(`PUSHING to ${shortEndpoint}`)
                 const response = await sendWebPush(
                     { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
                     payload,
@@ -109,14 +157,25 @@ serve(async (req) => {
                     vapidSubject,
                 )
 
+                log(`PUSH RESULT: HTTP ${response.status}`)
+
                 if (response.status === 201 || response.status === 200) {
                     sent++
+                    pushResults.push({ endpoint: shortEndpoint, status: response.status, ok: true })
                 } else if (response.status === 404 || response.status === 410) {
-                    // Subscription expired or unsubscribed — remove it
                     staleEndpoints.push(sub.endpoint)
+                    pushResults.push({ endpoint: shortEndpoint, status: response.status, ok: false })
+                    log(`STALE subscription removed: HTTP ${response.status}`)
+                } else {
+                    let responseBody = ''
+                    try { responseBody = await response.text() } catch { /* ignore */ }
+                    log(`PUSH FAILED: HTTP ${response.status}: ${responseBody.slice(0, 200)}`)
+                    pushResults.push({ endpoint: shortEndpoint, status: `${response.status}: ${responseBody.slice(0, 100)}`, ok: false })
                 }
-            } catch {
-                // Individual push failure — continue with others
+            } catch (pushErr) {
+                const errMsg = (pushErr as Error).message
+                log(`PUSH EXCEPTION: ${errMsg}`)
+                pushResults.push({ endpoint: shortEndpoint, status: `error: ${errMsg}`, ok: false })
             }
         }
 
@@ -126,15 +185,20 @@ serve(async (req) => {
                 .from('push_subscriptions')
                 .delete()
                 .in('endpoint', staleEndpoints)
+            log(`Cleaned ${staleEndpoints.length} stale subscription(s)`)
         }
 
+        log(`DONE: sent=${sent}/${subscriptions.length}`)
+
         return new Response(
-            JSON.stringify({ sent, total: subscriptions.length, cleaned: staleEndpoints.length }),
+            JSON.stringify({ sent, total: subscriptions.length, cleaned: staleEndpoints.length, pushResults, logs }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
     } catch (err) {
+        const errMsg = (err as Error).message
+        log(`FATAL: ${errMsg}`)
         return new Response(
-            JSON.stringify({ error: (err as Error).message }),
+            JSON.stringify({ error: errMsg, logs }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
     }
@@ -152,15 +216,8 @@ async function sendWebPush(
     const endpoint = new URL(subscription.endpoint)
     const audience = `${endpoint.protocol}//${endpoint.host}`
 
-    // Create VAPID JWT
     const jwt = await createVapidJwt(audience, vapidSubject, vapidPrivateKey)
-
-    // Encrypt the payload using the subscription keys
-    const encrypted = await encryptPayload(
-        payload,
-        subscription.keys.p256dh,
-        subscription.keys.auth,
-    )
+    const encrypted = await encryptPayload(payload, subscription.keys.p256dh, subscription.keys.auth)
 
     return fetch(subscription.endpoint, {
         method: 'POST',
@@ -190,23 +247,17 @@ async function createVapidJwt(
 
     const keyData = base64urlDecode(privateKeyBase64)
     const key = await crypto.subtle.importKey(
-        'pkcs8',
-        buildPkcs8(keyData),
-        { name: 'ECDSA', namedCurve: 'P-256' },
-        false,
-        ['sign'],
+        'pkcs8', buildPkcs8(keyData),
+        { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign'],
     )
 
     const signature = await crypto.subtle.sign(
-        { name: 'ECDSA', hash: 'SHA-256' },
-        key,
+        { name: 'ECDSA', hash: 'SHA-256' }, key,
         new TextEncoder().encode(unsignedToken),
     )
 
-    // Convert DER signature to raw r||s format
     const sigBytes = new Uint8Array(signature)
     const rawSig = derToRaw(sigBytes)
-
     return `${unsignedToken}.${base64urlEncode(rawSig)}`
 }
 
@@ -217,38 +268,27 @@ async function encryptPayload(
 ): Promise<Uint8Array> {
     const payloadBytes = new TextEncoder().encode(payload)
 
-    // Generate local ECDH keypair for encryption
     const localKeys = await crypto.subtle.generateKey(
-        { name: 'ECDH', namedCurve: 'P-256' },
-        true,
-        ['deriveBits'],
+        { name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits'],
     )
 
     const localPublicRaw = new Uint8Array(
         await crypto.subtle.exportKey('raw', localKeys.publicKey),
     )
 
-    // Import the subscription's public key
     const clientPublicKey = await crypto.subtle.importKey(
-        'raw',
-        base64urlDecode(p256dhBase64),
-        { name: 'ECDH', namedCurve: 'P-256' },
-        false,
-        [],
+        'raw', base64urlDecode(p256dhBase64),
+        { name: 'ECDH', namedCurve: 'P-256' }, false, [],
     )
 
-    // Derive shared secret
     const sharedSecret = new Uint8Array(
         await crypto.subtle.deriveBits(
-            { name: 'ECDH', public: clientPublicKey },
-            localKeys.privateKey,
-            256,
+            { name: 'ECDH', public: clientPublicKey }, localKeys.privateKey, 256,
         ),
     )
 
     const authSecret = base64urlDecode(authBase64)
 
-    // HKDF: derive PRK from auth secret + shared secret
     const prkInfo = concatBuffers(
         new TextEncoder().encode('WebPush: info\0'),
         base64urlDecode(p256dhBase64),
@@ -257,10 +297,8 @@ async function encryptPayload(
     const prk = await hkdfExtract(authSecret, sharedSecret)
     const ikm = await hkdfExpand(prk, prkInfo, 32)
 
-    // Generate salt
     const salt = crypto.getRandomValues(new Uint8Array(16))
 
-    // Derive content encryption key and nonce
     const cekInfo = new TextEncoder().encode('Content-Encoding: aes128gcm\0')
     const nonceInfo = new TextEncoder().encode('Content-Encoding: nonce\0')
 
@@ -268,37 +306,20 @@ async function encryptPayload(
     const cek = await hkdfExpand(prkFinal, cekInfo, 16)
     const nonce = await hkdfExpand(prkFinal, nonceInfo, 12)
 
-    // Encrypt with AES-128-GCM
     const aesKey = await crypto.subtle.importKey(
-        'raw',
-        cek,
-        { name: 'AES-GCM' },
-        false,
-        ['encrypt'],
+        'raw', cek, { name: 'AES-GCM' }, false, ['encrypt'],
     )
 
-    // Add padding delimiter
     const paddedPayload = concatBuffers(payloadBytes, new Uint8Array([2]))
 
     const encrypted = new Uint8Array(
-        await crypto.subtle.encrypt(
-            { name: 'AES-GCM', iv: nonce },
-            aesKey,
-            paddedPayload,
-        ),
+        await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce }, aesKey, paddedPayload),
     )
 
-    // Build aes128gcm header: salt(16) + rs(4) + idlen(1) + keyid(65) + encrypted
     const rs = new Uint8Array(4)
     new DataView(rs.buffer).setUint32(0, 4096, false)
 
-    return concatBuffers(
-        salt,
-        rs,
-        new Uint8Array([localPublicRaw.length]),
-        localPublicRaw,
-        encrypted,
-    )
+    return concatBuffers(salt, rs, new Uint8Array([localPublicRaw.length]), localPublicRaw, encrypted)
 }
 
 // ---- Utility Functions ----
@@ -322,15 +343,11 @@ function concatBuffers(...buffers: Uint8Array[]): Uint8Array {
     const totalLength = buffers.reduce((sum, b) => sum + b.length, 0)
     const result = new Uint8Array(totalLength)
     let offset = 0
-    for (const buf of buffers) {
-        result.set(buf, offset)
-        offset += buf.length
-    }
+    for (const buf of buffers) { result.set(buf, offset); offset += buf.length }
     return result
 }
 
 function buildPkcs8(rawPrivateKey: Uint8Array): Uint8Array {
-    // PKCS8 wrapper for a P-256 private key
     const prefix = new Uint8Array([
         0x30, 0x41, 0x02, 0x01, 0x00, 0x30, 0x13, 0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02,
         0x01, 0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07, 0x04, 0x27, 0x30, 0x25,
@@ -340,18 +357,13 @@ function buildPkcs8(rawPrivateKey: Uint8Array): Uint8Array {
 }
 
 function derToRaw(der: Uint8Array): Uint8Array {
-    // If already 64 bytes, it's raw format
     if (der.length === 64) return der
-
-    // Parse DER sequence
     const raw = new Uint8Array(64)
-    let offset = 2 // skip SEQUENCE tag + length
-    // Read R
+    let offset = 2
     const rLen = der[offset + 1]
     const rStart = offset + 2 + (rLen - 32)
     raw.set(der.slice(rStart, rStart + 32), 0)
     offset = offset + 2 + rLen
-    // Read S
     const sLen = der[offset + 1]
     const sStart = offset + 2 + (sLen - 32)
     raw.set(der.slice(sStart, sStart + 32), 32)

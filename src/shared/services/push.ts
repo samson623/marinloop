@@ -22,8 +22,11 @@ export const PushService = {
     async registerSW(): Promise<ServiceWorkerRegistration | null> {
         if (!('serviceWorker' in navigator)) return null
         try {
-            return await navigator.serviceWorker.register('/sw.js', { scope: '/' })
-        } catch {
+            const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            console.log('[Push] Service worker registered:', reg.scope)
+            return reg
+        } catch (err) {
+            console.error('[Push] Service worker registration failed:', err)
             return null
         }
     },
@@ -34,29 +37,49 @@ export const PushService = {
     },
 
     async subscribe(): Promise<boolean> {
-        if (!this.isSupported()) return false
+        if (!this.isSupported()) {
+            console.warn('[Push] Push not supported in this browser')
+            return false
+        }
+
+        console.log('[Push] Starting subscription flow...')
 
         await this.registerSW()
         const reg = await navigator.serviceWorker.ready
+        console.log('[Push] Service worker ready')
 
         const permission = await Notification.requestPermission()
+        console.log('[Push] Permission result:', permission)
         if (permission !== 'granted') return false
 
         const vapidKey = env.vapidPublicKey
         if (!vapidKey) {
-            console.error('[Push] VAPID public key not configured')
+            console.error('[Push] ❌ VAPID public key not configured! Check VITE_VAPID_PUBLIC_KEY env var.')
+            return false
+        }
+        console.log('[Push] VAPID key present:', vapidKey.slice(0, 10) + '...')
+
+        const existing = await reg.pushManager.getSubscription()
+        if (existing) {
+            console.log('[Push] Unsubscribing existing subscription')
+            await existing.unsubscribe()
+        }
+
+        let subscription: PushSubscription
+        try {
+            subscription = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(vapidKey).buffer as ArrayBuffer,
+            })
+            console.log('[Push] Browser subscription created:', subscription.endpoint.slice(0, 50) + '...')
+        } catch (subErr) {
+            console.error('[Push] ❌ Browser subscription failed:', subErr)
             return false
         }
 
-        const existing = await reg.pushManager.getSubscription()
-        if (existing) await existing.unsubscribe()
-
-        const subscription = await reg.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(vapidKey).buffer as ArrayBuffer,
-        })
-
         const json = subscription.toJSON()
+        console.log('[Push] Saving subscription to Supabase...')
+
         const { error } = await supabase.from('push_subscriptions').upsert(
             {
                 endpoint: json.endpoint!,
@@ -68,11 +91,12 @@ export const PushService = {
         )
 
         if (error) {
-            console.error('[Push] Failed to save subscription:', error)
+            console.error('[Push] ❌ Failed to save subscription to DB:', error)
             await subscription.unsubscribe()
             return false
         }
 
+        console.log('[Push] ✅ Subscription saved successfully!')
         return true
     },
 
@@ -82,13 +106,45 @@ export const PushService = {
 
         const endpoint = subscription.endpoint
         await subscription.unsubscribe()
+        console.log('[Push] Browser unsubscribed')
 
         const { error } = await supabase
             .from('push_subscriptions')
             .delete()
             .eq('endpoint', endpoint)
 
-        if (error) console.error('[Push] Failed to delete subscription:', error)
+        if (error) console.error('[Push] Failed to delete subscription from DB:', error)
+        else console.log('[Push] ✅ Subscription removed from DB')
         return true
+    },
+
+    /** Test: send a push notification to yourself right now */
+    async testPush(): Promise<{ success: boolean; details: unknown }> {
+        try {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) return { success: false, details: 'Not authenticated' }
+
+            console.log('[Push] Sending test push to user:', user.id)
+            const { data, error } = await supabase.functions.invoke('send-push', {
+                body: {
+                    user_id: user.id,
+                    title: '🧪 MedFlow Test',
+                    body: `Test notification at ${new Date().toLocaleTimeString()}`,
+                    url: '/meds',
+                    tag: 'test-push',
+                },
+            })
+
+            if (error) {
+                console.error('[Push] Test push failed:', error)
+                return { success: false, details: error }
+            }
+
+            console.log('[Push] Test push response:', data)
+            return { success: true, details: data }
+        } catch (err) {
+            console.error('[Push] Test push exception:', err)
+            return { success: false, details: (err as Error).message }
+        }
     },
 }

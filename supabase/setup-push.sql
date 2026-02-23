@@ -1,28 +1,11 @@
 -- ============================================================
 -- MedFlow Push Notification: One-Click Setup
 -- ============================================================
--- Run this in Supabase Dashboard → SQL Editor AFTER you have
--- deployed all Edge Functions.
+-- Run this in Supabase Dashboard → SQL Editor → New query
 --
--- This script:
---   1. Enables pg_cron, pg_net, and supabase_vault extensions
---   2. Stores your Supabase URL & Service Role Key in the vault
---   3. Creates/updates the dispatch function with enhanced logging
---   4. Registers the cron jobs
---
--- ⚠️ REPLACE the two placeholders below with YOUR actual values:
+-- ⚠️  IMPORTANT: Replace the two values below BEFORE running!
+--     (Search for REPLACE_ME)
 -- ============================================================
-
--- ╔══════════════════════════════════════════════════════════╗
--- ║  STEP 0: FILL IN YOUR VALUES BELOW                     ║
--- ╚══════════════════════════════════════════════════════════╝
-
--- Copy your Supabase URL from Dashboard → Settings → API → Project URL
--- Copy your Service Role Key from Dashboard → Settings → API → service_role key
-
-\set SUPABASE_PROJECT_URL 'https://lcbdafnxwvqbziootvmi.supabase.co'
--- IMPORTANT: Replace 'YOUR_SERVICE_ROLE_KEY_HERE' with the actual key!
-\set SERVICE_ROLE_KEY 'YOUR_SERVICE_ROLE_KEY_HERE'
 
 -- ╔══════════════════════════════════════════════════════════╗
 -- ║  STEP 1: Enable extensions                             ║
@@ -38,13 +21,26 @@ CREATE EXTENSION IF NOT EXISTS supabase_vault;
 -- Delete old vault entries first to avoid duplicates
 DELETE FROM vault.secrets WHERE name IN ('supabase_url', 'service_role_key');
 
-SELECT vault.create_secret(:'SUPABASE_PROJECT_URL', 'supabase_url', 'Supabase URL for Cron Push Dispatcher');
-SELECT vault.create_secret(:'SERVICE_ROLE_KEY', 'service_role_key', 'Service Role Key for Cron Push Dispatcher');
+-- ⚠️  REPLACE the values below with YOUR actual values!
+-- Copy your Supabase URL from: Dashboard → Settings → API → Project URL
+-- Copy your Service Role Key from: Dashboard → Settings → API → service_role
+
+SELECT vault.create_secret(
+  'https://lcbdafnxwvqbziootvmi.supabase.co',   -- REPLACE_ME with your Supabase URL
+  'supabase_url',
+  'Supabase URL for Cron Push Dispatcher'
+);
+
+SELECT vault.create_secret(
+  'REPLACE_ME_WITH_SERVICE_ROLE_KEY',             -- REPLACE_ME with your service_role key
+  'service_role_key',
+  'Service Role Key for Cron Push Dispatcher'
+);
 
 -- Verify they were created:
 SELECT name,
        CASE WHEN decrypted_secret IS NOT NULL AND decrypted_secret != ''
-            THEN '✅ SET'
+            THEN '✅ SET (' || left(decrypted_secret, 20) || '...)'
             ELSE '❌ MISSING'
        END AS status
 FROM vault.decrypted_secrets
@@ -69,8 +65,11 @@ DECLARE
   inserted_count int;
   total_due int := 0;
   total_dispatched int := 0;
+  total_skipped int := 0;
+  user_local_time text;
+  user_local_dow int;
 BEGIN
-  -- Read configuration from Supabase vault / env
+  -- Read configuration from Supabase vault
   supabase_url := current_setting('app.settings.supabase_url', true);
   service_role_key := current_setting('app.settings.service_role_key', true);
 
@@ -91,11 +90,16 @@ BEGIN
 
   -- Abort with visible warning if config missing
   IF supabase_url IS NULL OR service_role_key IS NULL THEN
-    RAISE WARNING '[MedFlow Cron] ❌ Missing vault secrets (supabase_url=%, service_role_key=%) — skipping dispatch. Run setup-push.sql to configure.',
+    RAISE WARNING '[MedFlow Cron] ❌ MISSING vault secrets! supabase_url=%, service_role_key=%. Run setup-push.sql.',
       CASE WHEN supabase_url IS NULL THEN 'NULL' ELSE 'SET' END,
       CASE WHEN service_role_key IS NULL THEN 'NULL' ELSE 'SET' END;
     RETURN;
   END IF;
+
+  RAISE LOG '[MedFlow Cron] ▶ Starting dispatch at % UTC (url=%.., key=..%)',
+    to_char(now_utc, 'YYYY-MM-DD HH24:MI:SS'),
+    left(supabase_url, 30),
+    right(service_role_key, 6);
 
   -- Find all due schedules
   FOR rec IN
@@ -105,6 +109,7 @@ BEGIN
       m.name       AS medication_name,
       m.dosage     AS medication_dosage,
       s.time       AS schedule_time,
+      s.days       AS schedule_days,
       p.timezone   AS user_timezone
     FROM public.schedules s
     JOIN public.profiles p     ON p.id = s.user_id
@@ -112,7 +117,7 @@ BEGIN
     WHERE s.active = true
       -- Time match: current HH:MM in the user's timezone = schedule time
       AND to_char(now_utc AT TIME ZONE COALESCE(p.timezone, 'America/Chicago'), 'HH24:MI') = s.time
-      -- Day-of-week match
+      -- Day-of-week match (PostgreSQL DOW: 0=Sun, 1=Mon, ..., 6=Sat)
       AND extract(dow FROM now_utc AT TIME ZONE COALESCE(p.timezone, 'America/Chicago'))::int = ANY(s.days)
       -- Only users who have at least one push subscription
       AND EXISTS (
@@ -146,20 +151,23 @@ BEGIN
       );
       total_dispatched := total_dispatched + 1;
 
-      RAISE LOG '[MedFlow Cron] ✅ Dispatched push for "%" to user % (tz=%, time=%)',
-        rec.medication_name, rec.user_id, rec.user_timezone, rec.schedule_time;
+      RAISE LOG '[MedFlow Cron] ✅ Dispatched push for "%" to user % (tz=%, localtime=%, dow=%)',
+        rec.medication_name, rec.user_id, rec.user_timezone, rec.schedule_time,
+        extract(dow FROM now_utc AT TIME ZONE COALESCE(rec.user_timezone, 'America/Chicago'))::int;
     ELSE
+      total_skipped := total_skipped + 1;
       RAISE LOG '[MedFlow Cron] ⏭ Already dispatched "%" for user % this minute — skipping',
         rec.medication_name, rec.user_id;
     END IF;
   END LOOP;
 
   IF total_due = 0 THEN
-    -- Only log at DEBUG level to avoid spamming — this fires every minute
-    RAISE DEBUG '[MedFlow Cron] No due schedules at % UTC', to_char(now_utc, 'HH24:MI');
+    -- Log the current time context for debugging (only at DEBUG level to avoid spam)
+    RAISE DEBUG '[MedFlow Cron] No due schedules at % UTC. Check: profiles.timezone, schedules.time, schedules.days, schedules.active, push_subscriptions exist.',
+      to_char(now_utc, 'HH24:MI');
   ELSE
-    RAISE LOG '[MedFlow Cron] 📊 Due=%, Dispatched=%, Skipped(dedup)=%',
-      total_due, total_dispatched, total_due - total_dispatched;
+    RAISE LOG '[MedFlow Cron] 📊 Summary: Due=%, Dispatched=%, Skipped(dedup)=%',
+      total_due, total_dispatched, total_skipped;
   END IF;
 
   -- Cleanup old dispatch log entries
@@ -172,9 +180,22 @@ $$;
 -- ║  STEP 4: Register cron jobs                             ║
 -- ╚══════════════════════════════════════════════════════════╝
 
--- Remove old jobs first to avoid duplicates
-SELECT cron.unschedule('medflow-push-dispatcher');
-SELECT cron.unschedule('medflow-dispatch-log-cleanup');
+-- Remove old jobs first to avoid duplicates (ignore errors if they don't exist)
+DO $$
+BEGIN
+  PERFORM cron.unschedule('medflow-push-dispatcher');
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'medflow-push-dispatcher job not found (OK for first run)';
+END
+$$;
+
+DO $$
+BEGIN
+  PERFORM cron.unschedule('medflow-dispatch-log-cleanup');
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'medflow-dispatch-log-cleanup job not found (OK for first run)';
+END
+$$;
 
 -- Schedule: every minute
 SELECT cron.schedule(
@@ -196,3 +217,21 @@ SELECT cron.schedule(
 
 SELECT '✅ Setup complete! Cron jobs registered:' AS result;
 SELECT jobname, schedule FROM cron.job WHERE jobname LIKE 'medflow%';
+
+-- Quick sanity check: manual dry run
+SELECT '📋 Active schedules that COULD trigger:' AS info;
+SELECT
+  s.id AS schedule_id,
+  s.user_id,
+  m.name AS medication_name,
+  s.time,
+  s.days,
+  p.timezone,
+  to_char(now() AT TIME ZONE COALESCE(p.timezone, 'America/Chicago'), 'HH24:MI') AS user_current_time,
+  extract(dow FROM now() AT TIME ZONE COALESCE(p.timezone, 'America/Chicago'))::int AS user_current_dow,
+  EXISTS (SELECT 1 FROM public.push_subscriptions ps WHERE ps.user_id = s.user_id) AS has_push_subscription
+FROM public.schedules s
+JOIN public.profiles p ON p.id = s.user_id
+JOIN public.medications m ON m.id = s.medication_id
+WHERE s.active = true
+ORDER BY s.time;

@@ -14,18 +14,26 @@ function toSameOriginPath(value, origin) {
 }
 
 self.addEventListener('push', (event) => {
-    if (!event.data) return
+    console.log('[MedFlow SW] Push event received!', event)
+
+    if (!event.data) {
+        console.warn('[MedFlow SW] Push event has no data')
+        return
+    }
 
     let payload
     try {
         payload = event.data.json()
+        console.log('[MedFlow SW] Push payload:', JSON.stringify(payload))
     } catch {
         payload = { title: 'MedFlow Care', body: event.data.text() }
+        console.log('[MedFlow SW] Push payload (text fallback):', payload.body)
     }
 
     const { title = 'MedFlow Care', body = '', icon, badge, url, tag } = payload
-    // Store only same-origin paths; reject external URLs to prevent open-redirect on click.
     const safeUrl = toSameOriginPath(url, self.location.origin)
+
+    console.log('[MedFlow SW] Showing notification:', { title, body, tag, url: safeUrl })
 
     event.waitUntil(
         self.registration.showNotification(title, {
@@ -41,8 +49,8 @@ self.addEventListener('push', (event) => {
 })
 
 // On notification click: focus existing app window and navigate to payload url, or open new window.
-// Only same-origin paths are used; external URLs are ignored (open-redirect protection).
 self.addEventListener('notificationclick', (event) => {
+    console.log('[MedFlow SW] Notification clicked:', event.notification.tag)
     event.notification.close()
 
     const base = self.location.origin
@@ -63,11 +71,18 @@ self.addEventListener('notificationclick', (event) => {
 })
 
 self.addEventListener('activate', (event) => {
+    console.log('[MedFlow SW] Activated')
     event.waitUntil(self.clients.claim())
 })
 
-// Allow the app to tell this worker to activate immediately (so user gets the new version after refresh)
+self.addEventListener('install', (event) => {
+    console.log('[MedFlow SW] Installed')
+    self.skipWaiting()
+})
+
+// Allow the app to tell this worker to activate immediately
 self.addEventListener('message', (event) => {
+    console.log('[MedFlow SW] Message received:', event.data)
     if (event.data === 'SKIP_WAITING') {
         self.skipWaiting()
     }

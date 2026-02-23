@@ -13,7 +13,7 @@ import { getPlatformLabel, isStandalone } from '@/shared/lib/device'
 
 export function ProfileView() {
   const { setShowProfile, toast } = useAppStore()
-  const { user, profile, isDemo, signOut, enrollMfa, verifyMfa } = useAuthStore()
+  const { user, profile, isDemo, signOut, enrollMfa, verifyMfa, updatePlan } = useAuthStore()
   const push = usePushNotifications()
   const installPrompt = useInstallPrompt()
 
@@ -21,6 +21,20 @@ export function ProfileView() {
   const [qrCode, setQrCode] = useState<string | null>(null)
   const [code, setCode] = useState('')
   const [mfaLoading, setMfaLoading] = useState(false)
+  const [planLoading, setPlanLoading] = useState(false)
+  const [planExpanded, setPlanExpanded] = useState(false)
+
+  const handlePlanChange = async (plan: 'free' | 'pro' | 'family') => {
+    if (plan === profile?.plan || planLoading) return
+    setPlanLoading(true)
+    const { error } = await updatePlan(plan)
+    setPlanLoading(false)
+    if (error) {
+      toast(getErrorMessage(error, 'Failed to update plan'), 'te')
+      return
+    }
+    toast(`Plan updated to ${plan.charAt(0).toUpperCase() + plan.slice(1)}`, 'ts')
+  }
 
   const joined = user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'
 
@@ -93,12 +107,53 @@ export function ProfileView() {
         )}
       </Card>
 
-      <div className="grid grid-cols-2 gap-3 mb-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
         <Card className="p-4 rounded-2xl">
-          <div className="text-[var(--color-text-tertiary)] uppercase tracking-[0.05em] mb-1 [font-size:var(--text-caption)]">Plan</div>
-          <div className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-body)]">
-            {profile?.plan ? profile.plan.charAt(0).toUpperCase() + profile.plan.slice(1) : 'Free'}
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[var(--color-text-tertiary)] uppercase tracking-[0.05em] mb-1 [font-size:var(--text-caption)]">Plan</div>
+              <div className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-body)]">
+                {profile?.plan ? profile.plan.charAt(0).toUpperCase() + profile.plan.slice(1) : 'Free'}
+              </div>
+            </div>
+            {!isDemo && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={planLoading}
+                onClick={() => setPlanExpanded((e) => !e)}
+                className="shrink-0"
+              >
+                {planExpanded ? 'Hide' : 'Change'}
+              </Button>
+            )}
           </div>
+          {!isDemo && planExpanded && (
+            <div className="mt-3 pt-3 border-t border-[var(--color-border-secondary)]">
+              <p className="text-[var(--color-text-tertiary)] mb-2 [font-size:var(--text-caption)]">
+                Stripe checkout will be integrated later.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {(['free', 'pro', 'family'] as const).map((plan) => {
+                  const isCurrent = profile?.plan === plan
+                  return (
+                    <Button
+                      key={plan}
+                      type="button"
+                      variant={isCurrent ? 'primary' : 'secondary'}
+                      size="md"
+                      disabled={planLoading}
+                      onClick={() => handlePlanChange(plan)}
+                      className="capitalize"
+                    >
+                      {plan.charAt(0).toUpperCase() + plan.slice(1)}
+                    </Button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </Card>
         <Card className="p-4 rounded-2xl">
           <div className="text-[var(--color-text-tertiary)] uppercase tracking-[0.05em] mb-1 [font-size:var(--text-caption)]">Joined</div>

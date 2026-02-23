@@ -90,9 +90,11 @@ export function usePushNotifications() {
         if (isDemo || isLoading) return
         setIsLoading(true)
         try {
-            const { success } = await PushService.testPush()
+            const { success, sent } = await PushService.testPush()
             if (success) {
                 toast('Test notification sent — check your device', 'ts')
+            } else if (sent === 0) {
+                toast('No push subscription found — try toggling notifications off and on', 'tw')
             } else {
                 toast('Test notification failed — check push setup', 'te')
             }

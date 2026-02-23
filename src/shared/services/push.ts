@@ -119,10 +119,10 @@ export const PushService = {
     },
 
     /** Test: send a push notification to yourself right now */
-    async testPush(): Promise<{ success: boolean; details: unknown }> {
+    async testPush(): Promise<{ success: boolean; sent: number; details: unknown }> {
         try {
             const { data: { user } } = await supabase.auth.getUser()
-            if (!user) return { success: false, details: 'Not authenticated' }
+            if (!user) return { success: false, sent: 0, details: 'Not authenticated' }
 
             console.log('[Push] Sending test push to user:', user.id)
             const { data, error } = await supabase.functions.invoke('send-push', {
@@ -137,14 +137,15 @@ export const PushService = {
 
             if (error) {
                 console.error('[Push] Test push failed:', error)
-                return { success: false, details: error }
+                return { success: false, sent: 0, details: error }
             }
 
+            const sent = typeof data?.sent === 'number' ? data.sent : 0
             console.log('[Push] Test push response:', data)
-            return { success: true, details: data }
+            return { success: sent > 0, sent, details: data }
         } catch (err) {
             console.error('[Push] Test push exception:', err)
-            return { success: false, details: (err as Error).message }
+            return { success: false, sent: 0, details: (err as Error).message }
         }
     },
 }

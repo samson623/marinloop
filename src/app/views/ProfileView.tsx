@@ -214,7 +214,25 @@ export function ProfileView() {
               />
             </button>
           </div>
+          {push.isSubscribed && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="md"
+              className="w-full mb-3 py-2.5"
+              onClick={() => { void push.testPush() }}
+              disabled={push.isLoading}
+            >
+              {push.isLoading ? 'Sending...' : 'Send test notification'}
+            </Button>
+          )}
+
           <div className="border-t border-[var(--color-border-secondary)] pt-3 [font-size:var(--text-caption)] text-[var(--color-text-tertiary)]">
+            {profile?.timezone && (
+              <p className="mb-2 font-medium text-[var(--color-text-secondary)]">
+                Reminder timezone: <span className="font-mono">{profile.timezone}</span>
+              </p>
+            )}
             <div className="font-semibold text-[var(--color-text-secondary)] mb-1.5">How it works</div>
             {getPlatformLabel() === 'iOS' && !isStandalone() && (
               <p className="mb-2">

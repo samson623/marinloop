@@ -86,6 +86,23 @@ export function usePushNotifications() {
         }
     }, [isDemo, isLoading, toast])
 
+    const testPush = useCallback(async () => {
+        if (isDemo || isLoading) return
+        setIsLoading(true)
+        try {
+            const { success } = await PushService.testPush()
+            if (success) {
+                toast('Test notification sent — check your device', 'ts')
+            } else {
+                toast('Test notification failed — check push setup', 'te')
+            }
+        } catch {
+            toast('Test notification failed', 'te')
+        } finally {
+            setIsLoading(false)
+        }
+    }, [isDemo, isLoading, toast])
+
     return {
         isSupported,
         permission,
@@ -93,6 +110,7 @@ export function usePushNotifications() {
         isLoading,
         subscribe,
         unsubscribe,
+        testPush,
         showAddToHomeScreenHelp,
         setShowAddToHomeScreenHelp,
     }

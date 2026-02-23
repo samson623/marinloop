@@ -293,6 +293,7 @@ function MedDetailModal({ med, isDemo, isDeleting, onClose, onUpdate, onDelete, 
       for (let i = editTimes.length; i < medScheds.length; i++) {
         deleteSched(medScheds[i].id)
       }
+      toast('Medication updated', 'ts')
     } catch {
       toast('Failed to update some schedules', 'te')
     }

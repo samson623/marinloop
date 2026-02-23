@@ -32,3 +32,21 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  deploy-functions:
+    runs-on: ubuntu-latest
+    needs: ci
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy Edge Functions
+        run: |
+          supabase functions deploy send-push --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+          supabase functions deploy cron-dispatch-push --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

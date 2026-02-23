@@ -3,60 +3,54 @@
 -- ============================================================
 -- Run this in Supabase Dashboard → SQL Editor → New query
 --
--- ⚠️  IMPORTANT: Replace the two values below BEFORE running!
---     (Search for REPLACE_ME)
+-- ⚠️ IMPORTANT: Replace the service role value before running.
 -- ============================================================
 
 -- ╔══════════════════════════════════════════════════════════╗
--- ║  STEP 1: Enable extensions                             ║
+-- ║ STEP 1: Enable extensions                               ║
 -- ╚══════════════════════════════════════════════════════════╝
 
-CREATE EXTENSION IF NOT EXISTS pg_cron;
-CREATE EXTENSION IF NOT EXISTS pg_net;
-CREATE EXTENSION IF NOT EXISTS supabase_vault;
+create extension if not exists pg_cron;
+create extension if not exists pg_net;
+create extension if not exists supabase_vault;
 
 -- ╔══════════════════════════════════════════════════════════╗
--- ║  STEP 2: Store secrets in Vault                        ║
+-- ║ STEP 2: Store secrets in Vault                          ║
 -- ╚══════════════════════════════════════════════════════════╝
--- Delete old vault entries first to avoid duplicates
-DELETE FROM vault.secrets WHERE name IN ('supabase_url', 'service_role_key');
 
--- ⚠️  REPLACE the values below with YOUR actual values!
--- Copy your Supabase URL from: Dashboard → Settings → API → Project URL
--- Copy your Service Role Key from: Dashboard → Settings → API → service_role
+delete from vault.secrets where name in ('supabase_url', 'service_role_key');
 
-SELECT vault.create_secret(
-  'https://lcbdafnxwvqbziootvmi.supabase.co',   -- REPLACE_ME with your Supabase URL
+select vault.create_secret(
+  'https://lcbdafnxwvqbziootvmi.supabase.co',
   'supabase_url',
   'Supabase URL for Cron Push Dispatcher'
 );
 
-SELECT vault.create_secret(
-  'REPLACE_ME_WITH_SERVICE_ROLE_KEY',             -- REPLACE_ME with your service_role key
+select vault.create_secret(
+  'REPLACE_ME_WITH_SERVICE_ROLE_KEY',
   'service_role_key',
   'Service Role Key for Cron Push Dispatcher'
 );
 
--- Verify they were created:
-SELECT name,
-       CASE WHEN decrypted_secret IS NOT NULL AND decrypted_secret != ''
-            THEN '✅ SET (' || left(decrypted_secret, 20) || '...)'
-            ELSE '❌ MISSING'
-       END AS status
-FROM vault.decrypted_secrets
-WHERE name IN ('supabase_url', 'service_role_key');
+select name,
+       case when decrypted_secret is not null and decrypted_secret != ''
+            then '✅ SET (' || left(decrypted_secret, 20) || '...)'
+            else '❌ MISSING'
+       end as status
+from vault.decrypted_secrets
+where name in ('supabase_url', 'service_role_key');
 
 -- ╔══════════════════════════════════════════════════════════╗
--- ║  STEP 3: Create enhanced dispatch function              ║
+-- ║ STEP 3: Create dispatcher function (matches migration 008) ║
 -- ╚══════════════════════════════════════════════════════════╝
 
-CREATE OR REPLACE FUNCTION public.dispatch_due_notifications()
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, extensions, net
-AS $$
-DECLARE
+create or replace function public.dispatch_due_notifications()
+returns void
+language plpgsql
+security definer
+set search_path = public, extensions, net
+as $$
+declare
   rec record;
   supabase_url text;
   service_role_key text;
@@ -65,77 +59,68 @@ DECLARE
   inserted_count int;
   total_due int := 0;
   total_dispatched int := 0;
-  total_skipped int := 0;
-  user_local_time text;
-  user_local_dow int;
-BEGIN
-  -- Read configuration from Supabase vault
+begin
+  -- Read configuration from app.settings (set via ALTER ROLE ... SET)
   supabase_url := current_setting('app.settings.supabase_url', true);
   service_role_key := current_setting('app.settings.service_role_key', true);
 
   -- Fallback: read from Vault
-  IF supabase_url IS NULL OR supabase_url = '' THEN
-    SELECT decrypted_secret INTO supabase_url
-      FROM vault.decrypted_secrets
-      WHERE name = 'supabase_url'
-      LIMIT 1;
-  END IF;
+  if supabase_url is null or supabase_url = '' then
+    select decrypted_secret into supabase_url
+      from vault.decrypted_secrets
+      where name = 'supabase_url'
+      limit 1;
+  end if;
 
-  IF service_role_key IS NULL OR service_role_key = '' THEN
-    SELECT decrypted_secret INTO service_role_key
-      FROM vault.decrypted_secrets
-      WHERE name = 'service_role_key'
-      LIMIT 1;
-  END IF;
+  if service_role_key is null or service_role_key = '' then
+    select decrypted_secret into service_role_key
+      from vault.decrypted_secrets
+      where name = 'service_role_key'
+      limit 1;
+  end if;
 
   -- Abort with visible warning if config missing
-  IF supabase_url IS NULL OR service_role_key IS NULL THEN
-    RAISE WARNING '[MedFlow Cron] ❌ MISSING vault secrets! supabase_url=%, service_role_key=%. Run setup-push.sql.',
-      CASE WHEN supabase_url IS NULL THEN 'NULL' ELSE 'SET' END,
-      CASE WHEN service_role_key IS NULL THEN 'NULL' ELSE 'SET' END;
-    RETURN;
-  END IF;
-
-  RAISE LOG '[MedFlow Cron] ▶ Starting dispatch at % UTC (url=%.., key=..%)',
-    to_char(now_utc, 'YYYY-MM-DD HH24:MI:SS'),
-    left(supabase_url, 30),
-    right(service_role_key, 6);
+  if supabase_url is null or service_role_key is null then
+    raise warning '[MedFlow Cron] Missing vault secrets (supabase_url=%, service_role_key=%) — run setup-push.sql to configure.',
+      case when supabase_url is null then 'NULL' else 'SET' end,
+      case when service_role_key is null then 'NULL' else 'SET' end;
+    return;
+  end if;
 
   -- Find all due schedules
-  FOR rec IN
-    SELECT
-      s.id         AS schedule_id,
-      s.user_id    AS user_id,
-      m.name       AS medication_name,
-      m.dosage     AS medication_dosage,
-      s.time       AS schedule_time,
-      s.days       AS schedule_days,
-      p.timezone   AS user_timezone
-    FROM public.schedules s
-    JOIN public.profiles p     ON p.id = s.user_id
-    JOIN public.medications m  ON m.id = s.medication_id
-    WHERE s.active = true
+  for rec in
+    select
+      s.id         as schedule_id,
+      s.user_id    as user_id,
+      m.name       as medication_name,
+      m.dosage     as medication_dosage,
+      s.time       as schedule_time,
+      p.timezone   as user_timezone
+    from public.schedules s
+    join public.profiles p     on p.id = s.user_id
+    join public.medications m  on m.id = s.medication_id
+    where s.active = true
       -- Time match: current HH:MM in the user's timezone = schedule time
-      AND to_char(now_utc AT TIME ZONE COALESCE(p.timezone, 'America/Chicago'), 'HH24:MI') = s.time
-      -- Day-of-week match (PostgreSQL DOW: 0=Sun, 1=Mon, ..., 6=Sat)
-      AND extract(dow FROM now_utc AT TIME ZONE COALESCE(p.timezone, 'America/Chicago'))::int = ANY(s.days)
+      and to_char(now_utc at time zone coalesce(p.timezone, 'America/Chicago'), 'HH24:MI') = s.time
+      -- Day-of-week match
+      and extract(dow from now_utc at time zone coalesce(p.timezone, 'America/Chicago'))::int = any(s.days)
       -- Only users who have at least one push subscription
-      AND EXISTS (
-        SELECT 1 FROM public.push_subscriptions ps WHERE ps.user_id = s.user_id
+      and exists (
+        select 1 from public.push_subscriptions ps where ps.user_id = s.user_id
       )
-  LOOP
+  loop
     total_due := total_due + 1;
 
     -- Deduplication
-    INSERT INTO public.notification_dispatch_log (schedule_id, minute_bucket)
-      VALUES (rec.schedule_id, minute_trunc)
-      ON CONFLICT (schedule_id, minute_bucket) DO NOTHING;
+    insert into public.notification_dispatch_log (schedule_id, minute_bucket)
+      values (rec.schedule_id, minute_trunc)
+      on conflict (schedule_id, minute_bucket) do nothing;
 
-    GET DIAGNOSTICS inserted_count = ROW_COUNT;
+    get diagnostics inserted_count = row_count;
 
-    IF inserted_count > 0 THEN
+    if inserted_count > 0 then
       -- Fire HTTP POST to cron-dispatch-push Edge Function
-      PERFORM net.http_post(
+      perform net.http_post(
         url := supabase_url || '/functions/v1/cron-dispatch-push',
         headers := jsonb_build_object(
           'Content-Type', 'application/json',
@@ -145,93 +130,60 @@ BEGIN
           'schedule_id', rec.schedule_id,
           'user_id', rec.user_id,
           'medication_name', rec.medication_name,
-          'medication_dosage', COALESCE(rec.medication_dosage, ''),
+          'medication_dosage', coalesce(rec.medication_dosage, ''),
           'schedule_time', rec.schedule_time
         )
       );
       total_dispatched := total_dispatched + 1;
 
-      RAISE LOG '[MedFlow Cron] ✅ Dispatched push for "%" to user % (tz=%, localtime=%, dow=%)',
-        rec.medication_name, rec.user_id, rec.user_timezone, rec.schedule_time,
-        extract(dow FROM now_utc AT TIME ZONE COALESCE(rec.user_timezone, 'America/Chicago'))::int;
-    ELSE
-      total_skipped := total_skipped + 1;
-      RAISE LOG '[MedFlow Cron] ⏭ Already dispatched "%" for user % this minute — skipping',
-        rec.medication_name, rec.user_id;
-    END IF;
-  END LOOP;
+      raise log '[MedFlow Cron] Dispatched push for "%" to user % (tz=%, time=%)',
+        rec.medication_name, rec.user_id, rec.user_timezone, rec.schedule_time;
+    end if;
+  end loop;
 
-  IF total_due = 0 THEN
-    -- Log the current time context for debugging (only at DEBUG level to avoid spam)
-    RAISE DEBUG '[MedFlow Cron] No due schedules at % UTC. Check: profiles.timezone, schedules.time, schedules.days, schedules.active, push_subscriptions exist.',
-      to_char(now_utc, 'HH24:MI');
-  ELSE
-    RAISE LOG '[MedFlow Cron] 📊 Summary: Due=%, Dispatched=%, Skipped(dedup)=%',
-      total_due, total_dispatched, total_skipped;
-  END IF;
+  if total_due > 0 then
+    raise log '[MedFlow Cron] Due=%, Dispatched=%, Skipped(dedup)=%',
+      total_due, total_dispatched, total_due - total_dispatched;
+  end if;
 
   -- Cleanup old dispatch log entries
-  DELETE FROM public.notification_dispatch_log
-    WHERE created_at < now_utc - interval '48 hours';
-END;
+  delete from public.notification_dispatch_log
+    where created_at < now_utc - interval '48 hours';
+end;
 $$;
 
 -- ╔══════════════════════════════════════════════════════════╗
--- ║  STEP 4: Register cron jobs                             ║
+-- ║ STEP 4: Register cron jobs                              ║
 -- ╚══════════════════════════════════════════════════════════╝
 
--- Remove old jobs first to avoid duplicates (ignore errors if they don't exist)
-DO $$
-BEGIN
-  PERFORM cron.unschedule('medflow-push-dispatcher');
-EXCEPTION WHEN OTHERS THEN
-  RAISE NOTICE 'medflow-push-dispatcher job not found (OK for first run)';
-END
+do $$
+begin
+  perform cron.unschedule('medflow-push-dispatcher');
+exception when others then
+  null;
+end
 $$;
 
-DO $$
-BEGIN
-  PERFORM cron.unschedule('medflow-dispatch-log-cleanup');
-EXCEPTION WHEN OTHERS THEN
-  RAISE NOTICE 'medflow-dispatch-log-cleanup job not found (OK for first run)';
-END
+do $$
+begin
+  perform cron.unschedule('medflow-dispatch-log-cleanup');
+exception when others then
+  null;
+end
 $$;
 
--- Schedule: every minute
-SELECT cron.schedule(
+select cron.schedule(
   'medflow-push-dispatcher',
   '* * * * *',
-  $$ SELECT public.dispatch_due_notifications(); $$
+  $$ select public.dispatch_due_notifications(); $$
 );
 
--- Cleanup old dispatch logs weekly
-SELECT cron.schedule(
+select cron.schedule(
   'medflow-dispatch-log-cleanup',
   '0 3 * * 0',
-  $$ DELETE FROM public.notification_dispatch_log WHERE created_at < now() - interval '7 days'; $$
+  $$ delete from public.notification_dispatch_log where created_at < now() - interval '7 days'; $$
 );
 
--- ╔══════════════════════════════════════════════════════════╗
--- ║  DONE! Verify setup:                                    ║
--- ╚══════════════════════════════════════════════════════════╝
-
-SELECT '✅ Setup complete! Cron jobs registered:' AS result;
-SELECT jobname, schedule FROM cron.job WHERE jobname LIKE 'medflow%';
-
--- Quick sanity check: manual dry run
-SELECT '📋 Active schedules that COULD trigger:' AS info;
-SELECT
-  s.id AS schedule_id,
-  s.user_id,
-  m.name AS medication_name,
-  s.time,
-  s.days,
-  p.timezone,
-  to_char(now() AT TIME ZONE COALESCE(p.timezone, 'America/Chicago'), 'HH24:MI') AS user_current_time,
-  extract(dow FROM now() AT TIME ZONE COALESCE(p.timezone, 'America/Chicago'))::int AS user_current_dow,
-  EXISTS (SELECT 1 FROM public.push_subscriptions ps WHERE ps.user_id = s.user_id) AS has_push_subscription
-FROM public.schedules s
-JOIN public.profiles p ON p.id = s.user_id
-JOIN public.medications m ON m.id = s.medication_id
-WHERE s.active = true
-ORDER BY s.time;
+-- Verification
+select '✅ Setup complete! Cron jobs registered:' as result;
+select jobname, schedule from cron.job where jobname like 'medflow%';

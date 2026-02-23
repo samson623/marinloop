@@ -116,23 +116,21 @@ export function ProfileView() {
                 {profile?.plan ? profile.plan.charAt(0).toUpperCase() + profile.plan.slice(1) : 'Free'}
               </div>
             </div>
-            {!isDemo && (
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={planLoading}
-                onClick={() => setPlanExpanded((e) => !e)}
-                className="shrink-0"
-              >
-                {planExpanded ? 'Hide' : 'Change'}
-              </Button>
-            )}
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={planLoading}
+              onClick={() => setPlanExpanded((e) => !e)}
+              className="shrink-0"
+            >
+              {planExpanded ? 'Hide' : 'Change'}
+            </Button>
           </div>
-          {!isDemo && planExpanded && (
+          {planExpanded && (
             <div className="mt-3 pt-3 border-t border-[var(--color-border-secondary)]">
               <p className="text-[var(--color-text-tertiary)] mb-2 [font-size:var(--text-caption)]">
-                Stripe checkout will be integrated later.
+                {isDemo ? 'Demo mode — plan updates are simulated locally.' : 'Stripe checkout will be integrated later.'}
               </p>
               <div className="flex flex-wrap gap-2">
                 {(['free', 'pro', 'family'] as const).map((plan) => {

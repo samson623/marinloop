@@ -267,7 +267,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   updatePlan: async (plan) => {
-    if (env.isDemoApp) return { error: null }
+    if (env.isDemoApp) {
+      set((s) => ({ profile: s.profile ? { ...s.profile, plan } : null }))
+      return { error: null }
+    }
 
     const { data } = await supabase.auth.getSession()
     if (!data.session?.user?.id) return { error: new Error('Not authenticated') }

@@ -337,16 +337,16 @@ function MedDetailModal({ med, isDemo, isDeleting, onClose, onUpdate, onDelete, 
             </FormField>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className={`grid gap-3 ${editTimes.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
             {editTimes.map((t, i) => (
               <FormField key={i} label={editTimes.length > 1 ? `Time ${i + 1}` : 'Time'} id={`edit-med-time-${i}`}>
                 <Input type="time" id={`edit-med-time-${i}`} value={t} onChange={(e) => updateEditTimeAtIndex(i, e.target.value)} />
               </FormField>
             ))}
-            <FormField label="Pills in Bottle" id="edit-med-sup">
-              <Input type="number" id="edit-med-sup" value={editSup} onChange={(e) => setEditSup(e.target.value)} min={0} />
-            </FormField>
           </div>
+          <FormField label="Pills in Bottle" id="edit-med-sup">
+            <Input type="number" id="edit-med-sup" value={editSup} onChange={(e) => setEditSup(e.target.value)} min={0} />
+          </FormField>
 
           <FormField label="Instructions" id="edit-med-inst">
             <textarea id="edit-med-inst" value={editInst} onChange={(e) => setEditInst(e.target.value)} rows={3} className="fi w-full resize-y min-h-[2.5rem]" placeholder="e.g. Take with food" />
@@ -997,28 +997,28 @@ function AddMedModal({ onClose, createBundleAsync, isDemo, isSaving, initialDraf
           <FormField label="Name" id="med-name">
             <Input id="med-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Amoxicillin" required />
           </FormField>
-          <div className="flex gap-2.5">
+          <div className="grid grid-cols-2 gap-3">
             <FormField label="Dosage" id="med-dosage">
               <Input id="med-dosage" value={dose} onChange={(e) => setDose(e.target.value)} placeholder="e.g. 500mg" />
             </FormField>
             <FormField label="Frequency" id="med-freq">
-              <select className="fi" id="med-freq" value={freq} onChange={(e) => handleFreqChange(e.target.value)}>
+              <select className="fi w-full" id="med-freq" value={freq} onChange={(e) => handleFreqChange(e.target.value)}>
                 <option value="1">Once daily</option>
                 <option value="2">Twice daily</option>
                 <option value="3">Three times</option>
               </select>
             </FormField>
           </div>
-          <div className="flex flex-wrap gap-2.5">
+          <div className={`grid gap-3 ${times.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
             {times.map((t, i) => (
               <FormField key={i} label={times.length > 1 ? `Time ${i + 1}` : 'Time'} id={`med-time-${i}`}>
                 <Input id={`med-time-${i}`} type="time" value={t} onChange={(e) => updateTimeAtIndex(i, e.target.value)} />
               </FormField>
             ))}
-            <FormField label="Pills in Bottle" id="med-sup">
-              <Input id="med-sup" type="number" value={sup} onChange={(e) => setSup(e.target.value)} min={0} />
-            </FormField>
           </div>
+          <FormField label="Pills in Bottle" id="med-sup">
+            <Input id="med-sup" type="number" value={sup} onChange={(e) => setSup(e.target.value)} min={0} />
+          </FormField>
           <FormField label="Instructions" id="med-inst">
             <textarea
               id="med-inst"

@@ -337,7 +337,7 @@ function MedDetailModal({ med, isDemo, isDeleting, onClose, onUpdate, onDelete, 
             </FormField>
           </div>
 
-          <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(Number(editFreq) || 1, 3)}, 1fr)${Number(editFreq) <= 2 ? ' 1fr' : ''}` }}>
+          <div className="grid grid-cols-2 gap-3">
             {editTimes.map((t, i) => (
               <FormField key={i} label={editTimes.length > 1 ? `Time ${i + 1}` : 'Time'} id={`edit-med-time-${i}`}>
                 <Input type="time" id={`edit-med-time-${i}`} value={t} onChange={(e) => updateEditTimeAtIndex(i, e.target.value)} />

@@ -289,10 +289,24 @@ async function sendWebPush(
     })
 }
 
+/** Parse a VAPID private key that may be hex-encoded or base64url-encoded */
+function parsePrivateKey(key: string): Uint8Array {
+    // Hex: exactly 64 hex chars = 32 bytes
+    if (/^[0-9a-f]{64}$/i.test(key)) {
+        const bytes = new Uint8Array(32)
+        for (let i = 0; i < 32; i++) {
+            bytes[i] = parseInt(key.slice(i * 2, i * 2 + 2), 16)
+        }
+        return bytes
+    }
+    // Otherwise assume base64url
+    return base64urlDecode(key)
+}
+
 async function createVapidJwt(
     audience: string,
     subject: string,
-    privateKeyBase64: string,
+    privateKeyRaw: string,
 ): Promise<string> {
     const header = { typ: 'JWT', alg: 'ES256' }
     const now = Math.floor(Date.now() / 1000)
@@ -302,7 +316,7 @@ async function createVapidJwt(
     const claimsB64 = base64urlEncode(new TextEncoder().encode(JSON.stringify(claims)))
     const unsignedToken = `${headerB64}.${claimsB64}`
 
-    const keyData = base64urlDecode(privateKeyBase64)
+    const keyData = parsePrivateKey(privateKeyRaw)
     const key = await crypto.subtle.importKey(
         'pkcs8', buildPkcs8(keyData),
         { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign'],

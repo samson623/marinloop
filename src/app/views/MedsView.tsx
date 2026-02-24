@@ -993,33 +993,54 @@ function AddMedModal({ onClose, createBundleAsync, isDemo, isSaving, initialDraf
           <div className="flex-1 h-px bg-[var(--color-border-primary)]" />
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <FormField label="Name" id="med-name">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-1">
+          {/* Name */}
+          <div>
+            <label htmlFor="med-name" className="block font-bold text-[var(--color-text-secondary)] mb-1.5 [font-size:var(--text-label)]">Name</label>
             <Input id="med-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Amoxicillin" required />
-          </FormField>
+          </div>
+
+          {/* Dosage | Frequency */}
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Dosage" id="med-dosage">
+            <div>
+              <label htmlFor="med-dosage" className="block font-bold text-[var(--color-text-secondary)] mb-1.5 [font-size:var(--text-label)]">Dosage</label>
               <Input id="med-dosage" value={dose} onChange={(e) => setDose(e.target.value)} placeholder="e.g. 500mg" />
-            </FormField>
-            <FormField label="Frequency" id="med-freq">
+            </div>
+            <div>
+              <label htmlFor="med-freq" className="block font-bold text-[var(--color-text-secondary)] mb-1.5 [font-size:var(--text-label)]">Frequency</label>
               <select className="fi w-full" id="med-freq" value={freq} onChange={(e) => handleFreqChange(e.target.value)}>
                 <option value="1">Once daily</option>
                 <option value="2">Twice daily</option>
                 <option value="3">Three times</option>
               </select>
-            </FormField>
+            </div>
           </div>
-          <div className={`grid gap-3 ${times.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-            {times.map((t, i) => (
-              <FormField key={i} label={times.length > 1 ? `Time ${i + 1}` : 'Time'} id={`med-time-${i}`}>
-                <Input id={`med-time-${i}`} type="time" value={t} onChange={(e) => updateTimeAtIndex(i, e.target.value)} />
-              </FormField>
-            ))}
+
+          {/* Schedule & Supply */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-[11px] font-semibold uppercase tracking-widest text-[var(--color-text-tertiary)]">Schedule & Supply</span>
+              <div className="flex-1 h-px bg-[var(--color-border-primary)]" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {times.map((t, i) => (
+                <div key={i}>
+                  <label htmlFor={`med-time-${i}`} className="block font-bold text-[var(--color-text-secondary)] mb-1.5 [font-size:var(--text-label)]">
+                    {times.length > 1 ? `Time ${i + 1}` : 'Time'}
+                  </label>
+                  <Input id={`med-time-${i}`} type="time" value={t} onChange={(e) => updateTimeAtIndex(i, e.target.value)} />
+                </div>
+              ))}
+              <div>
+                <label htmlFor="med-sup" className="block font-bold text-[var(--color-text-secondary)] mb-1.5 [font-size:var(--text-label)]">Pills in Bottle</label>
+                <Input id="med-sup" type="number" value={sup} onChange={(e) => setSup(e.target.value)} min={0} />
+              </div>
+            </div>
           </div>
-          <FormField label="Pills in Bottle" id="med-sup">
-            <Input id="med-sup" type="number" value={sup} onChange={(e) => setSup(e.target.value)} min={0} />
-          </FormField>
-          <FormField label="Instructions" id="med-inst">
+
+          {/* Instructions */}
+          <div>
+            <label htmlFor="med-inst" className="block font-bold text-[var(--color-text-secondary)] mb-1.5 [font-size:var(--text-label)]">Instructions</label>
             <textarea
               id="med-inst"
               value={inst}
@@ -1028,8 +1049,11 @@ function AddMedModal({ onClose, createBundleAsync, isDemo, isSaving, initialDraf
               rows={inst.length > 80 ? 4 : 2}
               className="fi w-full resize-y min-h-[2.5rem]"
             />
-          </FormField>
-          <FormField label="Warnings" id="med-warn">
+          </div>
+
+          {/* Warnings */}
+          <div>
+            <label htmlFor="med-warn" className="block font-bold text-[var(--color-text-secondary)] mb-1.5 [font-size:var(--text-label)]">Warnings</label>
             <textarea
               id="med-warn"
               value={warn}
@@ -1038,8 +1062,9 @@ function AddMedModal({ onClose, createBundleAsync, isDemo, isSaving, initialDraf
               rows={warn.length > 80 ? 4 : 2}
               className="fi w-full resize-y min-h-[2.5rem]"
             />
-          </FormField>
-          <Button type="submit" variant="primary" size="md" className="mt-1.5" disabled={isSaving || isLooking}>
+          </div>
+
+          <Button type="submit" variant="primary" size="md" className="mt-1" disabled={isSaving || isLooking}>
             {isSaving ? (
               <span className="flex items-center justify-center gap-2">
                 <span className="w-4 h-4 border-2 border-white/30 border-t-2 border-t-white rounded-full spin-loading shrink-0" />

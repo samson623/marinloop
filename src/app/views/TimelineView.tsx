@@ -54,6 +54,9 @@ export function TimelineView() {
           <div className="text-[var(--color-text-secondary)] font-medium text-base sm:[font-size:var(--text-label)]">
             {now.toLocaleDateString('en-US', { weekday: 'long' })}
           </div>
+          <div className="text-[var(--color-text-tertiary)] [font-family:var(--font-mono)] [font-size:var(--text-caption)] mt-0.5">
+            {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+          </div>
         </div>
 
         <div className="flex-1 flex flex-col items-center justify-center min-w-0 px-2">

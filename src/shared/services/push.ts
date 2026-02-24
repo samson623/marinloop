@@ -65,6 +65,12 @@ export const PushService = {
             await existing.unsubscribe()
         }
 
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+            console.error('[Push] ❌ No authenticated user')
+            return false
+        }
+
         let subscription: PushSubscription
         try {
             subscription = await reg.pushManager.subscribe({
@@ -82,6 +88,7 @@ export const PushService = {
 
         const { error } = await supabase.from('push_subscriptions').upsert(
             {
+                user_id: user.id,
                 endpoint: json.endpoint!,
                 p256dh: json.keys!.p256dh!,
                 auth: json.keys!.auth!,

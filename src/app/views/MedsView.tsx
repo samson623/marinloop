@@ -337,16 +337,28 @@ function MedDetailModal({ med, isDemo, isDeleting, onClose, onUpdate, onDelete, 
             </FormField>
           </div>
 
-          <div className={`grid gap-3 ${editTimes.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-            {editTimes.map((t, i) => (
-              <FormField key={i} label={editTimes.length > 1 ? `Time ${i + 1}` : 'Time'} id={`edit-med-time-${i}`}>
-                <Input type="time" id={`edit-med-time-${i}`} value={t} onChange={(e) => updateEditTimeAtIndex(i, e.target.value)} />
-              </FormField>
-            ))}
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-[11px] font-semibold uppercase tracking-widest text-[var(--color-text-tertiary)]">Schedule & Supply</span>
+              <div className="flex-1 h-px bg-[var(--color-border-primary)]" />
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-5">
+              {editTimes.map((t, i) => (
+                <div key={i}>
+                  <label htmlFor={`edit-med-time-${i}`} className="block font-bold text-[var(--color-text-secondary)] mb-1.5 [font-size:var(--text-label)]">
+                    {editTimes.length > 1 ? `Time ${i + 1}` : 'Time'}
+                  </label>
+                  <Input type="time" id={`edit-med-time-${i}`} value={t} onChange={(e) => updateEditTimeAtIndex(i, e.target.value)} />
+                </div>
+              ))}
+              <div>
+                <label htmlFor="edit-med-sup" className="block font-bold text-[var(--color-text-secondary)] mb-1.5 [font-size:var(--text-label)]">
+                  Pills in Bottle
+                </label>
+                <Input type="number" id="edit-med-sup" value={editSup} onChange={(e) => setEditSup(e.target.value)} min={0} />
+              </div>
+            </div>
           </div>
-          <FormField label="Pills in Bottle" id="edit-med-sup">
-            <Input type="number" id="edit-med-sup" value={editSup} onChange={(e) => setEditSup(e.target.value)} min={0} />
-          </FormField>
 
           <FormField label="Instructions" id="edit-med-inst">
             <textarea id="edit-med-inst" value={editInst} onChange={(e) => setEditInst(e.target.value)} rows={3} className="fi w-full resize-y min-h-[2.5rem]" placeholder="e.g. Take with food" />
@@ -1017,12 +1029,12 @@ function AddMedModal({ onClose, createBundleAsync, isDemo, isSaving, initialDraf
           </div>
 
           {/* Schedule & Supply */}
-          <div>
+          <div className="mb-2">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-[11px] font-semibold uppercase tracking-widest text-[var(--color-text-tertiary)]">Schedule & Supply</span>
               <div className="flex-1 h-px bg-[var(--color-border-primary)]" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-5">
               {times.map((t, i) => (
                 <div key={i}>
                   <label htmlFor={`med-time-${i}`} className="block font-bold text-[var(--color-text-secondary)] mb-1.5 [font-size:var(--text-label)]">

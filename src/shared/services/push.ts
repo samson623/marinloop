@@ -2,8 +2,9 @@ import { supabase } from '@/shared/lib/supabase'
 import { env } from '@/shared/lib/env'
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
-    const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
-    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+    const cleanStr = base64String.replace(/[\s\n\r]|\\n/g, '')
+    const padding = '='.repeat((4 - (cleanStr.length % 4)) % 4)
+    const base64 = (cleanStr + padding).replace(/-/g, '+').replace(/_/g, '/')
     const raw = atob(base64)
     const arr = new Uint8Array(raw.length)
     for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i)

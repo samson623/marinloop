@@ -47,8 +47,8 @@ serve(async (req) => {
     try {
         const supabaseUrl = Deno.env.get('SUPABASE_URL')
         const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-        const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')
-        const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')
+        const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')?.replace(/[\s\n\r]|\\n/g, '')
+        const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')?.replace(/[\s\n\r]|\\n/g, '')
         const vapidSubject = Deno.env.get('VAPID_SUBJECT') || 'mailto:admin@medflowcare.app'
 
         log(`ENV: URL=${supabaseUrl ? 'SET' : '❌'}, SRK=${serviceRoleKey ? 'SET' : '❌'}, VAPID_PUB=${vapidPublicKey ? 'SET' : '❌'}, VAPID_PRIV=${vapidPrivateKey ? 'SET' : '❌'}`)

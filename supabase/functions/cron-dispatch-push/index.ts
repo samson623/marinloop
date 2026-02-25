@@ -48,7 +48,7 @@ serve(async (req) => {
     try {
         // ── Step 1: Check environment variables ──
         const supabaseUrl = Deno.env.get('SUPABASE_URL')
-        const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+        const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')?.trim()
         const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')?.replace(/[\s\n\r]|\\n/g, '')
         const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')?.replace(/[\s\n\r]|\\n/g, '')
         const vapidSubject = Deno.env.get('VAPID_SUBJECT') || 'mailto:admin@medflowcare.app'
@@ -80,12 +80,18 @@ serve(async (req) => {
                 { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
         }
-        const token = authHeader.replace('Bearer ', '')
+        const token = authHeader.replace('Bearer ', '').trim()
+        // MEDFLOW_SERVICE_ROLE_KEY stores the project JWT (same as dashboard service role key).
+        // Used to authenticate pg_cron calls from the vault without hitting the sb_secret_* format mismatch.
+        const medflowSrk = Deno.env.get('MEDFLOW_SERVICE_ROLE_KEY')?.trim()
 
         let isServiceRole = false
-        if (token === serviceRoleKey) {
+        if (medflowSrk && token === medflowSrk) {
             isServiceRole = true
             log('AUTH: Service role key matched ✅')
+        } else if (token === serviceRoleKey) {
+            isServiceRole = true
+            log('AUTH: Auto-injected service role key matched ✅')
         }
 
         if (!isServiceRole) {

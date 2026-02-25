@@ -33,7 +33,6 @@ serve(async (req) => {
         const envCheck = {
             SUPABASE_URL: !!Deno.env.get('SUPABASE_URL'),
             SUPABASE_SERVICE_ROLE_KEY: !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
-            SUPABASE_ANON_KEY: !!Deno.env.get('SUPABASE_ANON_KEY'),
             VAPID_PUBLIC_KEY: !!Deno.env.get('VAPID_PUBLIC_KEY'),
             VAPID_PRIVATE_KEY: !!Deno.env.get('VAPID_PRIVATE_KEY'),
             VAPID_SUBJECT: !!Deno.env.get('VAPID_SUBJECT'),
@@ -46,7 +45,7 @@ serve(async (req) => {
 
     try {
         const supabaseUrl = Deno.env.get('SUPABASE_URL')
-        const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+        const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')?.trim()
         const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')?.replace(/[\s\n\r]|\\n/g, '')
         const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')?.replace(/[\s\n\r]|\\n/g, '')
         const vapidSubject = Deno.env.get('VAPID_SUBJECT') || 'mailto:admin@medflowcare.app'
@@ -71,13 +70,20 @@ serve(async (req) => {
             )
         }
 
-        const token = authHeader.replace('Bearer ', '')
+        const token = authHeader.replace('Bearer ', '').trim()
+        // MEDFLOW_SERVICE_ROLE_KEY is the same JWT as the project service role key,
+        // stored as a custom secret to avoid the SUPABASE_ prefix restriction.
+        // This is what pg_cron sends from the vault and what we compare against.
+        const medflowSrk = Deno.env.get('MEDFLOW_SERVICE_ROLE_KEY')?.trim()
         let authenticatedUserId: string | null = null
 
-        // Accept service role key OR user JWT
-        if (token === serviceRoleKey) {
-            log('AUTH: Service role key ✅')
+        // Accept MEDFLOW_SERVICE_ROLE_KEY (for pg_cron calls), auto-injected SRK, OR user JWT
+        if (medflowSrk && token === medflowSrk) {
+            log('AUTH: Service role key matched ✅')
+        } else if (token === serviceRoleKey) {
+            log('AUTH: Auto-injected service role key matched ✅')
         } else {
+
             const userClient = createClient(
                 supabaseUrl,
                 Deno.env.get('SUPABASE_ANON_KEY')!,
@@ -132,7 +138,7 @@ serve(async (req) => {
         if (!subscriptions || subscriptions.length === 0) {
             log(`NO SUBSCRIPTIONS for user=${user_id}`)
             return new Response(
-                JSON.stringify({ sent: 0, message: 'No subscriptions found', logs }),
+                JSON.stringify({ sent: 0, total: 0, message: 'No subscriptions found', logs }),
                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
         }
@@ -261,13 +267,14 @@ async function createVapidJwt(
 
     const keyData = parsePrivateKey(privateKeyRaw)
     const key = await crypto.subtle.importKey(
-        'pkcs8', buildPkcs8(keyData),
+        'pkcs8', buildPkcs8(keyData).buffer as ArrayBuffer,
         { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign'],
     )
 
+    const tokenBytes = new TextEncoder().encode(unsignedToken)
     const signature = await crypto.subtle.sign(
-        { name: 'ECDSA', hash: 'SHA-256' }, key,
-        new TextEncoder().encode(unsignedToken),
+        { name: 'ECDSA', hash: { name: 'SHA-256' } }, key,
+        tokenBytes.buffer as ArrayBuffer,
     )
 
     const sigBytes = new Uint8Array(signature)

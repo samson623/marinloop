@@ -78,7 +78,7 @@ export const PushService = {
         try {
             subscription = await reg.pushManager.subscribe({
                 userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(vapidKey),
+                applicationServerKey: urlBase64ToUint8Array(vapidKey) as BufferSource,
             })
             if (DEBUG) console.log('[Push] Browser subscription created:', subscription.endpoint.slice(0, 50) + '...')
         } catch (subErr) {

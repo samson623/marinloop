@@ -6,10 +6,21 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Vary': 'Origin',
+function getAllowedOrigins(): string[] {
+    const raw = Deno.env.get('ALLOWED_ORIGINS')
+    if (!raw?.trim()) return []
+    return raw.split(',').map((o) => o.trim()).filter(Boolean)
+}
+
+function getCorsHeaders(origin: string | null): Record<string, string> {
+    const allowed = getAllowedOrigins()
+    const originAllowed = origin != null && origin !== 'null' &&
+        (allowed.includes('*') || allowed.includes(origin))
+    return {
+        'Access-Control-Allow-Origin': originAllowed ? origin! : 'https://medflowcare.app',
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+        'Vary': 'Origin',
+    }
 }
 
 interface CronPayload {
@@ -21,13 +32,14 @@ interface CronPayload {
 }
 
 serve(async (req) => {
+    const origin = req.headers.get('Origin')
+
     if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders })
+        return new Response('ok', { headers: getCorsHeaders(origin) })
     }
 
-    // Collect diagnostic logs for the response
-    const logs: string[] = []
-    const log = (msg: string) => { logs.push(`[${new Date().toISOString()}] ${msg}`); console.log(`[cron-dispatch-push] ${msg}`) }
+    const corsHeaders = { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
+    const log = (msg: string) => console.log(`[cron-dispatch-push] ${msg}`)
 
     // GET = health check
     if (req.method === 'GET') {
@@ -41,7 +53,21 @@ serve(async (req) => {
         }
         return new Response(
             JSON.stringify({ status: 'ok', env: envCheck, timestamp: new Date().toISOString() }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            { headers: corsHeaders }
+        )
+    }
+
+    // CORS check: null origin = server-to-server call (pg_cron), always pass through.
+    // Non-null origin must be in ALLOWED_ORIGINS (fail-closed).
+    const allowed = getAllowedOrigins()
+    const originAllowed =
+        origin == null ||
+        allowed.includes('*') ||
+        (origin !== 'null' && allowed.includes(origin))
+    if (!originAllowed) {
+        return new Response(
+            JSON.stringify({ error: 'CORS not allowed' }),
+            { status: 403, headers: corsHeaders },
         )
     }
 
@@ -58,16 +84,16 @@ serve(async (req) => {
         if (!supabaseUrl || !serviceRoleKey) {
             log('ABORT: Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
             return new Response(
-                JSON.stringify({ error: 'Server misconfigured: missing Supabase env vars', logs }),
-                { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                JSON.stringify({ error: 'Server misconfigured: missing Supabase env vars' }),
+                { status: 500, headers: corsHeaders }
             )
         }
 
         if (!vapidPublicKey || !vapidPrivateKey) {
             log('ABORT: Missing VAPID keys')
             return new Response(
-                JSON.stringify({ error: 'Server misconfigured: missing VAPID keys', logs }),
-                { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                JSON.stringify({ error: 'Server misconfigured: missing VAPID keys' }),
+                { status: 500, headers: corsHeaders }
             )
         }
 
@@ -76,8 +102,8 @@ serve(async (req) => {
         if (!authHeader?.startsWith('Bearer ')) {
             log('ABORT: No Authorization header')
             return new Response(
-                JSON.stringify({ error: 'Missing Authorization header', logs }),
-                { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                JSON.stringify({ error: 'Missing Authorization header' }),
+                { status: 401, headers: corsHeaders }
             )
         }
         const token = authHeader.replace('Bearer ', '').trim()
@@ -104,8 +130,8 @@ serve(async (req) => {
             if (authError || !user) {
                 log(`AUTH FAILED: ${authError?.message || 'no user returned'}`)
                 return new Response(
-                    JSON.stringify({ error: 'Unauthorized', details: authError?.message, logs }),
-                    { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                    JSON.stringify({ error: 'Unauthorized' }),
+                    { status: 401, headers: corsHeaders }
                 )
             }
             log(`AUTH: User JWT validated for user=${user.id} ✅`)
@@ -118,8 +144,8 @@ serve(async (req) => {
         } catch (e) {
             log(`ABORT: Failed to parse request body: ${(e as Error).message}`)
             return new Response(
-                JSON.stringify({ error: 'Invalid JSON body', logs }),
-                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                JSON.stringify({ error: 'Invalid JSON body' }),
+                { status: 400, headers: corsHeaders }
             )
         }
 
@@ -129,8 +155,8 @@ serve(async (req) => {
         if (!user_id || !medication_name) {
             log('ABORT: Missing required fields (user_id or medication_name)')
             return new Response(
-                JSON.stringify({ error: 'user_id and medication_name are required', logs }),
-                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                JSON.stringify({ error: 'user_id and medication_name are required' }),
+                { status: 400, headers: corsHeaders }
             )
         }
 
@@ -155,8 +181,8 @@ serve(async (req) => {
         if (!subscriptions || subscriptions.length === 0) {
             log(`NO SUBSCRIPTIONS found for user=${user_id}. Push cannot be delivered.`)
             return new Response(
-                JSON.stringify({ sent: 0, message: 'No subscriptions for this user', logs }),
-                { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                JSON.stringify({ sent: 0, message: 'No subscriptions for this user' }),
+                { headers: corsHeaders }
             )
         }
 
@@ -238,21 +264,15 @@ serve(async (req) => {
         log(`DONE: sent=${sent}/${subscriptions.length}, cleaned=${staleEndpoints.length}`)
 
         return new Response(
-            JSON.stringify({
-                sent,
-                total: subscriptions.length,
-                cleaned: staleEndpoints.length,
-                pushResults,
-                logs,
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            JSON.stringify({ sent, total: subscriptions.length, cleaned: staleEndpoints.length, pushResults }),
+            { headers: corsHeaders }
         )
     } catch (err) {
         const errMsg = (err as Error).message
-        log(`FATAL ERROR: ${errMsg}`)
+        console.log(`[cron-dispatch-push] FATAL ERROR: ${errMsg}`)
         return new Response(
-            JSON.stringify({ error: errMsg, logs }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            JSON.stringify({ error: errMsg }),
+            { status: 500, headers: corsHeaders }
         )
     }
 })
@@ -267,7 +287,7 @@ function formatTime12h(time24: string): string {
     return `${h12}:${String(m).padStart(2, '0')} ${period}`
 }
 
-// ---- Web Push Implementation ----
+// ---- Web Push Implementation using Deno crypto ----
 
 async function sendWebPush(
     subscription: { endpoint: string; keys: { p256dh: string; auth: string } },
@@ -279,7 +299,7 @@ async function sendWebPush(
     const endpoint = new URL(subscription.endpoint)
     const audience = `${endpoint.protocol}//${endpoint.host}`
 
-    const jwt = await createVapidJwt(audience, vapidSubject, vapidPrivateKey)
+    const jwt = await createVapidJwt(audience, vapidSubject, vapidPrivateKey, vapidPublicKey)
     const encrypted = await encryptPayload(payload, subscription.keys.p256dh, subscription.keys.auth)
 
     return fetch(subscription.endpoint, {
@@ -297,7 +317,6 @@ async function sendWebPush(
 
 /** Parse a VAPID private key that may be hex-encoded or base64url-encoded */
 function parsePrivateKey(key: string): Uint8Array {
-    // Hex: exactly 64 hex chars = 32 bytes
     if (/^[0-9a-f]{64}$/i.test(key)) {
         const bytes = new Uint8Array(32)
         for (let i = 0; i < 32; i++) {
@@ -305,7 +324,6 @@ function parsePrivateKey(key: string): Uint8Array {
         }
         return bytes
     }
-    // Otherwise assume base64url
     return base64urlDecode(key)
 }
 
@@ -313,6 +331,7 @@ async function createVapidJwt(
     audience: string,
     subject: string,
     privateKeyRaw: string,
+    publicKeyRaw: string,
 ): Promise<string> {
     const header = { typ: 'JWT', alg: 'ES256' }
     const now = Math.floor(Date.now() / 1000)
@@ -322,15 +341,28 @@ async function createVapidJwt(
     const claimsB64 = base64urlEncode(new TextEncoder().encode(JSON.stringify(claims)))
     const unsignedToken = `${headerB64}.${claimsB64}`
 
-    const keyData = parsePrivateKey(privateKeyRaw)
+    // JWK import: Deno's ring engine accepts JWK at sign time.
+    // PKCS8 passes importKey but throws InvalidEncoding during sign — use JWK only.
+    const privateKeyBytes = parsePrivateKey(privateKeyRaw)
+    const publicKeyBytes = base64urlDecode(publicKeyRaw)
+    // Uncompressed P-256 public key: 0x04 || x(32 bytes) || y(32 bytes)
+    const d = base64urlEncode(privateKeyBytes)
+    const x = base64urlEncode(publicKeyBytes.slice(1, 33))
+    const y = base64urlEncode(publicKeyBytes.slice(33, 65))
+
     const key = await crypto.subtle.importKey(
-        'pkcs8', buildPkcs8(keyData),
-        { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign'],
+        'jwk',
+        { kty: 'EC', crv: 'P-256', d, x, y },
+        { name: 'ECDSA', namedCurve: 'P-256' },
+        false,
+        ['sign'],
     )
 
+    const tokenBytes = new TextEncoder().encode(unsignedToken)
     const signature = await crypto.subtle.sign(
-        { name: 'ECDSA', hash: 'SHA-256' }, key,
-        new TextEncoder().encode(unsignedToken),
+        { name: 'ECDSA', hash: { name: 'SHA-256' } },
+        key,
+        tokenBytes.buffer as ArrayBuffer,
     )
 
     const sigBytes = new Uint8Array(signature)
@@ -424,16 +456,8 @@ function concatBuffers(...buffers: Uint8Array[]): Uint8Array {
     return result
 }
 
-function buildPkcs8(rawPrivateKey: Uint8Array): Uint8Array {
-    const prefix = new Uint8Array([
-        0x30, 0x41, 0x02, 0x01, 0x00, 0x30, 0x13, 0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02,
-        0x01, 0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07, 0x04, 0x27, 0x30, 0x25,
-        0x02, 0x01, 0x01, 0x04, 0x20,
-    ])
-    return concatBuffers(prefix, rawPrivateKey)
-}
-
 function derToRaw(der: Uint8Array): Uint8Array {
+    // WebCrypto ECDSA sign returns IEEE P1363 (r || s, 64 bytes) — return as-is.
     if (der.length === 64) return der
     const raw = new Uint8Array(64)
     let offset = 2

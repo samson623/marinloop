@@ -32,21 +32,21 @@ export function useTimeline() {
 
       const time = schedule.time.slice(0, 5)
       const log = todayLogs.find((l) => l.schedule_id === schedule.id)
-      const st = log ? (log.status === 'taken' ? 'done' : log.status) : 'pending'
-      const at = log ? toLocalTimeString(log.taken_at) : null
+      const status = log ? (log.status === 'taken' ? 'done' : log.status) : 'pending'
+      const actualTime = log ? toLocalTimeString(log.taken_at) : null
 
       items.push({
         id: schedule.id,
-        tp: 'med',
-        mid: schedule.medication_id,
+        type: 'med',
+        medicationId: schedule.medication_id,
         name: med.name,
         dose: med.dosage ?? '',
         time,
-        tm: timeToMinutes(time),
-        inst: med.instructions ?? '',
-        warn: med.warnings ?? '',
-        st,
-        at,
+        timeMinutes: timeToMinutes(time),
+        instructions: med.instructions ?? '',
+        warnings: med.warnings ?? '',
+        status,
+        actualTime,
       })
     }
 
@@ -57,13 +57,13 @@ export function useTimeline() {
       const time = toLocalTimeString(appt.start_time)
       items.push({
         id: `appt_${appt.id}`,
-        tp: 'appt',
+        type: 'appt',
         name: appt.title,
         time,
-        tm: timeToMinutes(time),
-        inst: appt.notes ?? '',
+        timeMinutes: timeToMinutes(time),
+        instructions: appt.notes ?? '',
         loc: appt.location ?? '',
-        st: 'appt',
+        status: 'appt',
       })
     }
 

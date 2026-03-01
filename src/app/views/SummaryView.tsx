@@ -16,7 +16,7 @@ export function SummaryView() {
   const {
     sched: demoSched,
     notes: demoNotes,
-    adh: demoAdh,
+    adherence: demoAdh,
     meds: demoMeds,
     appts: demoAppts,
     addNote: storeAddNote,
@@ -24,7 +24,7 @@ export function SummaryView() {
     openQuickCaptureModal,
     closeQuickCaptureModal,
   } = useAppStore()
-  const { adh: realAdh } = useAdherenceHistory(7)
+  const { adherence: realAdh } = useAdherenceHistory(7)
   const { timeline } = useTimeline()
   const { notes: realNotes, addNote: addNoteReal, isAdding, updateNote, deleteNote, isDeleting } = useNotes()
   const { meds: realMeds } = useMedications()
@@ -56,11 +56,11 @@ export function SummaryView() {
   let total = 0
 
   sched.forEach((i) => {
-    if (i.tp !== 'med') return
+    if (i.type !== 'med') return
     total += 1
-    if (i.st === 'done') dn += 1
-    else if (i.st === 'late') { dn += 1; lt += 1 }
-    else if (i.st === 'missed') ms += 1
+    if (i.status === 'done') dn += 1
+    else if (i.status === 'late') { dn += 1; lt += 1 }
+    else if (i.status === 'missed') ms += 1
   })
 
   const adh = isDemo ? demoAdh : realAdh
@@ -79,7 +79,7 @@ export function SummaryView() {
   const notes = isDemo
     ? demoNotes.map((n) => ({
       id: n.id,
-      title: n.mid ? (demoMeds.find((m) => m.id === n.mid)?.name ?? 'Note') : 'Note',
+      title: n.medicationId ? (demoMeds.find((m) => m.id === n.medicationId)?.name ?? 'Note') : 'Note',
       text: n.text,
       created: n.time,
     }))

@@ -23,11 +23,11 @@ describe('timeline-utils', () => {
   })
 
   describe('sortAndMarkNext', () => {
-    const item = (id: string, tm: number, tp: string, st: string): TimelineItemLike => ({
+    const item = (id: string, timeMinutes: number, type: string, status: string): TimelineItemLike => ({
       id,
-      tp,
-      tm,
-      st,
+      type,
+      timeMinutes,
+      status,
     })
 
     it('sorts items by tm ascending', () => {
@@ -48,9 +48,9 @@ describe('timeline-utils', () => {
       ]
       const now = 10 * 60 + 30
       sortAndMarkNext(items, now)
-      expect(items.find((i) => i.id === 'past')?.nx).toBeUndefined()
-      expect((items.find((i) => i.id === 'soon') as TimelineItemLike & { nx?: boolean }).nx).toBe(true)
-      expect(items.find((i) => i.id === 'later')?.nx).toBeUndefined()
+      expect(items.find((i) => i.id === 'past')?.isNext).toBeUndefined()
+      expect(items.find((i) => i.id === 'soon')?.isNext).toBe(true)
+      expect(items.find((i) => i.id === 'later')?.isNext).toBeUndefined()
     })
 
     it('does not mark appt or done items as next', () => {
@@ -59,8 +59,8 @@ describe('timeline-utils', () => {
         item('appt', 10 * 60, 'appt', 'appt'),
       ]
       sortAndMarkNext(items, 10 * 60)
-      expect((items[0] as TimelineItemLike & { nx?: boolean }).nx).toBe(true)
-      expect((items[1] as TimelineItemLike & { nx?: boolean }).nx).toBeUndefined()
+      expect(items[0].isNext).toBe(true)
+      expect(items[1].isNext).toBeUndefined()
     })
 
     it('marks only one item as next', () => {
@@ -70,7 +70,7 @@ describe('timeline-utils', () => {
         item('c', 11 * 60, 'med', 'pending'),
       ]
       sortAndMarkNext(items, 10 * 60)
-      const nextCount = items.filter((i) => (i as TimelineItemLike & { nx?: boolean }).nx).length
+      const nextCount = items.filter((i) => i.isNext).length
       expect(nextCount).toBe(1)
     })
   })

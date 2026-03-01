@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useThemeStore } from '@/shared/stores/theme-store'
 import { useAppStore } from '@/shared/stores/app-store'
 import { useAuthStore } from '@/shared/stores/auth-store'
@@ -6,11 +7,7 @@ import { getErrorMessage } from '@/shared/lib/errors'
 import { IconButton } from '@/shared/components/IconButton'
 import { Button, Input } from '@/shared/components/ui'
 
-type LoginScreenProps = {
-  onBack?: () => void
-}
-
-export function LoginScreen({ onBack }: LoginScreenProps) {
+export function LoginScreen() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -21,7 +18,10 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
 
   const { toggleTheme } = useThemeStore()
   const { toast } = useAppStore()
-  const { signInWithEmail, signUp, signInWithGoogle } = useAuthStore()
+  const { session, isDemo, signInWithEmail, signUp, signInWithGoogle } = useAuthStore()
+  const navigate = useNavigate()
+
+  if (session || isDemo) return <Navigate to="/timeline" replace />
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -71,17 +71,15 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
       </IconButton>
 
       <div className="w-full max-w-[400px] sm:max-w-[420px] px-2 sm:px-4 py-6 sm:py-8 md:py-10">
-        {onBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            aria-label="Back"
-            className="absolute top-[max(1rem,env(safe-area-inset-top))] left-[max(1rem,env(safe-area-inset-left))] flex items-center gap-2 border-none bg-transparent cursor-pointer text-[var(--color-text-secondary)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] min-h-[44px] min-w-[44px] [font-size:var(--text-body)]"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
-            Back
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => navigate('/landing')}
+          aria-label="Back"
+          className="absolute top-[max(1rem,env(safe-area-inset-top))] left-[max(1rem,env(safe-area-inset-left))] flex items-center gap-2 border-none bg-transparent cursor-pointer text-[var(--color-text-secondary)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] min-h-[44px] min-w-[44px] [font-size:var(--text-body)]"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+          Back
+        </button>
         <div className="flex items-center gap-2 mb-3 sm:mb-4">
           <h1 className="font-extrabold tracking-[-0.03em] text-[var(--color-text-primary)] [font-size:var(--text-title)]">
             MedFlow

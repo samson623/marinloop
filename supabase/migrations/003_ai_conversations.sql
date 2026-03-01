@@ -1,6 +1,6 @@
 -- AI chat history for GPT-5 nano and similar models
 create table if not exists public.ai_conversations (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   role text not null check (role in ('user', 'assistant', 'system')),
   content text not null,

@@ -1,13 +1,15 @@
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useThemeStore } from '@/shared/stores/theme-store'
+import { useAuthStore } from '@/shared/stores/auth-store'
 import { IconButton } from '@/shared/components/IconButton'
 import { Button } from '@/shared/components/ui'
 
-type LandingScreenProps = {
-  onGetStarted: () => void
-}
-
-export function LandingScreen({ onGetStarted }: LandingScreenProps) {
+export function LandingScreen() {
   const { toggleTheme } = useThemeStore()
+  const { session, isDemo } = useAuthStore()
+  const navigate = useNavigate()
+
+  if (session || isDemo) return <Navigate to="/timeline" replace />
 
   return (
     <div
@@ -42,14 +44,14 @@ export function LandingScreen({ onGetStarted }: LandingScreenProps) {
           Medication reminders and daily care in one place.
         </p>
         <p className="text-[var(--color-text-tertiary)] mb-10 sm:mb-12 md:mb-14 leading-snug max-w-[280px] sm:max-w-none [font-size:var(--text-caption)]">
-          MedFlow Care provides reminders and tracking tools. Not medical advice.
+          MedFlow Care provides reminders and tracking tools. Not medical advice. Always follow your healthcare provider&apos;s instructions.
         </p>
 
         <Button
           type="button"
           variant="primary"
           size="lg"
-          onClick={onGetStarted}
+          onClick={() => navigate('/login')}
           className="w-full max-w-[280px] sm:max-w-[320px]"
         >
           Get started

@@ -12,8 +12,11 @@
     "test:watch": "vitest",
     "preview": "vite preview",
     "generate-icons": "node scripts/generate-icons.mjs",
-    "deploy:openai-chat": "npx supabase functions deploy openai-chat --project-ref lcbdafnxwvqbziootvmi",
-    "deploy:extract-label": "npx supabase functions deploy extract-label --project-ref lcbdafnxwvqbziootvmi"
+    "deploy:openai-chat": "npx supabase functions deploy openai-chat --project-ref ${SUPABASE_PROJECT_REF:?Set SUPABASE_PROJECT_REF}",
+    "deploy:extract-label": "npx supabase functions deploy extract-label --project-ref ${SUPABASE_PROJECT_REF:?Set SUPABASE_PROJECT_REF}",
+    "deploy:send-push": "npx supabase functions deploy send-push --project-ref ${SUPABASE_PROJECT_REF:?Set SUPABASE_PROJECT_REF}",
+    "deploy:cron-dispatch-push": "npx supabase functions deploy cron-dispatch-push --project-ref ${SUPABASE_PROJECT_REF:?Set SUPABASE_PROJECT_REF}",
+    "deploy:functions": "npm run deploy:openai-chat && npm run deploy:extract-label && npm run deploy:send-push && npm run deploy:cron-dispatch-push"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

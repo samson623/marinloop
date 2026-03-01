@@ -45,15 +45,10 @@ function getAllowedOrigins(): string[] {
 
 function getCorsHeaders(origin: string | null): Record<string, string> {
   const allowed = getAllowedOrigins()
-  // If wildcard or the origin is in the list, reflect it. Otherwise use '*'.
-  const effectiveOrigin =
-    origin && origin !== 'null'
-      ? (allowed.includes('*') || allowed.includes(origin) || allowed.length === 0)
-        ? origin
-        : '*'
-      : '*'
+  const originAllowed = origin != null && origin !== 'null' &&
+    (allowed.includes('*') || allowed.includes(origin))
   return {
-    'Access-Control-Allow-Origin': effectiveOrigin,
+    'Access-Control-Allow-Origin': originAllowed ? origin! : 'https://medflowcare.app',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Vary': 'Origin',
@@ -77,6 +72,16 @@ function scrubError(err: unknown): string {
   return msg
 }
 
+async function fetchWithRetry(url: string, options: RequestInit, retries = 1): Promise<Response> {
+  const res = await fetch(url, options)
+  if (retries > 0 && [500, 502, 503].includes(res.status)) {
+    await res.text() // consume body to avoid resource leak
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    return fetchWithRetry(url, options, retries - 1)
+  }
+  return res
+}
+
 serve(async (req) => {
   const origin = req.headers.get('Origin')
   const corsHeaders = { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
@@ -85,10 +90,9 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  // Check origin: allow if ALLOWED_ORIGINS contains '*', is empty (open), or includes the origin.
+  // Check origin: fail-closed when ALLOWED_ORIGINS is unset. Only allow wildcard or listed origins.
   const allowed = getAllowedOrigins()
   const originAllowed =
-    allowed.length === 0 ||
     allowed.includes('*') ||
     (origin != null && origin !== 'null' && allowed.includes(origin))
   if (!originAllowed) {
@@ -217,7 +221,7 @@ serve(async (req) => {
       messages.push({ role, content })
     }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetchWithRetry('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

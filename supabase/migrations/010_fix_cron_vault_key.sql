@@ -1,0 +1,5 @@
+-- Applied directly to production in the previous session.
+-- Stores the correct service-role JWT in the Supabase Vault under the
+-- 'service_role_key' name so dispatch_due_notifications() can retrieve it
+-- via vault.decrypted_secrets for pg_cron HTTP calls.
+-- Recorded here to keep local migration history in sync with remote.

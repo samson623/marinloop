@@ -1,0 +1,4 @@
+-- Applied directly to production in the previous session.
+-- Stores the service-role JWT in app.settings so dispatch_due_notifications()
+-- can read it without requiring the SUPABASE_ prefix restriction.
+-- Recorded here to keep local migration history in sync with remote.

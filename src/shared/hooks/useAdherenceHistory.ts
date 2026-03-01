@@ -12,8 +12,8 @@ export function useAdherenceHistory(daysBack: number = 7) {
   })
 
   if (isDemo || isLoading) {
-    return { adh: {} as Record<string, { t: number; d: number }>, isLoading }
+    return { adherence: {} as Record<string, { t: number; d: number }>, isLoading }
   }
 
-  return { adh: data ?? {}, isLoading: false }
+  return { adherence: data ?? {}, isLoading: false }
 }

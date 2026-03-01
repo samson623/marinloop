@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Check, Clock, XCircle } from 'lucide-react'
 import { useAppStore, fT, type SchedItem } from '@/shared/stores/app-store'
 import { useTimeline } from '@/shared/hooks/useTimeline'
@@ -31,13 +32,13 @@ export function TimelineView() {
   let total = 0
 
   sched.forEach((i) => {
-    if (i.tp !== 'med') return
+    if (i.type !== 'med') return
     total += 1
-    if (i.st === 'done') dn += 1
-    else if (i.st === 'late') {
+    if (i.status === 'done') dn += 1
+    else if (i.status === 'late') {
       dn += 1
       lt += 1
-    } else if (i.st === 'missed') ms += 1
+    } else if (i.status === 'missed') ms += 1
   })
 
   const pct = total > 0 ? Math.round((dn / total) * 100) : 0
@@ -106,7 +107,8 @@ export function TimelineView() {
 }
 
 function TimelineItem({ item: it, nowMin }: { item: SchedItem; nowMin: number }) {
-  const { toast, setTab } = useAppStore()
+  const { toast } = useAppStore()
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
 
@@ -116,43 +118,43 @@ function TimelineItem({ item: it, nowMin }: { item: SchedItem; nowMin: number })
   let tag: React.ReactNode = null
   let opacity = 1
 
-  if (it.tp === 'med') {
-    if (it.st === 'done') { dotColor = 'var(--color-green)'; opacity = 0.55; tag = <Tag bg="var(--color-green-bg)" color="var(--color-green)" border="var(--color-green-border)" label="Done" icon={<Check size={10} aria-hidden />} /> }
-    else if (it.st === 'late') { dotColor = 'var(--color-amber)'; opacity = 0.6; tag = <Tag bg="var(--color-amber-bg)" color="var(--color-amber)" border="var(--color-amber-border)" label="Late" icon={<Clock size={10} aria-hidden />} /> }
-    else if (it.st === 'missed') { dotColor = 'var(--color-red)'; bg = 'var(--color-red-bg)'; tag = <Tag bg="var(--color-red-bg)" color="var(--color-red)" border="var(--color-red-border)" label="Missed" icon={<XCircle size={10} aria-hidden />} /> }
-    else if (it.nx) { dotColor = 'var(--color-amber)'; bg = 'var(--color-amber-bg)'; tag = <Tag bg="var(--color-amber-bg)" color="var(--color-amber)" border="var(--color-amber-border)" label="Next" /> }
-  } else if (it.tp === 'food') {
+  if (it.type === 'med') {
+    if (it.status === 'done') { dotColor = 'var(--color-green)'; opacity = 0.55; tag = <Tag bg="var(--color-green-bg)" color="var(--color-green)" border="var(--color-green-border)" label="Done" icon={<Check size={10} aria-hidden />} /> }
+    else if (it.status === 'late') { dotColor = 'var(--color-amber)'; opacity = 0.6; tag = <Tag bg="var(--color-amber-bg)" color="var(--color-amber)" border="var(--color-amber-border)" label="Late" icon={<Clock size={10} aria-hidden />} /> }
+    else if (it.status === 'missed') { dotColor = 'var(--color-red)'; bg = 'var(--color-red-bg)'; tag = <Tag bg="var(--color-red-bg)" color="var(--color-red)" border="var(--color-red-border)" label="Missed" icon={<XCircle size={10} aria-hidden />} /> }
+    else if (it.isNext) { dotColor = 'var(--color-amber)'; bg = 'var(--color-amber-bg)'; tag = <Tag bg="var(--color-amber-bg)" color="var(--color-amber)" border="var(--color-amber-border)" label="Next" /> }
+  } else if (it.type === 'food') {
     dotColor = 'var(--color-amber)'
     bg = 'var(--color-amber-bg)'
     dotRadius = '1px'
     tag = <Tag bg="var(--color-amber-bg)" color="var(--color-amber)" border="var(--color-amber-border)" label="Food" dashed />
-  } else if (it.tp === 'appt') {
+  } else if (it.type === 'appt') {
     dotColor = 'var(--color-text-primary)'
     dotRadius = '2px'
     tag = <Tag bg="var(--color-bg-tertiary)" color="var(--color-text-secondary)" border="var(--color-border-primary)" label="Appt" />
   }
 
-  const borderLeft = it.st === 'done'
+  const borderLeft = it.status === 'done'
     ? '3px solid var(--color-green)'
-    : it.st === 'late'
+    : it.status === 'late'
       ? '3px solid var(--color-amber)'
-      : it.st === 'missed'
+      : it.status === 'missed'
         ? '3px solid var(--color-red)'
-        : it.nx
+        : it.isNext
           ? '3px solid var(--color-amber)'
-          : it.tp === 'food'
+          : it.type === 'food'
             ? '3px dashed var(--color-amber-border)'
-            : it.tp === 'appt'
+            : it.type === 'appt'
               ? '3px solid var(--color-text-primary)'
               : 'none'
 
   const handleClick = () => {
-    if (it.tp === 'med' && (it.st === 'pending' || it.nx)) setOpen(true)
-    else if (it.tp === 'appt') setTab('appts')
-    else if (it.st === 'done' || it.st === 'late') toast(`${it.name} - already confirmed`, 'ts')
+    if (it.type === 'med' && (it.status === 'pending' || it.isNext)) setOpen(true)
+    else if (it.type === 'appt') navigate('/appts')
+    else if (it.status === 'done' || it.status === 'late') toast(`${it.name} - already confirmed`, 'ts')
   }
 
-  const statusText = it.tp === 'med' && it.st ? `, ${it.st}` : it.tp === 'appt' ? ', appointment' : it.tp === 'food' ? ', food' : ''
+  const statusText = it.type === 'med' && it.status ? `, ${it.status}` : it.type === 'appt' ? ', appointment' : it.type === 'food' ? ', food' : ''
   const ariaLabel = `${it.name}, ${fT(it.time)}${statusText}`
 
   return (
@@ -174,7 +176,7 @@ function TimelineItem({ item: it, nowMin }: { item: SchedItem; nowMin: number })
           <span className="text-[var(--color-text-secondary)] font-bold min-w-[64px] pt-0.5 [font-family:var(--font-mono)] [font-size:var(--text-caption)]">{fT(it.time)}</span>
           <div className="flex-1 min-w-0 max-w-[60ch]">
             <div className="font-bold mb-1 truncate text-[var(--color-text-primary)] [font-size:var(--text-body)]">{it.name}</div>
-            <div className="text-[var(--color-text-secondary)] truncate [font-size:var(--text-label)]">{it.inst || ''}</div>
+            <div className="text-[var(--color-text-secondary)] truncate [font-size:var(--text-label)]">{it.instructions || ''}</div>
           </div>
           {tag}
         </div>
@@ -206,11 +208,11 @@ function DoseModal({ item: it, onClose, nowMin, triggerRef }: { item: SchedItem;
       markDoneDemo(it.id)
       return
     }
-    if (!it.mid) return
+    if (!it.medicationId) return
 
-    const late = nowMin > it.tm + 15
+    const late = nowMin > it.timeMinutes + 15
     logDose({
-      medication_id: it.mid,
+      medication_id: it.medicationId,
       schedule_id: it.id,
       taken_at: new Date().toISOString(),
       status: late ? 'late' : 'taken',
@@ -223,10 +225,10 @@ function DoseModal({ item: it, onClose, nowMin, triggerRef }: { item: SchedItem;
       markMissedDemo(it.id)
       return
     }
-    if (!it.mid) return
+    if (!it.medicationId) return
 
     logDose({
-      medication_id: it.mid,
+      medication_id: it.medicationId,
       schedule_id: it.id,
       taken_at: new Date().toISOString(),
       status: 'missed',
@@ -244,7 +246,7 @@ function DoseModal({ item: it, onClose, nowMin, triggerRef }: { item: SchedItem;
     >
       <div className="text-[var(--color-text-tertiary)] mb-1 [font-family:var(--font-mono)] [font-size:var(--text-caption)]">{fT(it.time)}</div>
       <div className="font-extrabold tracking-[-0.02em] mb-1 text-[var(--color-text-primary)] [font-size:var(--text-subtitle)]">{it.name} {it.dose || ''}</div>
-      <div className="text-[var(--color-text-secondary)] mb-4 [font-size:var(--text-body)]">{it.inst || ''}</div>
+      <div className="text-[var(--color-text-secondary)] mb-4 [font-size:var(--text-body)]">{it.instructions || ''}</div>
 
       <div className="flex flex-col gap-2">
         <Button

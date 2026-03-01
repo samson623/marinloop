@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Routes, Route, Navigate, useLocation, useNavigate, Outlet } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from '@/shared/lib/query-client'
 import { useThemeStore } from '@/shared/stores/theme-store'
@@ -8,13 +9,14 @@ import { useNotifications } from '@/shared/hooks/useNotifications'
 import { useDoseLogs } from '@/shared/hooks/useDoseLogs'
 import { useNotes } from '@/shared/hooks/useNotes'
 import { useVoiceIntent } from '@/shared/hooks/useVoiceIntent'
-import { LoginScreen } from '@/app/LoginScreen'
-import { LandingScreen } from '@/app/LandingScreen'
 import { TimelineView } from '@/app/views/TimelineView'
 import { MedsView } from '@/app/views/MedsView'
 import { ApptsView } from '@/app/views/ApptsView'
 import { SummaryView } from '@/app/views/SummaryView'
 import { ProfileView } from '@/app/views/ProfileView'
+import { LandingScreen } from '@/app/LandingScreen'
+import { LoginScreen } from '@/app/LoginScreen'
+import { PrivateRoute } from '@/app/PrivateRoute'
 import { isMobile, isStandalone } from '@/shared/lib/device'
 import { AddToHomeScreenPrompt } from '@/shared/components/AddToHomeScreenPrompt'
 import { getAddToHomeScreenSeen, setAddToHomeScreenSeen } from '@/shared/lib/add-to-home-screen-storage'
@@ -24,7 +26,6 @@ import { Button, Input } from '@/shared/components/ui'
 import { useInstallPrompt } from '@/shared/hooks/useInstallPrompt'
 import { useServiceWorkerUpdate } from '@/shared/hooks/useServiceWorkerUpdate'
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
-import { getAuthView } from '@/shared/lib/auth-guard'
 
 type NotificationItem = {
   id: string
@@ -75,12 +76,45 @@ export function App() {
 }
 
 function AppInner() {
-  const { tab, setTab, toasts, showProfile, setShowProfile } = useAppStore()
-  const { session, isDemo, isLoading, initialize } = useAuthStore()
+  const { initialize } = useAuthStore()
+
+  useEffect(() => {
+    void initialize()
+  }, [initialize])
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => { })
+    }
+  }, [])
+
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/timeline" replace />} />
+      <Route path="/landing" element={<LandingScreen />} />
+      <Route path="/login" element={<LoginScreen />} />
+      <Route element={<PrivateRoute />}>
+        <Route element={<AppShell />}>
+          <Route path="/timeline" element={<TimelineView />} />
+          <Route path="/meds" element={<MedsView />} />
+          <Route path="/appts" element={<ApptsView />} />
+          <Route path="/summary" element={<SummaryView />} />
+          <Route path="/profile" element={<ProfileView />} />
+        </Route>
+      </Route>
+      <Route path="*" element={<Navigate to="/timeline" replace />} />
+    </Routes>
+  )
+}
+
+function AppShell() {
+  const { session, isDemo } = useAuthStore()
   const { resolvedTheme, toggleTheme } = useThemeStore()
   const { logDose } = useDoseLogs()
   const { addNote: addNoteReal } = useNotes()
   const voice = useVoiceIntent({ logDose, addNoteReal })
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
   const [notifOpen, setNotifOpen] = useState(false)
   const notifTriggerRef = useRef<HTMLButtonElement>(null)
   const [showVoiceTest] = useState(() => {
@@ -91,27 +125,16 @@ function AppInner() {
     }
   })
   const [showAddToHomeScreenOnboarding, setShowAddToHomeScreenOnboarding] = useState(false)
-  const [showLoginScreen, setShowLoginScreen] = useState(false)
   const installPrompt = useInstallPrompt()
   const { updateAvailable, reloadToUpdate } = useServiceWorkerUpdate()
-
-  useEffect(() => {
-    void initialize()
-  }, [initialize])
+  const toasts = useAppStore((s) => s.toasts)
 
   useEffect(() => {
     // Only clean up the hash if it's just an empty '#' (cosmetic)
-    // We strictly avoid touching it if it contains params (like access_token)
     if (window.location.hash === '#') {
       window.history.replaceState(null, '', window.location.pathname + window.location.search)
     }
-  }, [isLoading])
-
-  useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => { })
-    }
-  }, [])
+  }, [pathname])
 
   useEffect(() => {
     if (!session || isDemo) return
@@ -120,42 +143,12 @@ function AppInner() {
     return () => clearTimeout(t)
   }, [session, isDemo])
 
-  const authView = getAuthView(isLoading, session, isDemo)
-  if (authView === 'loading') {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[var(--color-bg-primary)]">
-        Loading...
-      </div>
-    )
-  }
-
-  if (authView === 'login') {
-    return (
-      <>
-        {showLoginScreen ? (
-          <LoginScreen onBack={() => setShowLoginScreen(false)} />
-        ) : (
-          <LandingScreen onGetStarted={() => setShowLoginScreen(true)} />
-        )}
-        <Toasts toasts={toasts} />
-      </>
-    )
-  }
-
-  const view = showProfile
-    ? <ProfileView />
-    : tab === 'timeline'
-      ? <TimelineView />
-      : tab === 'meds'
-        ? <MedsView />
-        : tab === 'appts'
-          ? <ApptsView />
-          : <SummaryView />
-
   const handleAddToHomeScreenDismiss = () => {
     setAddToHomeScreenSeen()
     setShowAddToHomeScreenOnboarding(false)
   }
+
+  const activeTab = pathname.slice(1) as Tab
 
   return (
     <ErrorBoundary>
@@ -200,7 +193,7 @@ function AppInner() {
               ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" /></svg>
               : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" /></svg>}
           </IconButton>
-          <IconButton size="md" aria-label="Open profile" onClick={() => setShowProfile(true)} className="overflow-hidden p-0">
+          <IconButton size="md" aria-label="Open profile" onClick={() => navigate('/profile')} className="overflow-hidden p-0">
             <img src="https://ui-avatars.com/api/?name=MedFlow+User&background=0D9488&color=fff" alt="" className="w-full h-full object-cover" />
           </IconButton>
         </div>
@@ -229,14 +222,14 @@ function AppInner() {
         <main
           id="main-content"
           role="tabpanel"
-          aria-labelledby={`tab-${tab}`}
+          aria-labelledby={`tab-${activeTab}`}
           className="w-full max-w-[480px] pt-5 px-[max(1rem,env(safe-area-inset-left))] sm:px-5 min-w-0"
           style={{
             paddingRight: 'max(1rem, env(safe-area-inset-right))',
             paddingBottom: 'calc(88px + env(safe-area-inset-bottom))',
           }}
         >
-          {view}
+          <Outlet />
         </main>
       </div>
 
@@ -248,7 +241,7 @@ function AppInner() {
       >
         <div className="max-w-[480px] mx-auto w-full flex justify-around items-center h-full">
         {tabs.map((t) => {
-          const active = tab === t.id
+          const active = activeTab === t.id
           return (
             <button
               key={t.id}
@@ -256,7 +249,7 @@ function AppInner() {
               role="tab"
               aria-selected={active}
               tabIndex={active ? 0 : -1}
-              onClick={() => setTab(t.id)}
+              onClick={() => navigate('/' + t.id)}
               className={`flex flex-col items-center justify-center gap-1.5 min-h-[44px] min-w-[44px] py-2 px-4 relative border-none cursor-pointer bg-transparent outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${active ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-tertiary)]'}`}
             >
               {active && (

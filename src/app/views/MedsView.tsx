@@ -21,9 +21,9 @@ type AddMedModalProps = {
     dose?: string
     freq?: number
     time?: string
-    sup?: number
-    inst?: string
-    warn?: string
+    supply?: number
+    instructions?: string
+    warnings?: string
   } | null
   openScanner?: boolean
   openPhoto?: boolean
@@ -40,11 +40,11 @@ type DisplayMed = {
   dose: string
   freq: number
   times: string[]
-  inst: string
-  warn: string
-  sup: number
-  tot: number
-  dpd: number
+  instructions: string
+  warnings: string
+  supply: number
+  total: number
+  dosesPerDay: number
 }
 
 export function MedsView() {
@@ -69,9 +69,9 @@ export function MedsView() {
       const myScheds = scheds.filter((s) => s.medication_id === m.id)
       const times = myScheds.map((s) => s.time.slice(0, 5))
       const refill = refills.find((r) => r.medication_id === m.id)
-      const sup = refill?.current_quantity ?? 0
-      const tot = refill?.total_quantity ?? 30
-      const dpd = m.freq || 1
+      const supply = refill?.current_quantity ?? 0
+      const total = refill?.total_quantity ?? 30
+      const dosesPerDay = m.freq || 1
 
       return {
         id: m.id,
@@ -79,12 +79,11 @@ export function MedsView() {
         dose: m.dosage || '',
         freq: m.freq,
         times,
-        inst: m.instructions || '',
-        warn: m.warnings || '',
-        fw: 0,
-        sup,
-        tot,
-        dpd,
+        instructions: m.instructions || '',
+        warnings: m.warnings || '',
+        supply,
+        total,
+        dosesPerDay,
       }
     })
 
@@ -103,8 +102,8 @@ export function MedsView() {
         )}
 
         {displayMeds.map((m, i) => {
-          const p = m.tot > 0 ? (m.sup / m.tot) * 100 : 0
-          const days = m.dpd > 0 ? Math.floor(m.sup / m.dpd) : 0
+          const p = m.total > 0 ? (m.supply / m.total) * 100 : 0
+          const days = m.dosesPerDay > 0 ? Math.floor(m.supply / m.dosesPerDay) : 0
           const sc = p < 20 ? 'var(--color-red)' : p < 40 ? 'var(--color-amber)' : 'var(--color-green)'
 
           return (
@@ -136,7 +135,7 @@ export function MedsView() {
                 />
               </div>
               <div className="text-[var(--color-text-secondary)] mt-2 flex justify-between [font-family:var(--font-mono)] [font-size:var(--text-caption)] font-medium">
-                <span>{m.sup} pills left</span>
+                <span>{m.supply} pills left</span>
                 <span className={days <= 5 ? 'text-[var(--color-red)] font-bold' : ''}>{days} days{days <= 5 ? ' — Refill soon' : ''}</span>
               </div>
             </button>
@@ -216,19 +215,19 @@ function MedDetailModal({ med, isDemo, isDeleting, onClose, onUpdate, onDelete, 
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [editingSupply, setEditingSupply] = useState(false)
-  const [supplyVal, setSupplyVal] = useState(String(med.sup))
+  const [supplyVal, setSupplyVal] = useState(String(med.supply))
 
   // Edit form state — initialized from current medication data
   const [editName, setEditName] = useState(med.name)
   const [editDose, setEditDose] = useState(med.dose)
   const [editFreq, setEditFreq] = useState(String(med.freq))
   const [editTimes, setEditTimes] = useState<string[]>(med.times.length > 0 ? med.times : ['08:00'])
-  const [editSup, setEditSup] = useState(String(med.sup))
-  const [editInst, setEditInst] = useState(med.inst)
-  const [editWarn, setEditWarn] = useState(med.warn)
+  const [editSup, setEditSup] = useState(String(med.supply))
+  const [editInst, setEditInst] = useState(med.instructions)
+  const [editWarn, setEditWarn] = useState(med.warnings)
 
-  const p = med.tot > 0 ? (med.sup / med.tot) * 100 : 0
-  const days = med.dpd > 0 ? Math.floor(med.sup / med.dpd) : 0
+  const p = med.total > 0 ? (med.supply / med.total) * 100 : 0
+  const days = med.dosesPerDay > 0 ? Math.floor(med.supply / med.dosesPerDay) : 0
   const barColor = p < 20 ? 'var(--color-red)' : p < 40 ? 'var(--color-amber)' : 'var(--color-green)'
 
   const refill = refills.find((r) => r.medication_id === med.id)
@@ -299,7 +298,7 @@ function MedDetailModal({ med, isDemo, isDeleting, onClose, onUpdate, onDelete, 
     }
 
     // 3. Update supply/refill
-    if (refill && newSup !== med.sup) {
+    if (refill && newSup !== med.supply) {
       onUpdateSupply(refill.id, newSup)
     }
   }
@@ -415,13 +414,13 @@ function MedDetailModal({ med, isDemo, isDeleting, onClose, onUpdate, onDelete, 
                 ) : (
                   <>
                     <span className="text-[var(--color-text-primary)]">
-                      {med.sup} of {med.tot} pills · {days} days left
+                      {med.supply} of {med.total} pills · {days} days left
                       {days <= 5 && <span className="text-[var(--color-red)] font-bold"> — Refill soon</span>}
                     </span>
                     {!isDemo && refill && (
                       <button
                         type="button"
-                        onClick={() => { setSupplyVal(String(med.sup)); setEditingSupply(true) }}
+                        onClick={() => { setSupplyVal(String(med.supply)); setEditingSupply(true) }}
                         className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-tertiary)] hover:text-[var(--color-accent)] cursor-pointer transition-colors"
                         aria-label="Update supply count"
                       >
@@ -434,16 +433,16 @@ function MedDetailModal({ med, isDemo, isDeleting, onClose, onUpdate, onDelete, 
                 )}
               </div>
             </div>
-            {med.inst && (
+            {med.instructions && (
               <div className="flex items-start gap-3">
                 <span className="text-[var(--color-text-tertiary)] shrink-0 w-28">Instructions</span>
-                <p className="text-[var(--color-text-primary)] leading-relaxed">{med.inst}</p>
+                <p className="text-[var(--color-text-primary)] leading-relaxed">{med.instructions}</p>
               </div>
             )}
-            {med.warn && (
+            {med.warnings && (
               <div className="flex items-start gap-3">
                 <span className="text-[var(--color-text-tertiary)] shrink-0 w-28">Warnings</span>
-                <p className="text-[var(--color-red)] font-medium leading-relaxed">{med.warn}</p>
+                <p className="text-[var(--color-red)] font-medium leading-relaxed">{med.warnings}</p>
               </div>
             )}
           </div>
@@ -628,9 +627,9 @@ function AddMedModal({ onClose, createBundleAsync, isDemo, isSaving, initialDraf
     } else if (initialDraft.time) {
       setTimes([initialDraft.time])
     }
-    if (typeof initialDraft.sup === 'number') setSup(String(initialDraft.sup))
-    if (initialDraft.inst) setInst(initialDraft.inst)
-    if (initialDraft.warn) setWarn(initialDraft.warn)
+    if (typeof initialDraft.supply === 'number') setSup(String(initialDraft.supply))
+    if (initialDraft.instructions) setInst(initialDraft.instructions)
+    if (initialDraft.warnings) setWarn(initialDraft.warnings)
   }, [initialDraft])
 
   useEffect(() => {
@@ -784,7 +783,7 @@ function AddMedModal({ onClose, createBundleAsync, isDemo, isSaving, initialDraf
     const f = Number.parseInt(freq, 10) || 1
 
     if (isDemo) {
-      addMedDemo({ name, dose, freq: f, times, inst, warn, fw: 0, sup: Number.parseInt(sup, 10) || 30, tot: Number.parseInt(sup, 10) || 30, dpd: f })
+      addMedDemo({ name, dose, freq: f, times, instructions: inst, warnings: warn, foodWaitMinutes: 0, supply: Number.parseInt(sup, 10) || 30, total: Number.parseInt(sup, 10) || 30, dosesPerDay: f })
       onClose()
       return
     }

@@ -5,11 +5,11 @@
 
 export interface TimelineItemLike {
   id: string
-  tp: string
-  tm: number
-  st?: string
-  nx?: boolean
-  mid?: string
+  type: string
+  timeMinutes: number
+  status?: string
+  isNext?: boolean
+  medicationId?: string
 }
 
 /** Parse "HH:MM" or "HH:MM:SS" to minutes since midnight */
@@ -33,12 +33,12 @@ export function sortAndMarkNext<T extends TimelineItemLike>(
   items: T[],
   nowMin: number = nowMinutes()
 ): T[] {
-  items.sort((a, b) => a.tm - b.tm)
+  items.sort((a, b) => a.timeMinutes - b.timeMinutes)
   const slack = 60
   let found = false
   for (const item of items) {
-    if (!found && item.tp === 'med' && item.st === 'pending' && item.tm >= nowMin - slack) {
-      ;(item as T & { nx?: boolean }).nx = true
+    if (!found && item.type === 'med' && item.status === 'pending' && item.timeMinutes >= nowMin - slack) {
+      item.isNext = true
       found = true
     }
   }

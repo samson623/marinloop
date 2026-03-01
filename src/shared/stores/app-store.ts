@@ -29,18 +29,18 @@ const uid = () => '_' + Math.random().toString(36).substr(2, 9)
 // ===== TYPES =====
 export interface Med {
     id: string; name: string; dose: string; freq: number; times: string[]
-    inst: string; warn: string; fw: number; sup: number; tot: number; dpd: number
+    instructions: string; warnings: string; foodWaitMinutes: number; supply: number; total: number; dosesPerDay: number
 }
 export interface Appt {
     id: string; title: string; date: string; time: string; loc: string; notes: string[]
 }
 export interface SchedItem {
-    id: string; tp: 'med' | 'food' | 'appt'; mid?: string; name: string; dose?: string
-    time: string; tm: number; inst: string; warn?: string; st: string; at?: string | null
-    nx?: boolean; ws?: string; wm?: number; loc?: string
+    id: string; type: 'med' | 'food' | 'appt'; medicationId?: string; name: string; dose?: string
+    time: string; timeMinutes: number; instructions: string; warnings?: string; status: string; actualTime?: string | null
+    isNext?: boolean; ws?: string; wm?: number; loc?: string
 }
 export interface NoteEntry {
-    id: string; text: string; time: string; mid: string
+    id: string; text: string; time: string; medicationId: string
 }
 export type AddNotePayload = { content: string; medication_id?: string | null; appointment_id?: string | null }
 export type Tab = 'timeline' | 'meds' | 'appts' | 'summary'
@@ -54,9 +54,9 @@ export interface MedDraft {
     dose?: string
     freq?: number
     time?: string
-    sup?: number
-    inst?: string
-    warn?: string
+    supply?: number
+    instructions?: string
+    warnings?: string
 }
 
 export interface ApptDraft {
@@ -80,16 +80,14 @@ export interface AssistantState {
 
 interface AppState {
     loggedIn: boolean
-    tab: Tab
     meds: Med[]
     appts: Appt[]
     sched: SchedItem[]
-    log: Record<string, { st: string; at: string | null }>
+    log: Record<string, { status: string; actualTime: string | null }>
     notes: NoteEntry[]
-    adh: Record<string, { t: number; d: number }>
+    adherence: Record<string, { t: number; d: number }>
     voice: boolean
     toasts: Toast[]
-    showProfile: boolean
     showAddMedModal: boolean
     showAddApptModal: boolean
     showQuickCaptureModal: boolean
@@ -100,8 +98,6 @@ interface AppState {
     // actions
     login: () => void
     logout: () => void
-    setTab: (t: Tab) => void
-    setShowProfile: (v: boolean) => void
     buildSched: () => void
     markDone: (id: string) => void
     markMissed: (id: string) => void
@@ -127,8 +123,6 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set, get) => ({
     loggedIn: false,
-    tab: 'timeline',
-    showProfile: false,
     showAddMedModal: false,
     showAddApptModal: false,
     showQuickCaptureModal: false,
@@ -144,19 +138,19 @@ export const useAppStore = create<AppState>((set, get) => ({
     toasts: [],
     log: {},
     notes: [
-        { id: 'n1', text: 'Mild dizziness after morning dose', time: dateOffset(-1) + ' 08:45', mid: 'm1' },
-        { id: 'n2', text: 'Ask Dr. Chen about switching to morning', time: dateOffset(-1) + ' 14:20', mid: 'm3' },
-        { id: 'n3', text: 'Missed morning — took at 10am', time: dateOffset(-2) + ' 10:05', mid: 'm2' },
+        { id: 'n1', text: 'Mild dizziness after morning dose', time: dateOffset(-1) + ' 08:45', medicationId: 'm1' },
+        { id: 'n2', text: 'Ask Dr. Chen about switching to morning', time: dateOffset(-1) + ' 14:20', medicationId: 'm3' },
+        { id: 'n3', text: 'Missed morning — took at 10am', time: dateOffset(-2) + ' 10:05', medicationId: 'm2' },
     ],
-    adh: {
+    adherence: {
         [dateOffset(-6)]: { t: 7, d: 7 }, [dateOffset(-5)]: { t: 7, d: 6 }, [dateOffset(-4)]: { t: 7, d: 5 },
         [dateOffset(-3)]: { t: 7, d: 7 }, [dateOffset(-2)]: { t: 7, d: 6 }, [dateOffset(-1)]: { t: 7, d: 7 },
     },
     meds: [
-        { id: 'm1', name: 'Levothyroxine', dose: '50mcg', freq: 1, times: ['08:00'], inst: 'Take on empty stomach with water', warn: 'Do not eat for 45 min after', fw: 45, sup: 22, tot: 30, dpd: 1 },
-        { id: 'm2', name: 'Amoxicillin', dose: '500mg', freq: 3, times: ['08:00', '13:00', '20:00'], inst: 'Take with or without food', warn: 'Complete full course', fw: 0, sup: 18, tot: 30, dpd: 3 },
-        { id: 'm3', name: 'Lisinopril', dose: '10mg', freq: 1, times: ['21:00'], inst: 'Take at bedtime', warn: 'May cause dizziness. Avoid alcohol.', fw: 0, sup: 8, tot: 30, dpd: 1 },
-        { id: 'm4', name: 'Metformin', dose: '850mg', freq: 2, times: ['08:30', '19:00'], inst: 'Take with meals', warn: 'Take with food to reduce nausea.', fw: 0, sup: 45, tot: 60, dpd: 2 },
+        { id: 'm1', name: 'Levothyroxine', dose: '50mcg', freq: 1, times: ['08:00'], instructions: 'Take on empty stomach with water', warnings: 'Do not eat for 45 min after', foodWaitMinutes: 45, supply: 22, total: 30, dosesPerDay: 1 },
+        { id: 'm2', name: 'Amoxicillin', dose: '500mg', freq: 3, times: ['08:00', '13:00', '20:00'], instructions: 'Take with or without food', warnings: 'Complete full course', foodWaitMinutes: 0, supply: 18, total: 30, dosesPerDay: 3 },
+        { id: 'm3', name: 'Lisinopril', dose: '10mg', freq: 1, times: ['21:00'], instructions: 'Take at bedtime', warnings: 'May cause dizziness. Avoid alcohol.', foodWaitMinutes: 0, supply: 8, total: 30, dosesPerDay: 1 },
+        { id: 'm4', name: 'Metformin', dose: '850mg', freq: 2, times: ['08:30', '19:00'], instructions: 'Take with meals', warnings: 'Take with food to reduce nausea.', foodWaitMinutes: 0, supply: 45, total: 60, dosesPerDay: 2 },
     ],
     appts: [
         { id: 'a1', title: 'Dr. Chen — Cardiology', date: todayLocal(), time: '15:30', loc: 'City Medical Center, Suite 420', notes: ['Review blood pressure trends', 'Discuss Lisinopril dosage', 'Bring medication list'] },
@@ -168,8 +162,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     login: () => set({ loggedIn: true }),
     logout: () => set({
         loggedIn: false,
-        tab: 'timeline',
-        showProfile: false,
         showAddMedModal: false,
         showAddApptModal: false,
         showQuickCaptureModal: false,
@@ -178,8 +170,6 @@ export const useAppStore = create<AppState>((set, get) => ({
         addMedModalOptions: null,
         assistantState: { pendingIntent: null, missing: [], prompt: null },
     }),
-    setTab: (t) => set({ tab: t, showProfile: false }),
-    setShowProfile: (v) => set({ showProfile: v }),
     setVoice: (v) => set({ voice: v }),
     openAddMedModal: (draft = null, options = null) => set({ showAddMedModal: true, draftMed: draft, addMedModalOptions: options }),
     closeAddMedModal: () => set({ showAddMedModal: false, draftMed: null, addMedModalOptions: null }),
@@ -215,15 +205,15 @@ export const useAppStore = create<AppState>((set, get) => ({
                 const k = `${m.id}_${t}_${td}`
                 const l = log[k]
                 items.push({
-                    id: k, tp: 'med', mid: m.id, name: m.name, dose: m.dose, time: t, tm: tM(t),
-                    inst: m.inst, warn: m.warn, st: l ? l.st : 'pending', at: l ? l.at : null,
+                    id: k, type: 'med', medicationId: m.id, name: m.name, dose: m.dose, time: t, timeMinutes: tM(t),
+                    instructions: m.instructions, warnings: m.warnings, status: l ? l.status : 'pending', actualTime: l ? l.actualTime : null,
                 })
-                if (m.fw > 0 && i === 0) {
-                    const e = tM(t) + m.fw
+                if (m.foodWaitMinutes > 0 && i === 0) {
+                    const e = tM(t) + m.foodWaitMinutes
                     items.push({
-                        id: `f_${m.id}`, tp: 'food', mid: m.id,
-                        name: `Safe to eat (after ${m.name})`, time: mT(e), tm: e,
-                        ws: t, wm: m.fw, inst: `Wait ${m.fw} min after ${m.name}`, st: 'info',
+                        id: `f_${m.id}`, type: 'food', medicationId: m.id,
+                        name: `Safe to eat (after ${m.name})`, time: mT(e), timeMinutes: e,
+                        ws: t, wm: m.foodWaitMinutes, instructions: `Wait ${m.foodWaitMinutes} min after ${m.name}`, status: 'info',
                     })
                 }
             })
@@ -231,17 +221,17 @@ export const useAppStore = create<AppState>((set, get) => ({
         appts.forEach(a => {
             if (a.date === td) {
                 items.push({
-                    id: `ap_${a.id}`, tp: 'appt', name: a.title, time: a.time, tm: tM(a.time),
-                    loc: a.loc, inst: a.loc, st: 'appt',
+                    id: `ap_${a.id}`, type: 'appt', name: a.title, time: a.time, timeMinutes: tM(a.time),
+                    loc: a.loc, instructions: a.loc, status: 'appt',
                 })
             }
         })
-        items.sort((a, b) => a.tm - b.tm)
+        items.sort((a, b) => a.timeMinutes - b.timeMinutes)
         const now = nM()
         let found = false
         items.forEach(it => {
-            if (!found && it.tp === 'med' && it.st === 'pending' && it.tm >= now - 60) {
-                it.nx = true; found = true
+            if (!found && it.type === 'med' && it.status === 'pending' && it.timeMinutes >= now - 60) {
+                it.isNext = true; found = true
             }
         })
         set({ sched: items })
@@ -252,9 +242,9 @@ export const useAppStore = create<AppState>((set, get) => ({
         const it = sched.find(i => i.id === id)
         if (!it) return
         const now = nM()
-        const late = now > it.tm + 15
-        const newLog = { ...log, [id]: { st: late ? 'late' : 'done', at: mT(now) } }
-        const newMeds = meds.map(m => m.id === it.mid && m.sup > 0 ? { ...m, sup: m.sup - 1 } : m)
+        const late = now > it.timeMinutes + 15
+        const newLog = { ...log, [id]: { status: late ? 'late' : 'done', actualTime: mT(now) } }
+        const newMeds = meds.map(m => m.id === it.medicationId && m.supply > 0 ? { ...m, supply: m.supply - 1 } : m)
         set({ log: newLog, meds: newMeds })
         get().buildSched()
         get().toast(`${it.name} — ${late ? 'Taken late' : 'Done'}`, 'ts')
@@ -264,7 +254,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         const { log, sched } = get()
         const it = sched.find(i => i.id === id)
         if (!it) return
-        set({ log: { ...log, [id]: { st: 'missed', at: null } } })
+        set({ log: { ...log, [id]: { status: 'missed', actualTime: null } } })
         get().buildSched()
         get().toast(`${it.name} marked missed`, 'te')
     },
@@ -273,10 +263,10 @@ export const useAppStore = create<AppState>((set, get) => ({
         const { content, medication_id } = 'content' in payload
             ? { content: payload.content, medication_id: payload.medication_id ?? null }
             : { content: payload.text, medication_id: payload.mid }
-        const mid = medication_id ?? ''
+        const medicationId = medication_id ?? ''
         const n = new Date()
         const note: NoteEntry = {
-            id: uid(), text: content, mid,
+            id: uid(), text: content, medicationId,
             time: `${todayLocal()} ${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`,
         }
         set(s => ({ notes: [note, ...s.notes] }))

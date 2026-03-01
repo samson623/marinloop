@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAppStore, fT, fD } from '@/shared/stores/app-store'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { useTimeline } from '@/shared/hooks/useTimeline'
@@ -45,15 +46,15 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
     notificationsService = defaultNotificationsService,
   } = options
 
+  const navigate = useNavigate()
   const {
-    setTab,
     openAddMedModal,
     openAddApptModal,
     addNote,
     meds: storeMeds,
     appts: storeAppts,
     notes: storeNotes,
-    adh: storeAdh,
+    adherence: storeAdh,
     assistantState,
     setAssistantPendingIntent,
     clearAssistantState,
@@ -93,7 +94,7 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
         id: n.id,
         text: n.content,
         time: n.created_at,
-        mid: n.medication_id ?? '',
+        medicationId: n.medication_id ?? '',
       }))
   const meds = isDemo ? storeMeds : medsForContext
 
@@ -107,22 +108,22 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
     const store = useAppStore.getState()
     const normalized = text.toLowerCase()
     if (normalized.includes('medication') || normalized.includes('meds')) {
-      store.setTab('meds')
+      navigate('/meds')
       store.toast('Showing medications', 'ts')
       return true
     }
     if (normalized.includes('appointment') || normalized.includes('appt')) {
-      store.setTab('appts')
+      navigate('/appts')
       store.toast('Showing appointments', 'ts')
       return true
     }
     if (normalized.includes('summary')) {
-      store.setTab('summary')
+      navigate('/summary')
       store.toast('Showing summary', 'ts')
       return true
     }
     if (normalized.includes('timeline') || normalized.includes('schedule')) {
-      store.setTab('timeline')
+      navigate('/timeline')
       store.toast('Showing timeline', 'ts')
       return true
     }
@@ -132,7 +133,7 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
   const applyNavigation = (target?: string) => {
     const store = useAppStore.getState()
     if (target === 'meds' || target === 'appts' || target === 'summary' || target === 'timeline') {
-      store.setTab(target)
+      navigate('/' + target)
       store.toast(`Showing ${target === 'appts' ? 'appointments' : target}`, 'ts')
       return true
     }
@@ -141,13 +142,13 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
 
   const findDoseTarget = (intent: VoiceIntentResult) => {
     const name = intent.entities.dose?.medication_name?.toLowerCase()
-    const pendingMeds = timeline.filter((item) => item.tp === 'med' && item.st === 'pending')
+    const pendingMeds = timeline.filter((item) => item.type === 'med' && item.status === 'pending')
     if (pendingMeds.length === 0) return null
     if (name) {
       const match = pendingMeds.find((item) => item.name.toLowerCase().includes(name))
       if (match) return match
     }
-    return pendingMeds.find((item) => item.nx) ?? pendingMeds[0]
+    return pendingMeds.find((item) => item.isNext) ?? pendingMeds[0]
   }
 
   const scheduleReminder = async (intent: VoiceIntentResult) => {
@@ -226,16 +227,16 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
             : entryMethod === 'photo'
               ? { openScanner: false, openPhoto: true }
               : null
-        setTab('meds')
+        navigate('/meds')
         openAddMedModal(
           {
             name: intent.entities.medication?.name,
             dose: intent.entities.medication?.dosage,
             freq: intent.entities.medication?.freq,
             time: intent.entities.medication?.time,
-            inst: intent.entities.medication?.instructions,
-            warn: intent.entities.medication?.warnings,
-            sup: intent.entities.medication?.supply,
+            instructions: intent.entities.medication?.instructions,
+            warnings: intent.entities.medication?.warnings,
+            supply: intent.entities.medication?.supply,
           },
           options
         )
@@ -249,7 +250,7 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
         return
       }
       case 'open_add_appt':
-        setTab('appts')
+        navigate('/appts')
         openAddApptModal({
           title: intent.entities.appointment?.title,
           date: intent.entities.appointment?.date,
@@ -260,7 +261,7 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
         store.toast('Opening add appointment form', 'ts')
         return
       case 'query_next_dose': {
-        const next = timeline.find((item) => item.tp === 'med' && item.st === 'pending')
+        const next = timeline.find((item) => item.type === 'med' && item.status === 'pending')
         if (!next) {
           store.toast('No upcoming doses found.', 'tw')
           return
@@ -272,11 +273,11 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
       }
       case 'log_dose': {
         const target = findDoseTarget(intent)
-        if (!target || !target.mid) {
+        if (!target || !target.medicationId) {
           store.toast('I could not find a dose to log right now.', 'tw')
           return
         }
-        const medicationId = target.mid
+        const medicationId = target.medicationId
         const status = intent.entities.dose?.status ?? 'taken'
         const confirmationMessage = status === 'missed'
           ? `Mark ${target.name} (${target.time}) as missed?`
@@ -332,8 +333,8 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
         const question = intent.entities.query?.question ?? transcript
         const timelineStr = timeline
           .map((i) => {
-            const status = i.st === 'done' ? '✓' : i.st === 'missed' ? 'missed' : i.st === 'late' ? 'late' : 'pending'
-            return `- ${i.tp === 'med' ? 'Med' : 'Appt'}: ${i.name}${i.dose ? ` ${i.dose}` : ''} at ${i.time} (${status})`
+            const statusLabel = i.status === 'done' ? '✓' : i.status === 'missed' ? 'missed' : i.status === 'late' ? 'late' : 'pending'
+            return `- ${i.type === 'med' ? 'Med' : 'Appt'}: ${i.name}${i.dose ? ` ${i.dose}` : ''} at ${i.time} (${statusLabel})`
           })
           .join('\n')
         const medsStr = (isDemo ? storeMeds : medsForContext)
@@ -347,7 +348,7 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
           .map((a) => `- ${a.title} on ${fD(a.date)} at ${fT(a.time)}${a.loc ? ` — ${a.loc}` : ''}`)
           .join('\n')
         const notesStr = (isDemo ? storeNotes : notesForContext)
-          .map((n) => `- ${n.text}${n.mid ? ` (med link)` : ''}`)
+          .map((n) => `- ${n.text}${n.medicationId ? ` (med link)` : ''}`)
           .join('\n')
         const adhStr =
           Object.keys(storeAdh).length > 0

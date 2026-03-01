@@ -65,3 +65,45 @@ jobs:
             --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+  deploy-functions-staging:
+    runs-on: ubuntu-latest
+    needs: ci
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy Edge Functions to Staging
+        run: |
+          if [ -z "$PROJECT_REF" ]; then
+            echo "SUPABASE_PROJECT_ID_STAGING not configured — staging deploy skipped"
+            exit 0
+          fi
+          supabase functions deploy openai-chat --project-ref "$PROJECT_REF"
+          supabase functions deploy extract-label --project-ref "$PROJECT_REF"
+          supabase functions deploy send-push --project-ref "$PROJECT_REF"
+          supabase functions deploy cron-dispatch-push --project-ref "$PROJECT_REF"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_ID_STAGING }}
+
+      - name: Set Edge Function Secrets (Staging)
+        run: |
+          if [ -z "$PROJECT_REF" ]; then
+            exit 0
+          fi
+          supabase secrets set \
+            VAPID_PUBLIC_KEY="${{ secrets.VAPID_PUBLIC_KEY_STAGING }}" \
+            VAPID_PRIVATE_KEY="${{ secrets.VAPID_PRIVATE_KEY_STAGING }}" \
+            VAPID_SUBJECT="${{ secrets.VAPID_SUBJECT }}" \
+            MEDFLOW_SERVICE_ROLE_KEY="${{ secrets.MEDFLOW_SERVICE_ROLE_KEY_STAGING }}" \
+            OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+            ALLOWED_ORIGINS="${{ secrets.ALLOWED_ORIGINS_STAGING }}" \
+            --project-ref "$PROJECT_REF"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_ID_STAGING }}

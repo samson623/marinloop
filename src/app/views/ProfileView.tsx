@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { cn } from '@/shared/lib/utils'
 import { useAppStore } from '@/shared/stores/app-store'
 import { useAuthStore } from '@/shared/stores/auth-store'
@@ -12,7 +13,8 @@ import { Button, Input, Card } from '@/shared/components/ui'
 import { getPlatformLabel, isStandalone } from '@/shared/lib/device'
 
 export function ProfileView() {
-  const { setShowProfile, toast } = useAppStore()
+  const { toast } = useAppStore()
+  const navigate = useNavigate()
   const { user, profile, isDemo, signOut, enrollMfa, verifyMfa, updatePlan } = useAuthStore()
   const push = usePushNotifications()
   const installPrompt = useInstallPrompt()
@@ -79,7 +81,7 @@ export function ProfileView() {
         <IconButton
           size="md"
           aria-label="Close profile"
-          onClick={() => setShowProfile(false)}
+          onClick={() => navigate(-1)}
           className="rounded-full"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
@@ -329,6 +331,17 @@ export function ProfileView() {
         />
       )}
 
+      {!isDemo && (
+        <Card className="p-4 mb-5 rounded-xl">
+          <div className="font-bold uppercase tracking-[0.08em] text-[var(--color-text-secondary)] mb-2 [font-size:var(--text-label)]">
+            Data &amp; Privacy
+          </div>
+          <p className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] leading-relaxed">
+            Your medication and health data is stored securely in your personal account and is not shared with third parties. To request data deletion, contact support.
+          </p>
+        </Card>
+      )}
+
       <div className="flex flex-col gap-2">
         <Button type="button" variant="danger" size="md" onClick={() => { void signOut() }}>
           Sign Out
@@ -336,6 +349,9 @@ export function ProfileView() {
       </div>
 
       <p className="mt-6 text-[var(--color-text-tertiary)] leading-relaxed text-center [font-size:var(--text-caption)]">
+        Not medical advice. Always follow your healthcare provider&apos;s instructions.
+      </p>
+      <p className="mt-1 text-[var(--color-text-tertiary)] text-center [font-size:var(--text-caption)] opacity-60">
         MedFlow Care v1.0.0
       </p>
     </div>

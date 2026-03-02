@@ -140,16 +140,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
 
     try {
-      const url = new URL(window.location.href)
-      const code = url.searchParams.get('code')
-
-      if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
-        if (error) {
-          console.error('[Auth] OAuth code exchange failed:', error.message)
-        }
-      }
-
       cleanupOAuthUrl()
 
       const { data } = await supabase.auth.getSession()

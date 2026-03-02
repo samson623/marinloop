@@ -102,22 +102,29 @@ export const useAuthStore = create<AuthState>((set) => ({
       return
     }
 
+    // Detect OAuth callback BEFORE calling getSession(). The Supabase SDK strips
+    // ?code= from the URL via history.replaceState early inside getSession(), so
+    // by the time onAuthStateChange fires null the param is already gone and a
+    // post-hoc URL check always misses it (root cause of the desktop redirect bug).
+    let oauthExchangeInProgress = false
+    try {
+      const url = new URL(window.location.href)
+      oauthExchangeInProgress = url.searchParams.has('code')
+    } catch { /* non-browser environment */ }
+
     const applySession = async (nextSession: Session | null) => {
       if (!nextSession) {
-        // If the URL still has a ?code= param the SDK hasn't finished the PKCE
-        // exchange yet (onAuthStateChange fired null before exchange completed).
-        // Keep isLoading=true so PrivateRoute doesn't prematurely redirect to
-        // /landing. The 5-second safety net above handles exchange failures.
-        try {
-          const url = new URL(window.location.href)
-          if (url.searchParams.has('code')) return
-        } catch { /* non-browser environment — fall through */ }
+        // If we know a PKCE exchange was started, keep isLoading=true until the
+        // session arrives (or the 5-second safety net fires).
+        if (oauthExchangeInProgress) return
         set({ session: null, user: null, profile: null, isDemo: false, isLoading: false })
         return
       }
 
-      // Clean OAuth params from URL once we have a session (works for both sync and async code exchange).
-      // Doing it here ensures we never strip code/state before Supabase uses them (e.g. in browser tab).
+      // Session arrived — exchange is complete.
+      oauthExchangeInProgress = false
+
+      // Clean OAuth params from URL once we have a confirmed session.
       cleanupOAuthUrl()
 
       try {
@@ -152,8 +159,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
 
     try {
-      // Call getSession() first so Supabase can exchange the OAuth code in the URL.
-      // URL cleanup runs only inside applySession when we have a session (and in onAuthStateChange when session arrives).
+      // getSession() triggers the PKCE exchange and strips ?code= from the URL.
+      // URL cleanup runs only inside applySession once a valid session is confirmed.
       const { data } = await supabase.auth.getSession()
       await applySession(data.session)
     } catch (err) {

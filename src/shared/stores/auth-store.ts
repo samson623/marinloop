@@ -104,9 +104,21 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     const applySession = async (nextSession: Session | null) => {
       if (!nextSession) {
+        // If the URL still has a ?code= param the SDK hasn't finished the PKCE
+        // exchange yet (onAuthStateChange fired null before exchange completed).
+        // Keep isLoading=true so PrivateRoute doesn't prematurely redirect to
+        // /landing. The 5-second safety net above handles exchange failures.
+        try {
+          const url = new URL(window.location.href)
+          if (url.searchParams.has('code')) return
+        } catch { /* non-browser environment — fall through */ }
         set({ session: null, user: null, profile: null, isDemo: false, isLoading: false })
         return
       }
+
+      // Clean OAuth params from URL once we have a session (works for both sync and async code exchange).
+      // Doing it here ensures we never strip code/state before Supabase uses them (e.g. in browser tab).
+      cleanupOAuthUrl()
 
       try {
         const profile = await fetchProfile(nextSession.user.id)
@@ -140,8 +152,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
 
     try {
-      cleanupOAuthUrl()
-
+      // Call getSession() first so Supabase can exchange the OAuth code in the URL.
+      // URL cleanup runs only inside applySession when we have a session (and in onAuthStateChange when session arrives).
       const { data } = await supabase.auth.getSession()
       await applySession(data.session)
     } catch (err) {

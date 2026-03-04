@@ -172,9 +172,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   signInWithGoogle: async () => {
     if (env.isDemoApp) return { error: null }
 
-    // Always use current origin so the OAuth callback returns to the same context (PWA or tab).
-    // Otherwise on iOS the callback can open in Safari and the home-screen PWA never gets the session.
-    const redirectTo = window.location.origin
+    // Use a dedicated callback URL so Supabase always redirects to the same path.
+    // Add this exact URL to Supabase Dashboard → Authentication → URL Configuration → Redirect URLs.
+    const redirectTo =
+      env.oauthRedirectUrl?.trim() ||
+      `${window.location.origin}/auth/callback`
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -241,7 +244,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     const { data, error } = await supabase.auth.mfa.enroll({
       factorType: 'totp',
-      friendlyName: 'MedFlow Authenticator',
+      friendlyName: 'marinloop Authenticator',
     })
 
     if (error || !data) {

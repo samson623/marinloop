@@ -244,12 +244,13 @@ Details: see [supabase/DATABASE_SETUP.md](supabase/DATABASE_SETUP.md)
 
 1. In Supabase Dashboard → **Authentication** → **URL Configuration**:
    - **Site URL**: Your app URL (e.g. `https://your-app.vercel.app` or `http://localhost:5173` for dev)
-   - **Redirect URLs**: Add every URL where users can open the app (so the OAuth callback returns to the same tab/PWA). Include:
-     - Your production URL, e.g. `https://your-app.vercel.app`
-     - Any Vercel deployment URL if users open the app from there (e.g. `https://medflow-care-xxxx.vercel.app`)
-     - Local dev: `http://localhost:5173`
+   - **Redirect URLs**: Add the **exact** OAuth callback URL for each environment. The app redirects to `/auth/callback`, so you must include:
+     - Production: `https://your-app.vercel.app/auth/callback`
+     - Local dev: `http://localhost:5173/auth/callback`
+     - Any Vercel preview: `https://medflow-care-xxxx.vercel.app/auth/callback`
+     If the callback URL is missing, Google sign-in will redirect to the wrong place or show a Supabase error.
 
-2. The app uses the **current window origin** for the Google sign-in redirect (so the home-screen PWA on iOS gets the callback). You do not need `VITE_OAUTH_REDIRECT_URL` in production; optional for local dev.
+2. Optional: set `VITE_OAUTH_REDIRECT_URL` in `.env` to override the callback URL (e.g. `http://localhost:5173/auth/callback` for local dev).
 
 3. In Google Cloud Console, ensure the OAuth redirect URI is `https://<your-supabase-project>.supabase.co/auth/v1/callback`.
 
@@ -266,9 +267,9 @@ If the app works in production (Vercel) but fails when running locally (`npm run
    - `VITE_SUPABASE_ANON_KEY=` your Supabase anon key (same as in Vercel)
    - Optional for Google sign-in: `VITE_OAUTH_REDIRECT_URL=http://localhost:5173`
 
-2. **Allow localhost in Supabase**  
+2. **Allow localhost callback in Supabase**  
    In Supabase Dashboard → **Authentication** → **URL Configuration** → **Redirect URLs**, add:
-   - `http://localhost:5173`  
+   - `http://localhost:5173/auth/callback`  
    If this is missing, OAuth sign-in will work on Vercel but redirect back to localhost will be rejected.
 
 3. **Restart the dev server**  

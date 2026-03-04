@@ -177,7 +177,7 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
             title,
             body: message,
             url: '/',
-            tag: 'medflow-reminder',
+            tag: 'marinloop-reminder',
           })
         } catch {
           // optional push path may fail if user is unsubscribed
@@ -392,7 +392,7 @@ ${adhStr ? `\n## Recent adherence\n${adhStr}` : ''}`
           const response = await AIService.chat([
             {
               role: 'system',
-              content: `You are MedFlow Care's clinical voice assistant. Answer the user's question using ONLY the data below. Be concise (1-3 sentences). Cite specifics. Do not make up data. If the data doesn't contain the answer, say so clearly. Do not give medical advice.`,
+              content: `You are marinloop's clinical voice assistant. Answer the user's question using ONLY the data below. Be concise (1-3 sentences). Cite specifics. Do not make up data. If the data doesn't contain the answer, say so clearly. Do not give medical advice.`,
             },
             { role: 'user', content: `Data:\n${context}\n\nUser question: ${question}\n\nAnswer briefly:` },
           ])

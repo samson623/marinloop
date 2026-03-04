@@ -48,7 +48,7 @@ function getCorsHeaders(origin: string | null): Record<string, string> {
   const originAllowed = origin != null && origin !== 'null' &&
     (allowed.includes('*') || allowed.includes(origin))
   return {
-    'Access-Control-Allow-Origin': originAllowed ? origin! : 'https://medflowcare.app',
+    'Access-Control-Allow-Origin': originAllowed ? origin! : 'https://marinloop.com',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Vary': 'Origin',

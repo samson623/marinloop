@@ -19,7 +19,7 @@ function getCorsHeaders(origin: string | null): Record<string, string> {
     const originAllowed = origin != null && origin !== 'null' &&
         (allowed.includes('*') || allowed.includes(origin))
     return {
-        'Access-Control-Allow-Origin': originAllowed ? origin! : 'https://medflowcare.app',
+        'Access-Control-Allow-Origin': originAllowed ? origin! : 'https://marinloop.com',
         'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
         'Vary': 'Origin',
     }
@@ -77,7 +77,7 @@ serve(async (req) => {
         const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')?.trim()
         const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')?.replace(/[\s\n\r]|\\n/g, '')
         const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')?.replace(/[\s\n\r]|\\n/g, '')
-        const vapidSubject = Deno.env.get('VAPID_SUBJECT') || 'mailto:admin@medflowcare.app'
+        const vapidSubject = Deno.env.get('VAPID_SUBJECT') || 'mailto:admin@marinloop.com'
 
         log(`ENV: URL=${supabaseUrl ? 'SET' : '❌'}, SRK=${serviceRoleKey ? 'SET' : '❌'}, VAPID_PUB=${vapidPublicKey ? 'SET' : '❌'}, VAPID_PRIV=${vapidPrivateKey ? 'SET' : '❌'}`)
 
@@ -170,7 +170,7 @@ serve(async (req) => {
 
         log(`Found ${subscriptions.length} subscription(s)`)
 
-        const payload = JSON.stringify({ title, body, url: url || '/', tag: tag || 'medflow' })
+        const payload = JSON.stringify({ title, body, url: url || '/', tag: tag || 'marinloop' })
 
         let sent = 0
         const staleEndpoints: string[] = []

@@ -1,1 +1,18 @@
-{"$schema":"https://openapi.vercel.sh/vercel.json","buildCommand":"npm run build","outputDirectory":"dist","framework":"vite","rewrites":[{"source":"/sw.js","destination":"/sw.js"},{"source":"/(.*)","destination":"/index.html"}]}
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "medflow-care.vercel.app" }],
+      "destination": "https://marinloop.com/$1",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    { "source": "/sw.js", "destination": "/sw.js" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

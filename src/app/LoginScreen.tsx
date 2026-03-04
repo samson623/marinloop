@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useThemeStore } from '@/shared/stores/theme-store'
 import { useAppStore } from '@/shared/stores/app-store'
 import { useAuthStore } from '@/shared/stores/auth-store'
@@ -20,6 +20,20 @@ export function LoginScreen() {
   const { toast } = useAppStore()
   const { session, isDemo, signInWithEmail, signUp, signInWithGoogle } = useAuthStore()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [googleLoading, setGoogleLoading] = useState(false)
+
+  // Show message when returning from failed callback (invalid/missing code or timeout)
+  useEffect(() => {
+    const err = searchParams.get('error')
+    if (err === 'callback') {
+      setError('Sign-in could not be completed. Please try again.')
+      setSearchParams({}, { replace: true })
+    } else if (err === 'timeout') {
+      setError('Sign-in took too long. Please try again.')
+      setSearchParams({}, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
 
   if (session || isDemo) return <Navigate to="/timeline" replace />
 
@@ -50,8 +64,23 @@ export function LoginScreen() {
   }
 
   const handleGoogle = async () => {
-    const { error: authError } = await signInWithGoogle()
-    if (authError) toast(authError.message, 'te')
+    setError(null)
+    setGoogleLoading(true)
+    try {
+      const { error: authError } = await signInWithGoogle()
+      if (authError) {
+        const msg = authError.message
+        setError(
+          /redirect|url|allowed/i.test(msg)
+            ? 'Redirect URL not allowed. Add this app’s URL to Supabase Dashboard → Authentication → URL Configuration → Redirect URLs (e.g. http://localhost:5173/auth/callback).'
+            : msg
+        )
+        toast(msg, 'te')
+      }
+      // If no error, Supabase will redirect the browser to Google; we don’t navigate in code
+    } finally {
+      setGoogleLoading(false)
+    }
   }
 
   return (
@@ -82,7 +111,7 @@ export function LoginScreen() {
         </button>
         <div className="flex items-center gap-2 mb-3 sm:mb-4">
           <h1 className="font-extrabold tracking-[-0.03em] text-[var(--color-text-primary)] [font-size:var(--text-title)]">
-            MedFlow
+            marinloop
           </h1>
           <span
             className="animate-dot-pulse w-2 h-2 rounded-[2px] bg-[var(--color-accent)] shrink-0"
@@ -172,9 +201,10 @@ export function LoginScreen() {
             variant="secondary"
             size="md"
             onClick={handleGoogle}
+            disabled={googleLoading}
             className="min-h-[48px] py-3"
           >
-            Continue with Google
+            {googleLoading ? 'Redirecting…' : 'Continue with Google'}
           </Button>
 
           <div className="text-center mt-3 sm:mt-4">
@@ -189,7 +219,7 @@ export function LoginScreen() {
         </form>
 
         <p className="mt-8 sm:mt-10 pt-5 sm:pt-6 border-t border-[var(--color-border-primary)] text-[var(--color-text-tertiary)] leading-relaxed [font-size:var(--text-caption)]">
-          MedFlow Care provides reminders and tracking tools. Not medical advice. Always follow your healthcare provider&apos;s instructions.
+          marinloop provides reminders and tracking tools. Not medical advice. Always follow your healthcare provider&apos;s instructions.
         </p>
       </div>
     </div>

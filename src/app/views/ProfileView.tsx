@@ -215,7 +215,7 @@ export function ProfileView() {
             Add to your phone
           </div>
           <p className="text-[var(--color-text-tertiary)] mb-3 [font-size:var(--text-body)]">
-            Get MedFlow on your home screen for reminders.
+            Get marinloop on your home screen for reminders.
           </p>
           <Button
             type="button"
@@ -224,10 +224,10 @@ export function ProfileView() {
             className="py-3"
             onClick={async () => {
               const accepted = await installPrompt.promptInstall()
-              if (accepted) toast('MedFlow added to your phone', 'ts')
+              if (accepted) toast('marinloop added to your phone', 'ts')
             }}
           >
-            Add MedFlow to your phone
+            Add marinloop to your phone
           </Button>
         </Card>
       )}
@@ -291,12 +291,12 @@ export function ProfileView() {
             <div className="font-semibold text-[var(--color-text-secondary)] mb-1.5">How it works</div>
             {getPlatformLabel() === 'iOS' && !isStandalone() && (
               <p className="mb-2">
-                On iOS, push notifications require adding MedFlow to your Home Screen first. Open this site in Safari, tap Share, then Add to Home Screen. After that, open the app from the home screen and enable notifications here.
+                On iOS, push notifications require adding marinloop to your Home Screen first. Open this site in Safari, tap Share, then Add to Home Screen. After that, open the app from the home screen and enable notifications here.
               </p>
             )}
             {push.permission === 'denied' && (
               <p className="mb-2">
-                To re-enable: open your browser or device Settings, find MedFlow (or this site), and turn on Notifications.
+                To re-enable: open your browser or device Settings, find marinloop (or this site), and turn on Notifications.
               </p>
             )}
             {(push.isSubscribed || (push.isSupported && push.permission === 'granted')) && (
@@ -352,7 +352,7 @@ export function ProfileView() {
         Not medical advice. Always follow your healthcare provider&apos;s instructions.
       </p>
       <p className="mt-1 text-[var(--color-text-tertiary)] text-center [font-size:var(--text-caption)] opacity-60">
-        MedFlow Care v1.0.0
+        marinloop v1.0.0
       </p>
     </div>
   )

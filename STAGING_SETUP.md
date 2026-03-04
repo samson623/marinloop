@@ -84,7 +84,7 @@ For each variable below, set the environment to **Preview** only (not Production
 | `VITE_SUPABASE_ANON_KEY` | staging anon key from Step 1 |
 | `VITE_VAPID_PUBLIC_KEY` | staging VAPID public key from Step 3 |
 | `VITE_APP_MODE` | `prod` |
-| `VITE_OAUTH_REDIRECT_URL` | `https://medflow-care-staging.vercel.app` |
+| `VITE_OAUTH_REDIRECT_URL` | `https://medflow-care-staging.vercel.app/auth/callback` |
 | `VITE_OPENAI_MODEL` | `gpt-5-nano` |
 
 ---

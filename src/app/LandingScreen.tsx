@@ -30,7 +30,7 @@ export function LandingScreen() {
       <div className="w-full max-w-[400px] sm:max-w-[440px] flex flex-col items-center text-center">
         <div className="flex items-center justify-center gap-2 mb-4 sm:mb-5">
           <h1 className="font-extrabold tracking-[-0.03em] text-[var(--color-text-primary)]" style={{ fontSize: 'var(--text-display)' }}>
-            MedFlow
+            marinloop
           </h1>
           <span
             className="animate-dot-pulse w-2.5 h-2.5 rounded-sm bg-[var(--color-accent)] shrink-0"
@@ -44,7 +44,7 @@ export function LandingScreen() {
           Medication reminders and daily care in one place.
         </p>
         <p className="text-[var(--color-text-tertiary)] mb-10 sm:mb-12 md:mb-14 leading-snug max-w-[280px] sm:max-w-none [font-size:var(--text-caption)]">
-          MedFlow Care provides reminders and tracking tools. Not medical advice. Always follow your healthcare provider&apos;s instructions.
+          marinloop provides reminders and tracking tools. Not medical advice. Always follow your healthcare provider&apos;s instructions.
         </p>
 
         <Button

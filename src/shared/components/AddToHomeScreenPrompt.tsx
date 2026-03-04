@@ -38,7 +38,7 @@ export function AddToHomeScreenPrompt({
         {isIOSDevice ? (
           <>
             <p className="text-[15px] text-[var(--color-text-secondary)] mb-0 leading-snug">
-              To get medication reminders, add MedFlow to your home screen:
+              To get medication reminders, add marinloop to your home screen:
             </p>
             <ol className="text-[15px] text-[var(--color-text-primary)] ml-5 mb-0 list-decimal leading-relaxed">
               <li>Tap the <strong>Share</strong> button at the bottom of the screen.</li>
@@ -46,16 +46,16 @@ export function AddToHomeScreenPrompt({
               <li>Tap <strong>Add</strong>.</li>
             </ol>
             <p className="text-sm text-[var(--color-text-secondary)] mb-0 leading-snug">
-              Then open MedFlow from the new icon on your home screen.
+              Then open marinloop from the new icon on your home screen.
             </p>
           </>
         ) : canInstall && onInstall ? (
           <>
             <p className="text-[15px] text-[var(--color-text-secondary)] mb-0 leading-snug">
-              Add MedFlow to your phone to get reminders.
+              Add marinloop to your phone to get reminders.
             </p>
             <Button type="button" onClick={handleInstallClick} variant="primary" size="lg">
-              Add MedFlow to your phone
+              Add marinloop to your phone
             </Button>
           </>
         ) : (
@@ -64,7 +64,7 @@ export function AddToHomeScreenPrompt({
               Open the browser menu (three dots) and choose <strong>Add to Home screen</strong> or <strong>Install app</strong>.
             </p>
             <p className="text-sm text-[var(--color-text-tertiary)] mb-0 leading-snug">
-              Then open MedFlow from the new icon to get reminders.
+              Then open marinloop from the new icon to get reminders.
             </p>
           </>
         )}

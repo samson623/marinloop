@@ -1,5 +1,5 @@
 -- ============================================================
--- MedFlow Push Notification Diagnostic Script (Enhanced)
+-- marinloop Push Notification Diagnostic Script (Enhanced)
 -- ============================================================
 -- Run this in Supabase Dashboard → SQL Editor to diagnose why
 -- push notifications are not being delivered.
@@ -45,8 +45,8 @@ WHERE name IN ('supabase_url', 'service_role_key');
 SELECT '3. CRON JOBS' AS check_name;
 SELECT jobid, jobname, schedule, active, command
 FROM cron.job
-WHERE jobname LIKE 'medflow%';
--- Expected: 2 rows (medflow-push-dispatcher, medflow-dispatch-log-cleanup)
+WHERE jobname LIKE 'marinloop%';
+-- Expected: 2 rows (marinloop-push-dispatcher, marinloop-dispatch-log-cleanup)
 -- If missing: run setup-push.sql
 
 -- ═══════════════════════════════════════════════════════════

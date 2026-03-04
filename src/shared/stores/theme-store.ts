@@ -20,7 +20,16 @@ function applyTheme(resolved: 'light' | 'dark') {
     document.documentElement.setAttribute('data-theme', resolved)
 }
 
-const saved = (typeof window !== 'undefined' ? localStorage.getItem('medflow-theme') : null) as 'light' | 'dark' | 'system' | null
+// One-time migration: medflow-theme → marinloop-theme
+if (typeof window !== 'undefined') {
+    const _legacy = localStorage.getItem('medflow-theme')
+    if (_legacy !== null && localStorage.getItem('marinloop-theme') === null) {
+        localStorage.setItem('marinloop-theme', _legacy)
+        localStorage.removeItem('medflow-theme')
+    }
+}
+
+const saved = (typeof window !== 'undefined' ? localStorage.getItem('marinloop-theme') : null) as 'light' | 'dark' | 'system' | null
 const initial = saved ?? 'system'
 const initialResolved = resolveTheme(initial)
 
@@ -34,7 +43,7 @@ export const useThemeStore = create<ThemeState>((set) => ({
 
     setTheme: (theme) => {
         const resolved = resolveTheme(theme)
-        localStorage.setItem('medflow-theme', theme)
+        localStorage.setItem('marinloop-theme', theme)
         applyTheme(resolved)
         set({ theme, resolvedTheme: resolved })
     },
@@ -42,7 +51,7 @@ export const useThemeStore = create<ThemeState>((set) => ({
     toggleTheme: () => {
         set((state) => {
             const next = state.resolvedTheme === 'light' ? 'dark' : 'light'
-            localStorage.setItem('medflow-theme', next)
+            localStorage.setItem('marinloop-theme', next)
             applyTheme(next)
             return { theme: next, resolvedTheme: next }
         })

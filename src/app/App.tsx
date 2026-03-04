@@ -16,6 +16,7 @@ import { SummaryView } from '@/app/views/SummaryView'
 import { ProfileView } from '@/app/views/ProfileView'
 import { LandingScreen } from '@/app/LandingScreen'
 import { LoginScreen } from '@/app/LoginScreen'
+import { AuthCallbackScreen } from '@/app/AuthCallbackScreen'
 import { PrivateRoute } from '@/app/PrivateRoute'
 import { isMobile, isStandalone } from '@/shared/lib/device'
 import { AddToHomeScreenPrompt } from '@/shared/components/AddToHomeScreenPrompt'
@@ -93,6 +94,7 @@ function AppInner() {
       <Route path="/" element={<Navigate to="/timeline" replace />} />
       <Route path="/landing" element={<LandingScreen />} />
       <Route path="/login" element={<LoginScreen />} />
+      <Route path="/auth/callback" element={<AuthCallbackScreen />} />
       <Route element={<PrivateRoute />}>
         <Route element={<AppShell />}>
           <Route path="/timeline" element={<TimelineView />} />
@@ -171,7 +173,7 @@ function AppShell() {
           <div className="w-10 h-10 rounded-xl bg-[var(--color-accent)] flex items-center justify-center text-[var(--color-text-inverse)] shrink-0">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
           </div>
-          <span className="text-[var(--text-subtitle)] font-extrabold tracking-[-0.02em] text-[var(--color-text-primary)] truncate">MedFlow</span>
+          <span className="text-[var(--text-subtitle)] font-extrabold tracking-[-0.02em] text-[var(--color-text-primary)] truncate">marinloop</span>
           {isDemo && (
             <span className="text-[var(--text-caption)] font-bold tracking-[0.08em] text-[var(--color-amber)] bg-[var(--color-amber-bg)] border border-[var(--color-amber-border)] rounded-md py-1 px-2 shrink-0">
               DEMO
@@ -194,7 +196,7 @@ function AppShell() {
               : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" /></svg>}
           </IconButton>
           <IconButton size="md" aria-label="Open profile" onClick={() => navigate('/profile')} className="overflow-hidden p-0">
-            <img src="https://ui-avatars.com/api/?name=MedFlow+User&background=0D9488&color=fff" alt="" className="w-full h-full object-cover" />
+            <img src="https://ui-avatars.com/api/?name=marinloop+User&background=0D9488&color=fff" alt="" className="w-full h-full object-cover" />
           </IconButton>
         </div>
         </div>

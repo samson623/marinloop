@@ -53,7 +53,7 @@ export function usePushNotifications() {
                     toast('Notifications blocked — check browser settings', 'tw')
                 } else if (needsAddToHomeScreenForPush()) {
                     setShowAddToHomeScreenHelp(true)
-                    toast('Add MedFlow to your home screen first', 'tw')
+                    toast('Add marinloop to your home screen first', 'tw')
                 } else {
                     toast('Failed to enable push notifications', 'te')
                 }

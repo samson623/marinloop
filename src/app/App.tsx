@@ -471,7 +471,32 @@ function notifDayLabel(date: Date): string {
     a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
   if (sameDay(date, today)) return 'Today'
   if (sameDay(date, yesterday)) return 'Yesterday'
-  return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+  return date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })
+}
+
+function NotifIcon({ type }: { type: string }) {
+  const color =
+    type === 'error' ? 'var(--color-red)' :
+    type === 'warning' ? '#f59e0b' :
+    type === 'success' ? 'var(--color-accent)' :
+    'var(--color-accent)'
+  const bg =
+    type === 'error' ? 'color-mix(in srgb, var(--color-red) 12%, transparent)' :
+    type === 'warning' ? 'color-mix(in srgb, #f59e0b 12%, transparent)' :
+    'color-mix(in srgb, var(--color-accent) 12%, transparent)'
+  return (
+    <div className="w-10 h-10 rounded-2xl shrink-0 flex items-center justify-center" style={{ background: bg }}>
+      {type === 'error' ? (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      ) : type === 'warning' ? (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      ) : type === 'success' ? (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="20 6 9 17 4 12"/></svg>
+      ) : (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      )}
+    </div>
+  )
 }
 
 function NotificationsPanel({ onClose, triggerRef }: { onClose: () => void; triggerRef?: React.RefObject<HTMLButtonElement | null> }) {
@@ -486,15 +511,11 @@ function NotificationsPanel({ onClose, triggerRef }: { onClose: () => void; trig
     read: n.read,
   }))
 
-  // Group by day label, preserving insertion order
   const groups: { label: string; items: NotificationItem[] }[] = []
   const seen = new Map<string, number>()
   for (const n of notifs) {
     const label = notifDayLabel(n.rawDate)
-    if (!seen.has(label)) {
-      seen.set(label, groups.length)
-      groups.push({ label, items: [] })
-    }
+    if (!seen.has(label)) { seen.set(label, groups.length); groups.push({ label, items: [] }) }
     groups[seen.get(label)!].items.push(n)
   }
 
@@ -505,77 +526,92 @@ function NotificationsPanel({ onClose, triggerRef }: { onClose: () => void; trig
   })
 
   const toggle = (label: string) =>
-    setCollapsed((prev) => {
-      const next = new Set(prev)
-      next.has(label) ? next.delete(label) : next.add(label)
-      return next
-    })
+    setCollapsed((prev) => { const next = new Set(prev); next.has(label) ? next.delete(label) : next.add(label); return next })
+
+  const totalUnread = notifs.filter((n) => !n.read).length
 
   return (
     <Modal open onOpenChange={(o) => !o && onClose()} title="Notifications" variant="center" triggerRef={triggerRef}>
-      <div className="py-1">
+      <div className="-mt-1">
+        {/* Unread summary pill */}
+        {totalUnread > 0 && (
+          <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl bg-[color-mix(in_srgb,var(--color-accent)_8%,transparent)]">
+            <span className="w-2 h-2 rounded-full bg-[var(--color-accent)] shrink-0" />
+            <span className="text-[14px] font-semibold text-[var(--color-accent)]">{totalUnread} unread</span>
+          </div>
+        )}
+
         {isLoading && (
-          <div className="text-[var(--color-text-secondary)] py-2 [font-size:var(--text-body)]">Loading...</div>
+          <div className="text-[var(--color-text-secondary)] py-6 text-center text-[15px]">Loading...</div>
         )}
         {!isLoading && notifs.length === 0 && (
-          <div className="text-[var(--color-text-secondary)] py-2 [font-size:var(--text-body)]">No notifications</div>
+          <div className="py-10 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-[var(--color-bg-secondary)] flex items-center justify-center mx-auto mb-3">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            </div>
+            <p className="text-[15px] font-semibold text-[var(--color-text-primary)]">All caught up</p>
+            <p className="text-[13px] text-[var(--color-text-tertiary)] mt-1">No notifications yet</p>
+          </div>
         )}
-        {groups.map((group) => {
+
+        {groups.map((group, gi) => {
           const isCollapsed = collapsed.has(group.label)
           const unread = group.items.filter((i) => !i.read).length
           return (
-            <div key={group.label} className="mb-1">
+            <div key={group.label} className={gi > 0 ? 'mt-2' : ''}>
               {/* Day header */}
               <button
                 type="button"
                 onClick={() => toggle(group.label)}
-                className="w-full flex items-center justify-between gap-2 py-2 bg-transparent border-none cursor-pointer text-left outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                className="w-full flex items-center justify-between gap-3 py-2.5 px-1 bg-transparent border-none cursor-pointer text-left outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">{group.label}</span>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="text-[15px] font-bold text-[var(--color-text-primary)]">{group.label}</span>
                   {unread > 0 && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--color-accent)] text-[var(--color-text-inverse)]">{unread}</span>
+                    <span className="shrink-0 min-w-[20px] h-5 flex items-center justify-center text-[11px] font-bold px-1.5 rounded-full bg-[var(--color-accent)] text-[var(--color-text-inverse)]">{unread}</span>
                   )}
                 </div>
                 <svg
-                  width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                  className={`text-[var(--color-text-tertiary)] transition-transform ${isCollapsed ? '' : 'rotate-180'}`}
+                  className={`text-[var(--color-text-tertiary)] transition-transform shrink-0 ${isCollapsed ? '' : 'rotate-180'}`}
                   aria-hidden
                 >
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </button>
-              {/* Items */}
+
               {!isCollapsed && (
-                <ul className="flex flex-col">
+                <ul className="flex flex-col gap-2 mt-1 mb-2">
                   {group.items.map((n) => (
                     <li key={n.id}>
                       <button
                         type="button"
                         onClick={() => { if (!n.read) markRead(n.id) }}
-                        className={`w-full bg-transparent border-none text-left flex gap-3 py-3 border-b border-[var(--color-border-secondary)] cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${n.read ? 'opacity-50' : ''}`}
+                        className="w-full border-none text-left cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] rounded-2xl transition-colors"
+                        style={{
+                          background: n.read
+                            ? 'var(--color-bg-secondary)'
+                            : 'color-mix(in srgb, var(--color-accent) 6%, var(--color-bg-secondary))',
+                        }}
                       >
-                        <div className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center mt-0.5"
-                          style={{ background: n.type === 'error' ? 'color-mix(in srgb, var(--color-red) 15%, transparent)' : n.type === 'warning' ? 'color-mix(in srgb, orange 15%, transparent)' : n.type === 'success' ? 'color-mix(in srgb, var(--color-accent) 15%, transparent)' : 'color-mix(in srgb, var(--color-text-tertiary) 12%, transparent)' }}
-                        >
-                          {n.type === 'error' ? (
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--color-red)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                          ) : n.type === 'warning' ? (
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="orange" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                          ) : n.type === 'success' ? (
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="20 6 9 17 4 12"/></svg>
-                          ) : (
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        <div className="flex gap-3.5 px-3.5 py-3.5 items-start">
+                          <NotifIcon type={n.type} />
+                          <div className="flex-1 min-w-0 pt-0.5">
+                            <div className={`text-[15px] leading-snug ${n.read ? 'font-medium text-[var(--color-text-secondary)]' : 'font-semibold text-[var(--color-text-primary)]'}`}>
+                              {n.msg}
+                            </div>
+                            {n.sub && (
+                              <div className="text-[13px] text-[var(--color-text-secondary)] mt-1 leading-snug">{n.sub}</div>
+                            )}
+                            <div className="text-[12px] text-[var(--color-text-tertiary)] mt-1.5 font-medium">
+                              {n.rawDate.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
+                            </div>
+                          </div>
+                          {!n.read && (
+                            <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-accent)] shrink-0 mt-1.5" aria-hidden />
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-[var(--color-text-primary)] text-[13px] leading-snug">{n.msg}</div>
-                          {n.sub && <div className="text-[var(--color-text-secondary)] text-[12px] mt-0.5 leading-snug">{n.sub}</div>}
-                        </div>
-                        <span className="text-[var(--color-text-tertiary)] whitespace-nowrap shrink-0 text-[11px] mt-0.5">
-                          {n.rawDate.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
-                        </span>
                       </button>
                     </li>
                   ))}

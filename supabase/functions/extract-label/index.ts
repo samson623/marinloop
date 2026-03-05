@@ -10,7 +10,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const ALLOWED_MODEL = 'gpt-4o-mini'
+const ALLOWED_MODEL = 'gpt-5-nano'
 const MAX_TOTAL_BASE64_BYTES = 18 * 1024 * 1024 // 18MB total across all images
 const MAX_IMAGES = 5
 

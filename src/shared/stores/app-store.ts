@@ -91,6 +91,7 @@ interface AppState {
     showAddMedModal: boolean
     showAddApptModal: boolean
     showQuickCaptureModal: boolean
+    showRemindersPanel: boolean
     draftMed: MedDraft | null
     draftAppt: ApptDraft | null
     addMedModalOptions: AddMedModalOptions | null
@@ -98,6 +99,8 @@ interface AppState {
     // actions
     login: () => void
     logout: () => void
+    openRemindersPanel: () => void
+    closeRemindersPanel: () => void
     buildSched: () => void
     markDone: (id: string) => void
     markMissed: (id: string) => void
@@ -126,6 +129,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     showAddMedModal: false,
     showAddApptModal: false,
     showQuickCaptureModal: false,
+    showRemindersPanel: false,
     draftMed: null,
     draftAppt: null,
     addMedModalOptions: null,
@@ -149,11 +153,14 @@ export const useAppStore = create<AppState>((set, get) => ({
         showAddMedModal: false,
         showAddApptModal: false,
         showQuickCaptureModal: false,
+        showRemindersPanel: false,
         draftMed: null,
         draftAppt: null,
         addMedModalOptions: null,
         assistantState: { pendingIntent: null, missing: [], prompt: null },
     }),
+    openRemindersPanel: () => set({ showRemindersPanel: true }),
+    closeRemindersPanel: () => set({ showRemindersPanel: false }),
     setVoice: (v) => set({ voice: v }),
     openAddMedModal: (draft = null, options = null) => set({ showAddMedModal: true, draftMed: draft, addMedModalOptions: options }),
     closeAddMedModal: () => set({ showAddMedModal: false, draftMed: null, addMedModalOptions: null }),

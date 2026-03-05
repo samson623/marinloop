@@ -31,6 +31,7 @@ export type NotificationsServiceLike = {
 export type UseVoiceIntentOptions = {
   logDose: (input: DoseLogCreateInput) => void
   addNoteReal: (payload: { content: string; medication_id: string | null }) => void
+  createReminder?: (payload: { userId: string; title: string; body: string; fireAt: Date }) => void
   voiceIntentService?: VoiceIntentServiceLike
   notificationsService?: NotificationsServiceLike
 }
@@ -42,6 +43,7 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
   const {
     logDose,
     addNoteReal,
+    createReminder,
     voiceIntentService = defaultVoiceIntentService,
     notificationsService = defaultNotificationsService,
   } = options
@@ -142,7 +144,7 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
     return pendingMeds.find((item) => item.isNext) ?? pendingMeds[0]
   }
 
-  const scheduleReminder = async (intent: VoiceIntentResult) => {
+  const scheduleReminder = (intent: VoiceIntentResult) => {
     const draft = intent.entities.reminder
     const inMinutes = draft?.in_minutes
     if (!inMinutes || inMinutes <= 0) {
@@ -150,32 +152,15 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
       return
     }
     const title = draft?.title || 'Medication reminder'
-    const message = draft?.message || `Reminder set for ${inMinutes} minutes from now.`
-    try {
-      await notificationsService.create({
-        title,
-        message: `Scheduled for ${inMinutes} minutes from now.`,
-        type: 'info',
-      })
-    } catch {
-      // keep local reminder scheduling even if persistence fails
+    const body = draft?.message || ''
+    const fireAt = new Date(Date.now() + inMinutes * 60 * 1000)
+
+    if (createReminder && session?.user?.id) {
+      createReminder({ userId: session.user.id, title, body, fireAt })
     }
-    window.setTimeout(async () => {
-      useAppStore.getState().toast(title, 'tw')
-      if (session?.user?.id) {
-        try {
-          await notificationsService.sendPush(session.user.id, {
-            title,
-            body: message,
-            url: '/',
-            tag: 'marinloop-reminder',
-          })
-        } catch {
-          // optional push path may fail if user is unsubscribed
-        }
-      }
-    }, inMinutes * 60 * 1000)
-    useAppStore.getState().toast(`Reminder set for ${inMinutes} minute${inMinutes === 1 ? '' : 's'}.`, 'ts')
+
+    const timeStr = fireAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })
+    useAppStore.getState().toast(`Reminder set for ${timeStr}`, 'ts')
   }
 
   const processVoice = async (text: string) => {
@@ -292,7 +277,7 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
         setVoiceConfirmation({
           message: 'Create this reminder?',
           onConfirm: () => {
-            void scheduleReminder(intent)
+            scheduleReminder(intent)
             setVoiceConfirmation(null)
           },
         })

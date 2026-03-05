@@ -1,5 +1,5 @@
 import { supabase } from '@/shared/lib/supabase'
-import { env, isDemoApp } from '@/shared/lib/env'
+import { env } from '@/shared/lib/env'
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant'
@@ -13,10 +13,6 @@ export interface ChatResponse {
 
 export const AIService = {
   async chat(messages: ChatMessage[]): Promise<string> {
-    if (isDemoApp) {
-      return '[Demo mode] Add your OpenAI API key and switch to prod mode for AI features.'
-    }
-
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
       throw new Error('Must be logged in to use AI')
@@ -55,6 +51,6 @@ export const AIService = {
   },
 
   isConfigured(): boolean {
-    return !isDemoApp && !!env.supabaseUrl
+    return !!env.supabaseUrl
   },
 }

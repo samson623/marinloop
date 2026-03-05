@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { RefillsService } from '@/shared/services/refills'
 import type { RefillUpsertInput } from '@/shared/types/contracts'
 import type { Database } from '@/shared/types/database.types'
-import { useAuthStore } from '@/shared/stores/auth-store'
 import { useAppStore } from '@/shared/stores/app-store'
 import { handleMutationError } from '@/shared/lib/errors'
 
@@ -10,13 +9,11 @@ type Refill = Database['public']['Tables']['refills']['Row']
 
 export function useRefills() {
   const queryClient = useQueryClient()
-  const { isDemo } = useAuthStore()
   const { toast } = useAppStore()
 
   const { data, isLoading } = useQuery({
     queryKey: ['refills'],
     queryFn: RefillsService.getAll,
-    enabled: !isDemo,
     staleTime: 1000 * 60 * 5,
   })
 
@@ -49,7 +46,7 @@ export function useRefills() {
 
   return {
     refills: data ?? [],
-    isLoading: isLoading && !isDemo,
+    isLoading,
     upsertRefill: upsertMutation.mutate,
     updateRefill: updateMutation.mutate,
     deleteRefill: deleteMutation.mutate,

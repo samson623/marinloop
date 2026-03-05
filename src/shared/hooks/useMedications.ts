@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { MedsService } from '@/shared/services/medications'
 import type { Database } from '@/shared/types/database.types'
 import type { MedicationBundleCreateInput } from '@/shared/types/contracts'
-import { useAuthStore } from '@/shared/stores/auth-store'
 import { useAppStore } from '@/shared/stores/app-store'
 import { handleMutationError } from '@/shared/lib/errors'
 
@@ -10,13 +9,11 @@ type Medication = Database['public']['Tables']['medications']['Row']
 
 export function useMedications() {
   const queryClient = useQueryClient()
-  const { isDemo } = useAuthStore()
   const { toast } = useAppStore()
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['medications'],
     queryFn: MedsService.getAll,
-    enabled: !isDemo,
     staleTime: 1000 * 60 * 5,
   })
 
@@ -60,7 +57,7 @@ export function useMedications() {
 
   return {
     meds: data ?? [],
-    isLoading: isLoading && !isDemo,
+    isLoading,
     error,
     addMed: createMutation.mutate,
     addMedBundle: createBundleMutation.mutate,

@@ -12,9 +12,6 @@ vi.mock('@/shared/services/dose-logs', () => ({
     logDose: vi.fn(),
   },
 }))
-vi.mock('@/shared/stores/auth-store', () => ({
-  useAuthStore: () => ({ isDemo: false }),
-}))
 vi.mock('@/shared/stores/app-store', () => ({
   useAppStore: () => ({ toast: vi.fn() }),
 }))

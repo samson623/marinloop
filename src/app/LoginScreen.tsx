@@ -10,6 +10,7 @@ import { Button, Input } from '@/shared/components/ui'
 export function LoginScreen() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [name, setName] = useState('')
+  const [betaCode, setBetaCode] = useState('')
   const [email, setEmail] = useState('')
   const [pass, setPass] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -18,7 +19,7 @@ export function LoginScreen() {
 
   const { toggleTheme } = useThemeStore()
   const { toast } = useAppStore()
-  const { session, isDemo, signInWithEmail, signUp, signInWithGoogle } = useAuthStore()
+  const { session, signInWithEmail, signUp, signInWithGoogle } = useAuthStore()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [googleLoading, setGoogleLoading] = useState(false)
@@ -35,7 +36,7 @@ export function LoginScreen() {
     }
   }, [searchParams, setSearchParams])
 
-  if (session || isDemo) return <Navigate to="/timeline" replace />
+  if (session) return <Navigate to="/timeline" replace />
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,7 +45,7 @@ export function LoginScreen() {
 
     try {
       if (isSignUp) {
-        const res = await signUp(email, pass, name)
+        const res = await signUp(email, pass, name, betaCode)
         if (res.error) throw res.error
         toast('Account created. Please sign in.', 'ts')
         setIsSignUp(false)
@@ -117,6 +118,9 @@ export function LoginScreen() {
             className="animate-dot-pulse w-2 h-2 rounded-[2px] bg-[var(--color-accent)] shrink-0"
             aria-hidden
           />
+          <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-md bg-[var(--color-accent)] text-[var(--color-text-inverse)] opacity-80 select-none">
+            BETA
+          </span>
         </div>
         <p className="text-[var(--color-text-secondary)] mb-8 sm:mb-10 font-normal [font-size:var(--text-body)]">
           {isSignUp ? 'Create your account.' : 'Stay on time. Stay safe. Stay confident.'}
@@ -146,6 +150,27 @@ export function LoginScreen() {
                 required
                 className="min-h-[44px]"
               />
+            </div>
+          )}
+
+          {isSignUp && (
+            <div>
+              <label htmlFor="login-beta-code" className="block font-semibold text-[var(--color-text-secondary)] mb-1.5 sm:mb-2 [font-size:var(--text-label)]">
+                Invite Code
+              </label>
+              <Input
+                id="login-beta-code"
+                type="text"
+                value={betaCode}
+                onChange={(e) => setBetaCode(e.target.value.toUpperCase())}
+                placeholder="MLOOP-XXXXX"
+                required
+                autoComplete="off"
+                className="min-h-[44px] font-mono tracking-widest"
+              />
+              <p className="mt-1.5 text-[var(--color-text-tertiary)] [font-size:var(--text-caption)]">
+                marinloop is invite-only during beta.
+              </p>
             </div>
           )}
 
@@ -210,7 +235,7 @@ export function LoginScreen() {
           <div className="text-center mt-3 sm:mt-4">
             <button
               type="button"
-              onClick={() => setIsSignUp(!isSignUp)}
+              onClick={() => { setIsSignUp(!isSignUp); setBetaCode('') }}
               className="border-none bg-transparent cursor-pointer [font-size:var(--text-body)] text-[var(--color-accent)] font-semibold outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] rounded min-h-[44px] min-w-[44px] inline-flex items-center justify-center"
             >
               {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}

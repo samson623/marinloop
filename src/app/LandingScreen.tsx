@@ -6,10 +6,10 @@ import { Button } from '@/shared/components/ui'
 
 export function LandingScreen() {
   const { toggleTheme } = useThemeStore()
-  const { session, isDemo } = useAuthStore()
+  const { session } = useAuthStore()
   const navigate = useNavigate()
 
-  if (session || isDemo) return <Navigate to="/timeline" replace />
+  if (session) return <Navigate to="/timeline" replace />
 
   return (
     <div
@@ -36,6 +36,9 @@ export function LandingScreen() {
             className="animate-dot-pulse w-2.5 h-2.5 rounded-sm bg-[var(--color-accent)] shrink-0"
             aria-hidden
           />
+          <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-md bg-[var(--color-accent)] text-[var(--color-text-inverse)] opacity-80 select-none">
+            BETA
+          </span>
         </div>
         <p className="text-[var(--color-text-secondary)] mb-3 sm:mb-4 leading-snug max-w-[320px] sm:max-w-none [font-size:var(--text-body)]">
           Stay on time. Stay safe. Stay confident.

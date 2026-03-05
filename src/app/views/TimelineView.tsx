@@ -4,7 +4,7 @@ import { Check, Clock, XCircle } from 'lucide-react'
 import { useAppStore, fT, type SchedItem } from '@/shared/stores/app-store'
 import { useTimeline } from '@/shared/hooks/useTimeline'
 import { useDoseLogs } from '@/shared/hooks/useDoseLogs'
-import { useAuthStore } from '@/shared/stores/auth-store'
+
 import { Modal } from '@/shared/components/Modal'
 import { Pill, Button } from '@/shared/components/ui'
 
@@ -199,15 +199,10 @@ function Tag({ bg, color, border, label, dashed, icon }: { bg: string; color: st
 }
 
 function DoseModal({ item: it, onClose, nowMin, triggerRef }: { item: SchedItem; onClose: () => void; nowMin: number; triggerRef?: React.RefObject<HTMLElement | null> }) {
-  const { isDemo } = useAuthStore()
-  const { markDone: markDoneDemo, markMissed: markMissedDemo, toast } = useAppStore()
+  const { toast } = useAppStore()
   const { logDose } = useDoseLogs()
 
   const markDone = () => {
-    if (isDemo) {
-      markDoneDemo(it.id)
-      return
-    }
     if (!it.medicationId) return
 
     const late = nowMin > it.timeMinutes + 15
@@ -221,10 +216,6 @@ function DoseModal({ item: it, onClose, nowMin, triggerRef }: { item: SchedItem;
   }
 
   const markMissed = () => {
-    if (isDemo) {
-      markMissedDemo(it.id)
-      return
-    }
     if (!it.medicationId) return
 
     logDose({

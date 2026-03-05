@@ -28,31 +28,16 @@ interface AuthState {
   session: Session | null
   user: User | null
   profile: Profile | null
-  isDemo: boolean
   isLoading: boolean
 
   initialize: () => Promise<void>
   signInWithGoogle: () => Promise<AuthResult>
   signInWithEmail: (email: string, pass: string) => Promise<AuthResult>
-  signUp: (email: string, pass: string, name: string) => Promise<AuthResult>
+  signUp: (email: string, pass: string, name: string, betaCode: string) => Promise<AuthResult>
   signOut: () => Promise<AuthResult>
   enrollMfa: () => Promise<{ data: MfaEnrollResult; error: Error | null }>
   verifyMfa: (factorId: string, code: string) => Promise<AuthResult>
   updatePlan: (plan: 'free' | 'pro' | 'family') => Promise<AuthResult>
-}
-
-const DEMO_USER = {
-  id: 'demo-user',
-  email: 'demo@medflow.app',
-} as User
-
-const DEMO_PROFILE: Profile = {
-  id: 'demo-user',
-  email: 'demo@medflow.app',
-  name: 'Demo User',
-  avatar_url: null,
-  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  plan: 'free',
 }
 
 let authSubscription: AuthSubscription | null = null
@@ -87,21 +72,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   session: null,
   user: null,
   profile: null,
-  isDemo: env.isDemoApp,
   isLoading: true,
 
   initialize: async () => {
-    if (env.isDemoApp) {
-      set({
-        session: null,
-        user: DEMO_USER,
-        profile: DEMO_PROFILE,
-        isDemo: true,
-        isLoading: false,
-      })
-      return
-    }
-
     // Detect OAuth callback BEFORE calling getSession(). The Supabase SDK strips
     // ?code= from the URL via history.replaceState early inside getSession(), so
     // by the time onAuthStateChange fires null the param is already gone and a
@@ -117,7 +90,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         // If we know a PKCE exchange was started, keep isLoading=true until the
         // session arrives (or the 5-second safety net fires).
         if (oauthExchangeInProgress) return
-        set({ session: null, user: null, profile: null, isDemo: false, isLoading: false })
+        set({ session: null, user: null, profile: null, isLoading: false })
         return
       }
 
@@ -129,7 +102,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       try {
         const profile = await fetchProfile(nextSession.user.id)
-        set({ session: nextSession, user: nextSession.user, profile, isDemo: false, isLoading: false })
+        set({ session: nextSession, user: nextSession.user, profile, isLoading: false })
 
         // Silently sync IANA timezone to the database so the cron dispatcher fires at the right wall-clock time
         const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -138,7 +111,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         }
       } catch (err) {
         console.warn('[Auth] failed to fetch profile:', err)
-        set({ session: nextSession, user: nextSession.user, profile: null, isDemo: false, isLoading: false })
+        set({ session: nextSession, user: nextSession.user, profile: null, isLoading: false })
       }
     }
 
@@ -165,13 +138,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       await applySession(data.session)
     } catch (err) {
       console.error('[Auth] init error:', err)
-      set({ session: null, user: null, profile: null, isDemo: false, isLoading: false })
+      set({ session: null, user: null, profile: null, isLoading: false })
     }
   },
 
   signInWithGoogle: async () => {
-    if (env.isDemoApp) return { error: null }
-
     // Use a dedicated callback URL so Supabase always redirects to the same path.
     // Add this exact URL to Supabase Dashboard → Authentication → URL Configuration → Redirect URLs.
     const redirectTo =
@@ -189,59 +160,63 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   signInWithEmail: async (email, pass) => {
-    if (env.isDemoApp) {
-      set({
-        session: null,
-        user: DEMO_USER,
-        profile: DEMO_PROFILE,
-        isDemo: true,
-        isLoading: false,
-      })
-      return { error: null }
-    }
-
     const { error } = await supabase.auth.signInWithPassword({ email, password: pass })
     return { error: error ? new Error(error.message) : null }
   },
 
-  signUp: async (email, pass, name) => {
-    if (env.isDemoApp) return { error: null }
+  signUp: async (email, pass, name, betaCode) => {
+    // Step 1: pre-check the code exists and is not yet redeemed.
+    // This avoids creating an orphan auth account when the code is bad.
+    const normalizedCode = betaCode.trim().toUpperCase()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: codeRow, error: codeCheckError } = await (supabase as any)
+      .from('beta_invite_codes')
+      .select('id, redeemed_at')
+      .eq('code', normalizedCode)
+      .single() as { data: { id: string; redeemed_at: string | null } | null; error: unknown }
 
-    const { error } = await supabase.auth.signUp({
+    if (codeCheckError || !codeRow) {
+      return { error: new Error('Invalid invite code.') }
+    }
+    if (codeRow.redeemed_at) {
+      return { error: new Error('This invite code has already been used.') }
+    }
+
+    // Step 2: create the auth account.
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password: pass,
       options: {
-        data: {
-          full_name: name,
-        },
+        data: { full_name: name },
       },
     })
 
-    return { error: error ? new Error(error.message) : null }
+    if (signUpError) {
+      return { error: new Error(signUpError.message) }
+    }
+
+    // Step 3: atomically redeem the code. The SECURITY DEFINER function
+    // prevents a race condition where two users claim the same code.
+    if (signUpData.user?.id) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).rpc('redeem_beta_code', {
+        p_code: normalizedCode,
+        p_user_id: signUpData.user.id,
+      })
+    }
+
+    return { error: null }
   },
 
   signOut: async () => {
-    if (env.isDemoApp) {
-      set({
-        session: null,
-        user: DEMO_USER,
-        profile: DEMO_PROFILE,
-        isDemo: true,
-        isLoading: false,
-      })
-      return { error: null }
-    }
-
     const { error } = await supabase.auth.signOut()
     if (!error) {
-      set({ session: null, user: null, profile: null, isDemo: false })
+      set({ session: null, user: null, profile: null })
     }
     return { error: error ? new Error(error.message) : null }
   },
 
   enrollMfa: async () => {
-    if (env.isDemoApp) return { data: null, error: null }
-
     const { data, error } = await supabase.auth.mfa.enroll({
       factorType: 'totp',
       friendlyName: 'marinloop Authenticator',
@@ -262,8 +237,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   verifyMfa: async (factorId, code) => {
-    if (env.isDemoApp) return { error: null }
-
     const challenge = await supabase.auth.mfa.challenge({ factorId })
     if (challenge.error || !challenge.data) {
       return { error: new Error(challenge.error?.message ?? 'Failed to challenge MFA factor') }
@@ -279,11 +252,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   updatePlan: async (plan) => {
-    if (env.isDemoApp) {
-      set((s) => ({ profile: s.profile ? { ...s.profile, plan } : null }))
-      return { error: null }
-    }
-
     const { data } = await supabase.auth.getSession()
     if (!data.session?.user?.id) return { error: new Error('Not authenticated') }
 

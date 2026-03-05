@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AppointmentsService } from '@/shared/services/appointments'
 import type { Database } from '@/shared/types/database.types'
 import type { AppointmentCreateInput } from '@/shared/types/contracts'
-import { useAuthStore } from '@/shared/stores/auth-store'
 import { useAppStore } from '@/shared/stores/app-store'
 import { handleMutationError } from '@/shared/lib/errors'
 
@@ -10,13 +9,11 @@ type Appointment = Database['public']['Tables']['appointments']['Row']
 
 export function useAppointments() {
   const queryClient = useQueryClient()
-  const { isDemo } = useAuthStore()
   const { toast } = useAppStore()
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['appointments'],
     queryFn: AppointmentsService.getAll,
-    enabled: !isDemo,
     staleTime: 1000 * 60 * 15,
   })
 
@@ -49,7 +46,7 @@ export function useAppointments() {
 
   return {
     appts: data ?? [],
-    isLoading: isLoading && !isDemo,
+    isLoading,
     error,
     addAppt: createMutation.mutate,
     updateAppt: updateMutation.mutate,

@@ -1,6 +1,5 @@
 
 import { supabase } from '@/shared/lib/supabase'
-import { isDemoApp } from '@/shared/lib/env'
 
 const EXTRACT_TIMEOUT_MS = 60_000 // 60s max for label extraction
 const MAX_IMAGE_DIMENSION = 1024  // px — more than enough for OCR
@@ -69,9 +68,6 @@ function mapApiError(msg: string): string {
  * Images are compressed client-side before sending to the Edge Function.
  */
 export async function extractFromImages(files: File[]): Promise<LabelExtractResult> {
-  if (isDemoApp) {
-    throw new Error('Label extraction is not available in demo mode. Please sign in.')
-  }
   if (files.length === 0) {
     throw new Error('At least one image is required.')
   }

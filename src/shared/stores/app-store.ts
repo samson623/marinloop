@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { todayLocal, dateOffset } from '@/shared/lib/dates'
+import { todayLocal } from '@/shared/lib/dates'
 
 // ===== HELPERS =====
 const tM = (t: string) => {
@@ -137,26 +137,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     voice: true,
     toasts: [],
     log: {},
-    notes: [
-        { id: 'n1', text: 'Mild dizziness after morning dose', time: dateOffset(-1) + ' 08:45', medicationId: 'm1' },
-        { id: 'n2', text: 'Ask Dr. Chen about switching to morning', time: dateOffset(-1) + ' 14:20', medicationId: 'm3' },
-        { id: 'n3', text: 'Missed morning — took at 10am', time: dateOffset(-2) + ' 10:05', medicationId: 'm2' },
-    ],
-    adherence: {
-        [dateOffset(-6)]: { t: 7, d: 7 }, [dateOffset(-5)]: { t: 7, d: 6 }, [dateOffset(-4)]: { t: 7, d: 5 },
-        [dateOffset(-3)]: { t: 7, d: 7 }, [dateOffset(-2)]: { t: 7, d: 6 }, [dateOffset(-1)]: { t: 7, d: 7 },
-    },
-    meds: [
-        { id: 'm1', name: 'Levothyroxine', dose: '50mcg', freq: 1, times: ['08:00'], instructions: 'Take on empty stomach with water', warnings: 'Do not eat for 45 min after', foodWaitMinutes: 45, supply: 22, total: 30, dosesPerDay: 1 },
-        { id: 'm2', name: 'Amoxicillin', dose: '500mg', freq: 3, times: ['08:00', '13:00', '20:00'], instructions: 'Take with or without food', warnings: 'Complete full course', foodWaitMinutes: 0, supply: 18, total: 30, dosesPerDay: 3 },
-        { id: 'm3', name: 'Lisinopril', dose: '10mg', freq: 1, times: ['21:00'], instructions: 'Take at bedtime', warnings: 'May cause dizziness. Avoid alcohol.', foodWaitMinutes: 0, supply: 8, total: 30, dosesPerDay: 1 },
-        { id: 'm4', name: 'Metformin', dose: '850mg', freq: 2, times: ['08:30', '19:00'], instructions: 'Take with meals', warnings: 'Take with food to reduce nausea.', foodWaitMinutes: 0, supply: 45, total: 60, dosesPerDay: 2 },
-    ],
-    appts: [
-        { id: 'a1', title: 'Dr. Chen — Cardiology', date: todayLocal(), time: '15:30', loc: 'City Medical Center, Suite 420', notes: ['Review blood pressure trends', 'Discuss Lisinopril dosage', 'Bring medication list'] },
-        { id: 'a2', title: 'Lab Work — Blood Panel', date: dateOffset(3), time: '09:00', loc: 'Quest Diagnostics, 2nd Floor', notes: ['Fasting required', 'Bring insurance card'] },
-        { id: 'a3', title: 'Dr. Patel — Endocrinology', date: dateOffset(10), time: '11:00', loc: 'University Hospital, Bldg C', notes: ['Thyroid follow-up', 'Bring recent lab results'] },
-    ],
+    notes: [],
+    adherence: {},
+    meds: [],
+    appts: [],
     sched: [],
 
     login: () => set({ loggedIn: true }),

@@ -1,11 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { PushService } from '@/shared/services/push'
-import { useAuthStore } from '@/shared/stores/auth-store'
 import { useAppStore } from '@/shared/stores/app-store'
 import { needsAddToHomeScreenForPush } from '@/shared/lib/device'
 
 export function usePushNotifications() {
-    const { isDemo } = useAuthStore()
     const { toast } = useAppStore()
 
     const [isSupported] = useState(() => PushService.isSupported())
@@ -17,28 +15,28 @@ export function usePushNotifications() {
     const [showAddToHomeScreenHelp, setShowAddToHomeScreenHelp] = useState(false)
 
     const refreshState = useCallback(() => {
-        if (!isSupported || isDemo) return
+        if (!isSupported) return
         setPermission(typeof Notification !== 'undefined' ? Notification.permission : 'default')
         PushService.getExistingSubscription()
             .then((sub) => setIsSubscribed(!!sub))
             .catch(() => setIsSubscribed(false))
-    }, [isSupported, isDemo])
+    }, [isSupported])
 
     useEffect(() => {
         refreshState()
     }, [refreshState])
 
     useEffect(() => {
-        if (!isSupported || isDemo) return
+        if (!isSupported) return
         const onVisibilityChange = () => {
             if (document.visibilityState === 'visible') refreshState()
         }
         document.addEventListener('visibilitychange', onVisibilityChange)
         return () => document.removeEventListener('visibilitychange', onVisibilityChange)
-    }, [isSupported, isDemo, refreshState])
+    }, [isSupported, refreshState])
 
     const subscribe = useCallback(async () => {
-        if (isDemo || isLoading) return
+        if (isLoading) return
         setIsLoading(true)
 
         try {
@@ -69,10 +67,10 @@ export function usePushNotifications() {
         } finally {
             setIsLoading(false)
         }
-    }, [isDemo, isLoading, toast])
+    }, [isLoading, toast])
 
     const unsubscribe = useCallback(async () => {
-        if (isDemo || isLoading) return
+        if (isLoading) return
         setIsLoading(true)
 
         try {
@@ -84,10 +82,10 @@ export function usePushNotifications() {
         } finally {
             setIsLoading(false)
         }
-    }, [isDemo, isLoading, toast])
+    }, [isLoading, toast])
 
     const testPush = useCallback(async () => {
-        if (isDemo || isLoading) return
+        if (isLoading) return
         setIsLoading(true)
         try {
             const { success, sent } = await PushService.testPush()
@@ -103,7 +101,7 @@ export function usePushNotifications() {
         } finally {
             setIsLoading(false)
         }
-    }, [isDemo, isLoading, toast])
+    }, [isLoading, toast])
 
     return {
         isSupported,

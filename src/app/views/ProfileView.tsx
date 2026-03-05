@@ -7,15 +7,18 @@ import { getErrorMessage } from '@/shared/lib/errors'
 import { usePushNotifications } from '@/shared/hooks/usePushNotifications'
 import { useInstallPrompt } from '@/shared/hooks/useInstallPrompt'
 import { AddToHomeScreenPrompt } from '@/shared/components/AddToHomeScreenPrompt'
+import { AdminBetaStats } from '@/shared/components/AdminBetaStats'
 import { setAddToHomeScreenSeen } from '@/shared/lib/add-to-home-screen-storage'
 import { IconButton } from '@/shared/components/IconButton'
 import { Button, Input, Card } from '@/shared/components/ui'
 import { getPlatformLabel, isStandalone } from '@/shared/lib/device'
 
+const ADMIN_USER_ID = 'b4f5d3fb-634c-4fe7-a2cb-36166e00ab3c'
+
 export function ProfileView() {
   const { toast } = useAppStore()
   const navigate = useNavigate()
-  const { user, profile, isDemo, signOut, enrollMfa, verifyMfa, updatePlan } = useAuthStore()
+  const { user, profile, signOut, enrollMfa, verifyMfa, updatePlan } = useAuthStore()
   const push = usePushNotifications()
   const installPrompt = useInstallPrompt()
 
@@ -98,15 +101,10 @@ export function ProfileView() {
         </div>
         <div className="text-center">
           <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)]">
-            {profile?.name || (isDemo ? 'Demo User' : 'User')}
+            {profile?.name || 'User'}
           </h2>
           <p className="text-[var(--color-text-secondary)] [font-size:var(--text-body)]">{user?.email}</p>
         </div>
-        {isDemo && (
-          <span className="font-bold bg-[var(--color-amber-bg)] text-[var(--color-amber)] py-1.5 px-3 rounded-[20px] [font-size:var(--text-caption)]">
-            DEMO MODE
-          </span>
-        )}
       </Card>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
@@ -132,7 +130,7 @@ export function ProfileView() {
           {planExpanded && (
             <div className="mt-3 pt-3 border-t border-[var(--color-border-secondary)]">
               <p className="text-[var(--color-text-tertiary)] mb-2 [font-size:var(--text-caption)]">
-                {isDemo ? 'Demo mode — plan updates are simulated locally.' : 'Stripe checkout will be integrated later.'}
+                Stripe checkout will be integrated later.
               </p>
               <div className="flex flex-wrap gap-2">
                 {(['free', 'pro', 'family'] as const).map((plan) => {
@@ -161,8 +159,7 @@ export function ProfileView() {
         </Card>
       </div>
 
-      {!isDemo && (
-        <Card className="p-4 mb-5 rounded-2xl">
+      <Card className="p-4 mb-5 rounded-2xl">
           <div className="font-bold mb-3 uppercase tracking-[0.08em] text-[var(--color-text-secondary)] [font-size:var(--text-label)]">
             Multi-Factor Authentication
           </div>
@@ -207,9 +204,8 @@ export function ProfileView() {
             </>
           )}
         </Card>
-      )}
 
-      {!isDemo && installPrompt.canInstall && (
+      {installPrompt.canInstall && (
         <Card className="p-4 mb-5 rounded-xl">
           <div className="font-bold uppercase tracking-[0.08em] text-[var(--color-text-secondary)] mb-2 [font-size:var(--text-label)]">
             Add to your phone
@@ -232,8 +228,7 @@ export function ProfileView() {
         </Card>
       )}
 
-      {!isDemo && (
-        <Card className="p-4 mb-5 rounded-xl">
+      <Card className="p-4 mb-5 rounded-xl">
           <div className="font-bold uppercase tracking-[0.08em] text-[var(--color-text-secondary)] mb-2 [font-size:var(--text-label)]">
             Push Notifications
           </div>
@@ -319,7 +314,6 @@ export function ProfileView() {
             </p>
           </div>
         </Card>
-      )}
 
       {push.showAddToHomeScreenHelp && (
         <AddToHomeScreenPrompt
@@ -331,14 +325,30 @@ export function ProfileView() {
         />
       )}
 
-      {!isDemo && (
-        <Card className="p-4 mb-5 rounded-xl">
-          <div className="font-bold uppercase tracking-[0.08em] text-[var(--color-text-secondary)] mb-2 [font-size:var(--text-label)]">
-            Data &amp; Privacy
-          </div>
-          <p className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] leading-relaxed">
-            Your medication and health data is stored securely in your personal account and is not shared with third parties. To request data deletion, contact support.
+      <Card className="p-4 mb-5 rounded-xl">
+        <div className="font-bold uppercase tracking-[0.08em] text-[var(--color-text-secondary)] mb-2 [font-size:var(--text-label)]">
+          Data &amp; Privacy &mdash; Beta
+        </div>
+        <div className="space-y-2 text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] leading-relaxed">
+          <p>
+            marinloop is pre-release beta software. It is <strong className="text-[var(--color-text-secondary)]">not a medical device</strong> and is not covered by a HIPAA Business Associate Agreement during this beta period.
           </p>
+          <p>
+            Your data is stored securely in your personal account and is not shared with third parties. Beta data may be reset before general availability.
+          </p>
+          <p>
+            To request data deletion or report a privacy concern, email{' '}
+            <a href="mailto:admin@marinloop.com" className="underline text-[var(--color-accent)]">admin@marinloop.com</a>.
+          </p>
+        </div>
+      </Card>
+
+      {user?.id === ADMIN_USER_ID && (
+        <Card className="p-4 mb-5 rounded-xl border-2 border-[var(--color-amber)]">
+          <div className="font-bold uppercase tracking-[0.08em] text-[var(--color-amber)] mb-3 [font-size:var(--text-label)]">
+            Admin &mdash; Beta Stats
+          </div>
+          <AdminBetaStats />
         </Card>
       )}
 
@@ -352,7 +362,7 @@ export function ProfileView() {
         Not medical advice. Always follow your healthcare provider&apos;s instructions.
       </p>
       <p className="mt-1 text-[var(--color-text-tertiary)] text-center [font-size:var(--text-caption)] opacity-60">
-        marinloop v1.0.0
+        marinloop v1.0.0-beta
       </p>
     </div>
   )

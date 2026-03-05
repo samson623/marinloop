@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useAppStore, fD, fT } from '@/shared/stores/app-store'
-import { useAuthStore } from '@/shared/stores/auth-store'
 import { todayLocal, isoToLocalDate, toLocalTimeString } from '@/shared/lib/dates'
 import { useAppointments } from '@/shared/hooks/useAppointments'
 import { Modal } from '@/shared/components/Modal'
@@ -20,29 +19,24 @@ type DisplayAppt = {
 
 export function ApptsView() {
   const {
-    appts: demoAppts,
-    toast,
     showAddApptModal,
     draftAppt,
     openAddApptModal,
     closeAddApptModal,
   } = useAppStore()
-  const { isDemo } = useAuthStore()
   const { appts: realAppts, addAppt, updateAppt, deleteAppt } = useAppointments()
   const [selectedAppt, setSelectedAppt] = useState<DisplayAppt | null>(null)
 
-  const displayAppts: DisplayAppt[] = isDemo
-    ? demoAppts
-    : realAppts.map((a) => ({
-      id: a.id,
-      title: a.title,
-      date: isoToLocalDate(a.start_time),
-      time: toLocalTimeString(a.start_time),
-      loc: a.location || '',
-      notes: a.notes ? [a.notes] : [],
-      doctor: a.doctor,
-      start_time: a.start_time,
-    }))
+  const displayAppts: DisplayAppt[] = realAppts.map((a) => ({
+    id: a.id,
+    title: a.title,
+    date: isoToLocalDate(a.start_time),
+    time: toLocalTimeString(a.start_time),
+    loc: a.location || '',
+    notes: a.notes ? [a.notes] : [],
+    doctor: a.doctor,
+    start_time: a.start_time,
+  }))
 
   const sorted = [...displayAppts].sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime())
 
@@ -53,7 +47,7 @@ export function ApptsView() {
       </h2>
 
       <div className="stagger-children">
-        {sorted.length === 0 && !isDemo && (
+        {sorted.length === 0 && (
           <div className="py-8 px-5 text-center border-2 border-dashed border-[var(--color-border-secondary)] rounded-2xl sm:py-6 sm:px-4">
             <p className="text-[var(--color-text-secondary)] text-lg font-medium sm:text-base">No upcoming appointments.</p>
             <p className="mt-2 text-[var(--color-text-tertiary)] text-sm sm:[font-size:var(--text-caption)]">Tap the button below to add one</p>
@@ -94,15 +88,12 @@ export function ApptsView() {
       {selectedAppt && (
         <ApptDetailModal
           appt={selectedAppt}
-          isDemo={isDemo}
           onClose={() => setSelectedAppt(null)}
           onUpdate={(id, updates) => {
-            if (isDemo) { toast('Sign in to edit records', 'ts'); return }
             updateAppt({ id, updates })
             setSelectedAppt(null)
           }}
           onDelete={(id) => {
-            if (isDemo) { toast('Sign in to edit records', 'ts'); return }
             deleteAppt(id)
             setSelectedAppt(null)
           }}
@@ -112,7 +103,6 @@ export function ApptsView() {
       {showAddApptModal && (
         <AddApptModal
           onClose={closeAddApptModal}
-          isDemo={isDemo}
           createRealAppt={addAppt}
           initialDraft={draftAppt}
         />
@@ -127,13 +117,11 @@ export function ApptsView() {
 
 function ApptDetailModal({
   appt,
-  isDemo,
   onClose,
   onUpdate,
   onDelete,
 }: {
   appt: DisplayAppt
-  isDemo: boolean
   onClose: () => void
   onUpdate: (id: string, updates: Record<string, unknown>) => void
   onDelete: (id: string) => void
@@ -244,7 +232,6 @@ function ApptDetailModal({
             <button
               type="button"
               onClick={() => {
-                if (isDemo) return
                 setIsEditing(true)
               }}
               className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold text-[var(--color-accent)] bg-[var(--color-accent-bg)] border border-[var(--color-green-border)] cursor-pointer transition-all hover:brightness-105 active:scale-[0.97] [font-size:var(--text-body)]"
@@ -257,7 +244,6 @@ function ApptDetailModal({
             <button
               type="button"
               onClick={() => {
-                if (isDemo) return
                 setShowDeleteConfirm(true)
               }}
               className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold text-[var(--color-red)] bg-[color-mix(in_srgb,var(--color-red)_8%,transparent)] border border-[color-mix(in_srgb,var(--color-red)_20%,transparent)] cursor-pointer transition-all hover:brightness-105 active:scale-[0.97] [font-size:var(--text-body)]"
@@ -289,15 +275,12 @@ function ApptDetailModal({
 function AddApptModal({
   onClose,
   createRealAppt,
-  isDemo,
   initialDraft,
 }: {
   onClose: () => void
   createRealAppt: (input: { title: string; start_time: string; location: string; notes: string; commute_minutes: number; doctor: string | null }) => void
-  isDemo: boolean
   initialDraft: { title?: string; date?: string; time?: string; loc?: string; notes?: string } | null
 }) {
-  const { addAppt: addApptDemo } = useAppStore()
   const today = todayLocal()
   const [title, setTitle] = useState(initialDraft?.title ?? '')
   const [date, setDate] = useState(initialDraft?.date ?? today)
@@ -317,24 +300,14 @@ function AddApptModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (isDemo) {
-      addApptDemo({
-        title,
-        date,
-        time,
-        loc,
-        notes: notes.trim() ? notes.split('\n').filter(Boolean) : [],
-      })
-    } else {
-      createRealAppt({
-        title,
-        start_time: new Date(`${date}T${time}:00`).toISOString(),
-        location: loc,
-        notes,
-        commute_minutes: 0,
-        doctor: null,
-      })
-    }
+    createRealAppt({
+      title,
+      start_time: new Date(`${date}T${time}:00`).toISOString(),
+      location: loc,
+      notes,
+      commute_minutes: 0,
+      doctor: null,
+    })
 
     onClose()
   }

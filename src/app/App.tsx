@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import { Routes, Route, Navigate, useLocation, useNavigate, Outlet } from 'react-router-dom'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Routes, Route, Navigate, useLocation, useNavigate, useSearchParams, Outlet } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import * as Sentry from '@sentry/react'
 import { queryClient } from '@/shared/lib/query-client'
@@ -31,6 +31,8 @@ import { Button, Input } from '@/shared/components/ui'
 import { useInstallPrompt } from '@/shared/hooks/useInstallPrompt'
 import { useServiceWorkerUpdate } from '@/shared/hooks/useServiceWorkerUpdate'
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
+import { useReminders } from '@/shared/hooks/useReminders'
+import { RemindersPanel } from '@/app/components/RemindersPanel'
 
 type NotificationItem = {
   id: string
@@ -119,11 +121,23 @@ function AppShell() {
   const { resolvedTheme, toggleTheme } = useThemeStore()
   const { logDose } = useDoseLogs()
   const { addNote: addNoteReal } = useNotes()
-  const voice = useVoiceIntent({ logDose, addNoteReal })
+  const { addReminder, reminders } = useReminders()
+  const { showRemindersPanel, openRemindersPanel, closeRemindersPanel } = useAppStore()
   const navigate = useNavigate()
   const { pathname } = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [notifOpen, setNotifOpen] = useState(false)
   const notifTriggerRef = useRef<HTMLButtonElement>(null)
+
+  // Build a stable createReminder function to inject into useVoiceIntent
+  const createReminder = useCallback(
+    ({ userId, title, body, fireAt }: { userId: string; title: string; body: string; fireAt: Date }) => {
+      addReminder({ user_id: userId, title, body, fire_at: fireAt.toISOString() })
+    },
+    [addReminder]
+  )
+
+  const voice = useVoiceIntent({ logDose, addNoteReal, createReminder })
   const { accepted: betaTermsAccepted, accept: acceptBetaTerms } = useBetaTermsAccepted()
   const [showVoiceTest] = useState(() => {
     try {
@@ -136,6 +150,14 @@ function AppShell() {
   const installPrompt = useInstallPrompt()
   const { updateAvailable, reloadToUpdate } = useServiceWorkerUpdate()
   const toasts = useAppStore((s) => s.toasts)
+
+  // Open reminders panel when navigating to ?reminders=open (e.g. from push notification tap)
+  useEffect(() => {
+    if (searchParams.get('reminders') === 'open') {
+      openRemindersPanel()
+      setSearchParams((prev) => { prev.delete('reminders'); return prev }, { replace: true })
+    }
+  }, [searchParams, openRemindersPanel, setSearchParams])
 
   useEffect(() => {
     // Only clean up the hash if it's just an empty '#' (cosmetic)
@@ -188,6 +210,25 @@ function AppShell() {
         </div>
 
         <div className="flex flex-row items-center gap-2 sm:gap-3 shrink-0">
+          {/* Reminders alarm icon */}
+          <IconButton
+            size="md"
+            aria-label="Open reminders"
+            onClick={openRemindersPanel}
+            className="relative"
+          >
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <circle cx="12" cy="12" r="7" />
+              <polyline points="12 9 12 12 13.5 13.5" />
+              <path d="M16.51 17.35l-.35 3.83a2 2 0 0 1-1.99 1.82H9.83a2 2 0 0 1-1.99-1.82l-.35-3.83m.01-10.7l.35-3.83A2 2 0 0 1 9.83 1h4.35a2 2 0 0 1 1.99 1.82l.35 3.83" />
+            </svg>
+            {reminders.filter((r) => !r.fired).length > 0 && (
+              <span
+                aria-label={`${reminders.filter((r) => !r.fired).length} upcoming reminders`}
+                className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-[var(--color-accent)]"
+              />
+            )}
+          </IconButton>
           <IconButton
             ref={notifTriggerRef}
             size="md"
@@ -364,6 +405,7 @@ function AppShell() {
       )}
 
       {notifOpen && <NotificationsPanel onClose={() => setNotifOpen(false)} triggerRef={notifTriggerRef} />}
+      {showRemindersPanel && <RemindersPanel />}
 
       <Toasts toasts={toasts} />
       <FeedbackWidget />

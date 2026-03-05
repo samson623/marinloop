@@ -16,10 +16,8 @@ export function AdminBetaStats() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ;(supabase as any)
-      .from('v_beta_admin_summary')
-      .select('*')
+    supabase
+      .rpc('get_beta_admin_stats')
       .single()
       .then(({ data }: { data: unknown }) => {
         setStats(data as unknown as Summary)

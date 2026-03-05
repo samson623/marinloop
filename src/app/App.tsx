@@ -556,64 +556,84 @@ function NotificationsPanel({ onClose, triggerRef }: { onClose: () => void; trig
           const isCollapsed = !expanded.has(group.label)
           const unread = group.items.filter((i) => !i.read).length
           return (
-            <div key={group.label} className={gi > 0 ? 'mt-2' : ''}>
-              {/* Day header */}
+            <div key={group.label} className={gi > 0 ? 'mt-3' : ''}>
+              {/* Day card header */}
               <button
                 type="button"
                 onClick={() => toggle(group.label)}
-                className="w-full flex items-center justify-between gap-3 py-2.5 px-1 bg-transparent border-none cursor-pointer text-left outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                className="w-full border-none cursor-pointer text-left outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] rounded-2xl active:scale-[0.98] transition-transform"
+                style={{
+                  background: isCollapsed
+                    ? 'var(--color-bg-secondary)'
+                    : 'color-mix(in srgb, var(--color-accent) 8%, var(--color-bg-secondary))',
+                  borderBottom: !isCollapsed ? '1px solid color-mix(in srgb, var(--color-accent) 15%, transparent)' : 'none',
+                  borderRadius: isCollapsed ? '1rem' : '1rem 1rem 0 0',
+                }}
               >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="text-[15px] font-bold text-[var(--color-text-primary)]">{group.label}</span>
-                  {unread > 0 && (
-                    <span className="shrink-0 min-w-[20px] h-5 flex items-center justify-center text-[11px] font-bold px-1.5 rounded-full bg-[var(--color-accent)] text-[var(--color-text-inverse)]">{unread}</span>
-                  )}
+                <div className="flex items-center justify-between gap-3 px-4 py-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center"
+                      style={{ background: 'color-mix(in srgb, var(--color-accent) 12%, transparent)' }}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                      </svg>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[17px] font-bold text-[var(--color-text-primary)] leading-tight">{group.label}</div>
+                      <div className="text-[13px] text-[var(--color-text-secondary)] mt-0.5">
+                        {group.items.length} notification{group.items.length !== 1 ? 's' : ''}
+                        {unread > 0 && <span className="text-[var(--color-accent)] font-semibold"> · {unread} unread</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <svg
+                    width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                    className={`text-[var(--color-text-tertiary)] transition-transform duration-200 shrink-0 ${isCollapsed ? '' : 'rotate-180'}`}
+                    aria-hidden
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
                 </div>
-                <svg
-                  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                  className={`text-[var(--color-text-tertiary)] transition-transform shrink-0 ${isCollapsed ? '' : 'rotate-180'}`}
-                  aria-hidden
-                >
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
               </button>
 
               {!isCollapsed && (
-                <ul className="flex flex-col gap-2 mt-1 mb-2">
-                  {group.items.map((n) => (
-                    <li key={n.id}>
-                      <button
-                        type="button"
-                        onClick={() => { if (!n.read) markRead(n.id) }}
-                        className="w-full border-none text-left cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] rounded-2xl transition-colors"
-                        style={{
-                          background: n.read
-                            ? 'var(--color-bg-secondary)'
-                            : 'color-mix(in srgb, var(--color-accent) 6%, var(--color-bg-secondary))',
-                        }}
-                      >
-                        <div className="flex gap-3.5 px-3.5 py-3.5 items-start">
-                          <NotifIcon type={n.type} />
-                          <div className="flex-1 min-w-0 pt-0.5">
-                            <div className={`text-[15px] leading-snug ${n.read ? 'font-medium text-[var(--color-text-secondary)]' : 'font-semibold text-[var(--color-text-primary)]'}`}>
-                              {n.msg}
+                <div
+                  className="rounded-b-2xl overflow-hidden mb-1"
+                  style={{ background: 'color-mix(in srgb, var(--color-accent) 4%, var(--color-bg-secondary))' }}
+                >
+                  <ul className="flex flex-col divide-y divide-[var(--color-border-secondary)]">
+                    {group.items.map((n) => (
+                      <li key={n.id}>
+                        <button
+                          type="button"
+                          onClick={() => { if (!n.read) markRead(n.id) }}
+                          className="w-full bg-transparent border-none text-left cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] active:bg-[var(--color-bg-primary)] transition-colors"
+                        >
+                          <div className="flex gap-4 px-4 py-4 items-start">
+                            <NotifIcon type={n.type} />
+                            <div className="flex-1 min-w-0 pt-0.5">
+                              <div className={`text-[15px] leading-snug ${n.read ? 'font-medium text-[var(--color-text-secondary)]' : 'font-semibold text-[var(--color-text-primary)]'}`}>
+                                {n.msg}
+                              </div>
+                              {n.sub && (
+                                <div className="text-[14px] text-[var(--color-text-secondary)] mt-1 leading-snug">{n.sub}</div>
+                              )}
+                              <div className="text-[12px] text-[var(--color-text-tertiary)] mt-2 font-medium">
+                                {n.rawDate.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
+                              </div>
                             </div>
-                            {n.sub && (
-                              <div className="text-[13px] text-[var(--color-text-secondary)] mt-1 leading-snug">{n.sub}</div>
+                            {!n.read && (
+                              <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-accent)] shrink-0 mt-2" aria-hidden />
                             )}
-                            <div className="text-[12px] text-[var(--color-text-tertiary)] mt-1.5 font-medium">
-                              {n.rawDate.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
-                            </div>
                           </div>
-                          {!n.read && (
-                            <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-accent)] shrink-0 mt-1.5" aria-hidden />
-                          )}
-                        </div>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
             </div>
           )

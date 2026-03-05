@@ -50,53 +50,44 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
   const {
     openAddMedModal,
     openAddApptModal,
-    addNote,
-    meds: storeMeds,
-    appts: storeAppts,
-    notes: storeNotes,
-    adherence: storeAdh,
     assistantState,
     setAssistantPendingIntent,
     clearAssistantState,
   } = useAppStore()
-  const { session, isDemo } = useAuthStore()
+  const { session } = useAuthStore()
   const { timeline } = useTimeline()
   const { meds: realMeds } = useMedications()
   const { scheds } = useSchedules()
   const { appts: realAppts } = useAppointments()
   const { notes: realNotes } = useNotes()
-  const medsForContext = isDemo
-    ? storeMeds
-    : (realMeds ?? []).map((m) => {
-        const medScheds = (scheds ?? []).filter((s) => s.medication_id === m.id)
-        const times = medScheds.map((s) => s.time?.slice(0, 5) ?? '').filter(Boolean)
-        return {
-          id: m.id,
-          name: m.name,
-          dose: m.dosage ?? '',
-          freq: m.freq ?? 1,
-          times,
-        }
-      })
-  const apptsForContext = isDemo
-    ? storeAppts
-    : (realAppts ?? []).map((a) => ({
-        id: a.id,
-        title: a.title,
-        date: isoToLocalDate(a.start_time),
-        time: toLocalTimeString(a.start_time),
-        loc: a.location ?? '',
-        notes: a.notes ? [a.notes] : [],
-      }))
-  const notesForContext = isDemo
-    ? storeNotes
-    : (realNotes ?? []).map((n) => ({
-        id: n.id,
-        text: n.content,
-        time: n.created_at,
-        medicationId: n.medication_id ?? '',
-      }))
-  const meds = isDemo ? storeMeds : medsForContext
+
+  const medsForContext = (realMeds ?? []).map((m) => {
+    const medScheds = (scheds ?? []).filter((s) => s.medication_id === m.id)
+    const times = medScheds.map((s) => s.time?.slice(0, 5) ?? '').filter(Boolean)
+    return {
+      id: m.id,
+      name: m.name,
+      dose: m.dosage ?? '',
+      freq: m.freq ?? 1,
+      times,
+    }
+  })
+
+  const apptsForContext = (realAppts ?? []).map((a) => ({
+    id: a.id,
+    title: a.title,
+    date: isoToLocalDate(a.start_time),
+    time: toLocalTimeString(a.start_time),
+    loc: a.location ?? '',
+    notes: a.notes ? [a.notes] : [],
+  }))
+
+  const notesForContext = (realNotes ?? []).map((n) => ({
+    id: n.id,
+    text: n.content,
+    time: n.created_at,
+    medicationId: n.medication_id ?? '',
+  }))
 
   const [voiceActive, setVoiceActive] = useState(false)
   const [voiceBubble, setVoiceBubble] = useState('')
@@ -285,18 +276,13 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
         setVoiceConfirmation({
           message: confirmationMessage,
           onConfirm: () => {
-            if (isDemo) {
-              if (status === 'missed') store.markMissed(target.id)
-              else store.markDone(target.id)
-            } else {
-              logDose({
-                medication_id: medicationId,
-                schedule_id: target.id,
-                taken_at: new Date().toISOString(),
-                status: status === 'missed' ? 'missed' : 'taken',
-                notes: null,
-              })
-            }
+            logDose({
+              medication_id: medicationId,
+              schedule_id: target.id,
+              taken_at: new Date().toISOString(),
+              status: status === 'missed' ? 'missed' : 'taken',
+              notes: null,
+            })
             setVoiceConfirmation(null)
           },
         })
@@ -317,15 +303,10 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
           store.toast('What should the note say? Say "add note" then your note.', 'tw')
           return
         }
-        const medList = meds ?? []
         const medName = intent.entities.note?.medication_name?.trim()
-        const med = medName ? medList.find((m) => m.name.toLowerCase().includes(medName.toLowerCase())) : null
+        const med = medName ? medsForContext.find((m) => m.name.toLowerCase().includes(medName.toLowerCase())) : null
         const medicationId = med?.id ?? null
-        if (isDemo) {
-          addNote({ content: noteText, medication_id: medicationId })
-        } else {
-          addNoteReal({ content: noteText, medication_id: medicationId })
-        }
+        addNoteReal({ content: noteText, medication_id: medicationId })
         setVoiceBubble(med ? `Note added for ${med.name}.` : 'Note saved.')
         return
       }
@@ -337,26 +318,19 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
             return `- ${i.type === 'med' ? 'Med' : 'Appt'}: ${i.name}${i.dose ? ` ${i.dose}` : ''} at ${i.time} (${statusLabel})`
           })
           .join('\n')
-        const medsStr = (isDemo ? storeMeds : medsForContext)
+        const medsStr = medsForContext
           .map((m) => {
             const t = (m as { times?: string[] }).times ?? []
             const times = t.length ? t.map(fT).join(', ') : ''
             return `- ${m.name}${m.dose ? ` ${m.dose}` : ''}${times ? ` at ${times}` : ''} (${m.freq ?? 1}x daily)`
           })
           .join('\n')
-        const apptsStr = (isDemo ? storeAppts : apptsForContext)
+        const apptsStr = apptsForContext
           .map((a) => `- ${a.title} on ${fD(a.date)} at ${fT(a.time)}${a.loc ? ` — ${a.loc}` : ''}`)
           .join('\n')
-        const notesStr = (isDemo ? storeNotes : notesForContext)
+        const notesStr = notesForContext
           .map((n) => `- ${n.text}${n.medicationId ? ` (med link)` : ''}`)
           .join('\n')
-        const adhStr =
-          Object.keys(storeAdh).length > 0
-            ? Object.entries(storeAdh)
-                .slice(-7)
-                .map(([d, v]) => `${d}: ${v.d}/${v.t} doses`)
-                .join('\n')
-            : ''
         const context = `Today is ${todayLocal()}.
 
 ## Today's schedule (timeline)
@@ -369,8 +343,7 @@ ${medsStr || 'No medications.'}
 ${apptsStr || 'No appointments.'}
 
 ## Notes
-${notesStr || 'No notes.'}
-${adhStr ? `\n## Recent adherence\n${adhStr}` : ''}`
+${notesStr || 'No notes.'}`
 
         if (!AIService.isConfigured()) {
           const fallback =

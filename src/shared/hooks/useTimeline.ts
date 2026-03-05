@@ -3,23 +3,17 @@ import { useAppointments } from '@/shared/hooks/useAppointments'
 import { useDoseLogs } from '@/shared/hooks/useDoseLogs'
 import { useMedications } from '@/shared/hooks/useMedications'
 import { useSchedules } from '@/shared/hooks/useSchedules'
-import { useAuthStore } from '@/shared/stores/auth-store'
-import { useAppStore, type SchedItem } from '@/shared/stores/app-store'
+import { type SchedItem } from '@/shared/stores/app-store'
 import { todayLocal, isoToLocalDate, toLocalTimeString } from '@/shared/lib/dates'
 import { timeToMinutes, nowMinutes, sortAndMarkNext } from '@/shared/lib/timeline-utils'
 
 export function useTimeline() {
-  const { isDemo } = useAuthStore()
-  const demoSched = useAppStore((s) => s.sched)
-
   const { meds } = useMedications()
   const { scheds } = useSchedules()
   const { todayLogs } = useDoseLogs()
   const { appts } = useAppointments()
 
   const timelineItems = useMemo(() => {
-    if (isDemo) return demoSched
-
     const byMedication = new Map(meds.map((m) => [m.id, m]))
     const items: SchedItem[] = []
     const todayStr = todayLocal()
@@ -68,7 +62,7 @@ export function useTimeline() {
     }
 
     return sortAndMarkNext(items, nowMinutes())
-  }, [isDemo, demoSched, meds, scheds, todayLogs, appts])
+  }, [meds, scheds, todayLogs, appts])
 
   return {
     timeline: timelineItems,

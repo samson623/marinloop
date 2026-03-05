@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useAppStore } from '@/shared/stores/app-store'
-import { useAuthStore } from '@/shared/stores/auth-store'
 import { toLocalDateString } from '@/shared/lib/dates'
 import { useTimeline } from '@/shared/hooks/useTimeline'
 import { useNotes } from '@/shared/hooks/useNotes'
@@ -12,19 +11,12 @@ import { QuickCaptureModal } from '@/shared/components/QuickCaptureModal'
 import { ConfirmDeleteModal } from '@/shared/components/ConfirmDeleteModal'
 
 export function SummaryView() {
-  const { isDemo } = useAuthStore()
   const {
-    sched: demoSched,
-    notes: demoNotes,
-    adherence: demoAdh,
-    meds: demoMeds,
-    appts: demoAppts,
-    addNote: storeAddNote,
     showQuickCaptureModal,
     openQuickCaptureModal,
     closeQuickCaptureModal,
   } = useAppStore()
-  const { adherence: realAdh } = useAdherenceHistory(7)
+  const { adherence: adh } = useAdherenceHistory(7)
   const { timeline } = useTimeline()
   const { notes: realNotes, addNote: addNoteReal, isAdding, updateNote, deleteNote, isDeleting } = useNotes()
   const { meds: realMeds } = useMedications()
@@ -35,20 +27,10 @@ export function SummaryView() {
   const [deleteNoteId, setDeleteNoteId] = useState<string | null>(null)
   const [deleteNoteName, setDeleteNoteName] = useState('')
 
-  const meds = isDemo ? demoMeds.map((m) => ({ id: m.id, name: m.name })) : realMeds.map((m) => ({ id: m.id, name: m.name }))
-  const appts = isDemo
-    ? demoAppts.map((a) => ({ id: a.id, title: a.title, start_time: `${a.date}T${a.time}:00` }))
-    : realAppts.map((a) => ({ id: a.id, title: a.title, start_time: a.start_time }))
+  const meds = realMeds.map((m) => ({ id: m.id, name: m.name }))
+  const appts = realAppts.map((a) => ({ id: a.id, title: a.title, start_time: a.start_time }))
 
-  const handleAddNote = (payload: { content: string; medication_id?: string | null; appointment_id?: string | null }) => {
-    if (isDemo) {
-      storeAddNote({ content: payload.content, medication_id: payload.medication_id ?? undefined, appointment_id: payload.appointment_id ?? undefined })
-    } else {
-      addNoteReal(payload)
-    }
-  }
-
-  const sched = isDemo ? demoSched : timeline
+  const sched = timeline
 
   let dn = 0
   let lt = 0
@@ -63,32 +45,22 @@ export function SummaryView() {
     else if (i.status === 'missed') ms += 1
   })
 
-  const adh = isDemo ? demoAdh : realAdh
   const days: { label: string; pct: number }[] = []
   for (let i = 6; i >= 0; i--) {
     const d = new Date()
     d.setDate(d.getDate() - i)
     const key = toLocalDateString(d)
     const label = ['S', 'M', 'T', 'W', 'T', 'F', 'S'][d.getDay()]
-    const pct = isDemo
-      ? (adh[key] ? Math.round((adh[key].d / adh[key].t) * 100) : i === 0 && total > 0 ? Math.round((dn / total) * 100) : 0)
-      : (adh[key] && adh[key].t > 0 ? Math.round((adh[key].d / adh[key].t) * 100) : i === 0 && total > 0 ? Math.round((dn / total) * 100) : 0)
+    const pct = adh[key] && adh[key].t > 0 ? Math.round((adh[key].d / adh[key].t) * 100) : i === 0 && total > 0 ? Math.round((dn / total) * 100) : 0
     days.push({ label, pct })
   }
 
-  const notes = isDemo
-    ? demoNotes.map((n) => ({
-      id: n.id,
-      title: n.medicationId ? (demoMeds.find((m) => m.id === n.medicationId)?.name ?? 'Note') : 'Note',
-      text: n.text,
-      created: n.time,
-    }))
-    : realNotes.map((n) => ({
-      id: n.id,
-      title: n.medication_id ? (realMeds.find((m) => m.id === n.medication_id)?.name ?? 'Note') : 'Note',
-      text: n.content,
-      created: n.created_at,
-    }))
+  const notes = realNotes.map((n) => ({
+    id: n.id,
+    title: n.medication_id ? (realMeds.find((m) => m.id === n.medication_id)?.name ?? 'Note') : 'Note',
+    text: n.content,
+    created: n.created_at,
+  }))
 
   return (
     <div className="animate-view-in w-full max-w-[480px] mx-auto">
@@ -140,38 +112,36 @@ export function SummaryView() {
                   <span className="text-[var(--color-text-tertiary)] [font-family:var(--font-mono)] [font-size:var(--text-caption)]">
                     {new Date(n.created).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
-                  {!isDemo && (
-                    <>
-                      {/* Edit button */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingNoteId(n.id)
-                          setEditingNoteText(n.text)
-                        }}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--color-text-tertiary)] hover:text-[var(--color-accent)] hover:bg-[var(--color-bg-tertiary)] cursor-pointer transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
-                        aria-label={`Edit note: ${n.text.slice(0, 20)}`}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                      </button>
-                      {/* Delete button */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDeleteNoteId(n.id)
-                          setDeleteNoteName(n.text.slice(0, 30) + (n.text.length > 30 ? '…' : ''))
-                        }}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--color-text-tertiary)] hover:text-[var(--color-red)] hover:bg-[color-mix(in_srgb,var(--color-red)_8%,transparent)] cursor-pointer transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
-                        aria-label={`Delete note: ${n.text.slice(0, 20)}`}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                          <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        </svg>
-                      </button>
-                    </>
-                  )}
+                  <>
+                    {/* Edit button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingNoteId(n.id)
+                        setEditingNoteText(n.text)
+                      }}
+                      className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--color-text-tertiary)] hover:text-[var(--color-accent)] hover:bg-[var(--color-bg-tertiary)] cursor-pointer transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                      aria-label={`Edit note: ${n.text.slice(0, 20)}`}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                    </button>
+                    {/* Delete button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeleteNoteId(n.id)
+                        setDeleteNoteName(n.text.slice(0, 30) + (n.text.length > 30 ? '…' : ''))
+                      }}
+                      className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--color-text-tertiary)] hover:text-[var(--color-red)] hover:bg-[color-mix(in_srgb,var(--color-red)_8%,transparent)] cursor-pointer transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                      aria-label={`Delete note: ${n.text.slice(0, 20)}`}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      </svg>
+                    </button>
+                  </>
                 </div>
               </div>
 
@@ -237,7 +207,7 @@ export function SummaryView() {
         onOpenChange={(open) => { if (!open) closeQuickCaptureModal() }}
         meds={meds}
         appts={appts}
-        onSubmit={handleAddNote}
+        onSubmit={addNoteReal}
         isSubmitting={isAdding}
       />
 
@@ -267,4 +237,3 @@ function StatCard({ n, label, color }: { n: number; label: string; color: string
     </Card>
   )
 }
-

@@ -9,11 +9,11 @@ import { useAuthStore } from '@/shared/stores/auth-store'
  */
 export function AuthCallbackScreen() {
   const navigate = useNavigate()
-  const { session, isDemo, isLoading } = useAuthStore()
+  const { session, isLoading } = useAuthStore()
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    if (isDemo || session) {
+    if (session) {
       navigate('/timeline', { replace: true })
       return
     }
@@ -29,7 +29,7 @@ export function AuthCallbackScreen() {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
     }
-  }, [session, isDemo, isLoading, navigate])
+  }, [session, isLoading, navigate])
 
   return (
     <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-4 bg-[var(--color-bg-primary)] p-4">

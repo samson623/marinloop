@@ -13,9 +13,6 @@ vi.mock('@/shared/services/notes', () => ({
     delete: vi.fn(),
   },
 }))
-vi.mock('@/shared/stores/auth-store', () => ({
-  useAuthStore: () => ({ isDemo: false }),
-}))
 vi.mock('@/shared/stores/app-store', () => ({
   useAppStore: () => ({ toast: vi.fn() }),
 }))

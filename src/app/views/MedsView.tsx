@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useAppStore, fT } from '@/shared/stores/app-store'
-import { useAuthStore } from '@/shared/stores/auth-store'
+
 import { useMedications } from '@/shared/hooks/useMedications'
 import { useSchedules } from '@/shared/hooks/useSchedules'
 import { useRefills } from '@/shared/hooks/useRefillsList'
@@ -14,7 +14,6 @@ import { Button, Input } from '@/shared/components/ui'
 
 type AddMedModalProps = {
   onClose: () => void
-  isDemo: boolean
   isSaving: boolean
   initialDraft: {
     name?: string
@@ -49,7 +48,6 @@ type DisplayMed = {
 
 export function MedsView() {
   const {
-    meds: demoMeds,
     showAddMedModal,
     draftMed,
     addMedModalOptions,
@@ -57,35 +55,31 @@ export function MedsView() {
     closeAddMedModal,
   } = useAppStore()
   const [selectedMed, setSelectedMed] = useState<DisplayMed | null>(null)
-  const { isDemo } = useAuthStore()
-  const { toast } = useAppStore()
   const { meds: realMeds, addMedBundleAsync, updateMed, deleteMed, isAdding, isDeleting } = useMedications()
   const { scheds, addSchedAsync, updateSched, deleteSched } = useSchedules()
   const { refills, updateRefill } = useRefills()
 
-  const displayMeds = isDemo
-    ? demoMeds
-    : realMeds.map((m) => {
-      const myScheds = scheds.filter((s) => s.medication_id === m.id)
-      const times = myScheds.map((s) => s.time.slice(0, 5))
-      const refill = refills.find((r) => r.medication_id === m.id)
-      const supply = refill?.current_quantity ?? 0
-      const total = refill?.total_quantity ?? 30
-      const dosesPerDay = m.freq || 1
+  const displayMeds = realMeds.map((m) => {
+    const myScheds = scheds.filter((s) => s.medication_id === m.id)
+    const times = myScheds.map((s) => s.time.slice(0, 5))
+    const refill = refills.find((r) => r.medication_id === m.id)
+    const supply = refill?.current_quantity ?? 0
+    const total = refill?.total_quantity ?? 30
+    const dosesPerDay = m.freq || 1
 
-      return {
-        id: m.id,
-        name: m.name,
-        dose: m.dosage || '',
-        freq: m.freq,
-        times,
-        instructions: m.instructions || '',
-        warnings: m.warnings || '',
-        supply,
-        total,
-        dosesPerDay,
-      }
-    })
+    return {
+      id: m.id,
+      name: m.name,
+      dose: m.dosage || '',
+      freq: m.freq,
+      times,
+      instructions: m.instructions || '',
+      warnings: m.warnings || '',
+      supply,
+      total,
+      dosesPerDay,
+    }
+  })
 
   return (
     <div className="animate-view-in w-full max-w-[480px] mx-auto">
@@ -94,7 +88,7 @@ export function MedsView() {
       </h2>
 
       <div className="stagger-children">
-        {displayMeds.length === 0 && !isDemo && (
+        {displayMeds.length === 0 && (
           <div className="py-10 px-6 text-center border-2 border-dashed border-[var(--color-border-secondary)] rounded-2xl">
             <p className="text-[var(--color-text-secondary)] [font-size:var(--text-body)] font-medium">No medications found. Add one below.</p>
             <p className="mt-3 text-[var(--color-text-tertiary)] [font-size:var(--text-caption)]">Add your first medication to get started</p>
@@ -157,21 +151,17 @@ export function MedsView() {
       {selectedMed && (
         <MedDetailModal
           med={selectedMed}
-          isDemo={isDemo}
           isDeleting={isDeleting}
           onClose={() => setSelectedMed(null)}
           onUpdate={(id, updates) => {
-            if (isDemo) { toast('Sign in to edit records', 'ts'); return }
             updateMed({ id, updates })
             setSelectedMed(null)
           }}
           onDelete={(id) => {
-            if (isDemo) { toast('Sign in to edit records', 'ts'); return }
             deleteMed(id)
             setSelectedMed(null)
           }}
           onUpdateSupply={(refillId, qty) => {
-            if (isDemo) { toast('Sign in to edit records', 'ts'); return }
             updateRefill({ id: refillId, updates: { current_quantity: qty } })
           }}
           refills={refills}
@@ -187,7 +177,6 @@ export function MedsView() {
           onClose={closeAddMedModal}
           createBundleAsync={addMedBundleAsync}
           isSaving={isAdding}
-          isDemo={isDemo}
           initialDraft={draftMed}
           openScanner={addMedModalOptions?.openScanner}
           openPhoto={addMedModalOptions?.openPhoto}
@@ -197,9 +186,8 @@ export function MedsView() {
   )
 }
 
-function MedDetailModal({ med, isDemo, isDeleting, onClose, onUpdate, onDelete, onUpdateSupply, refills, scheds, addSchedAsync, updateSched, deleteSched }: {
+function MedDetailModal({ med, isDeleting, onClose, onUpdate, onDelete, onUpdateSupply, refills, scheds, addSchedAsync, updateSched, deleteSched }: {
   med: DisplayMed
-  isDemo: boolean
   isDeleting: boolean
   onClose: () => void
   onUpdate: (id: string, updates: Record<string, unknown>) => void
@@ -417,7 +405,7 @@ function MedDetailModal({ med, isDemo, isDeleting, onClose, onUpdate, onDelete, 
                       {med.supply} of {med.total} pills · {days} days left
                       {days <= 5 && <span className="text-[var(--color-red)] font-bold"> — Refill soon</span>}
                     </span>
-                    {!isDemo && refill && (
+                    {refill && (
                       <button
                         type="button"
                         onClick={() => { setSupplyVal(String(med.supply)); setEditingSupply(true) }}
@@ -465,7 +453,6 @@ function MedDetailModal({ med, isDemo, isDeleting, onClose, onUpdate, onDelete, 
             <button
               type="button"
               onClick={() => {
-                if (isDemo) return
                 setIsEditing(true)
               }}
               className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold text-[var(--color-accent)] bg-[var(--color-accent-bg)] border border-[var(--color-green-border)] cursor-pointer transition-all hover:brightness-105 active:scale-[0.97] [font-size:var(--text-body)]"
@@ -478,7 +465,6 @@ function MedDetailModal({ med, isDemo, isDeleting, onClose, onUpdate, onDelete, 
             <button
               type="button"
               onClick={() => {
-                if (isDemo) return
                 setShowDeleteConfirm(true)
               }}
               className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold text-[var(--color-red)] bg-[color-mix(in_srgb,var(--color-red)_8%,transparent)] border border-[color-mix(in_srgb,var(--color-red)_20%,transparent)] cursor-pointer transition-all hover:brightness-105 active:scale-[0.97] [font-size:var(--text-body)]"
@@ -504,8 +490,8 @@ function MedDetailModal({ med, isDemo, isDeleting, onClose, onUpdate, onDelete, 
   )
 }
 
-function AddMedModal({ onClose, createBundleAsync, isDemo, isSaving, initialDraft, openScanner: openScannerProp, openPhoto: openPhotoProp }: AddMedModalProps) {
-  const { addMed: addMedDemo, toast } = useAppStore()
+function AddMedModal({ onClose, createBundleAsync, isSaving, initialDraft, openScanner: openScannerProp, openPhoto: openPhotoProp }: AddMedModalProps) {
+  const { toast } = useAppStore()
   const [name, setName] = useState('')
   const [dose, setDose] = useState('')
   const [freq, setFreq] = useState('1')
@@ -637,11 +623,11 @@ function AddMedModal({ onClose, createBundleAsync, isDemo, isSaving, initialDraf
   }, [openScannerProp])
 
   useEffect(() => {
-    if (openPhotoProp && !isDemo) {
+    if (openPhotoProp) {
       const timer = setTimeout(() => labelPhotoInputRef.current?.click(), 150)
       return () => clearTimeout(timer)
     }
-  }, [openPhotoProp, isDemo])
+  }, [openPhotoProp])
 
   const handleBarcodeLookup = async () => {
     const code = barcodeInputValue.trim()
@@ -782,12 +768,6 @@ function AddMedModal({ onClose, createBundleAsync, isDemo, isSaving, initialDraf
     e.preventDefault()
     const f = Number.parseInt(freq, 10) || 1
 
-    if (isDemo) {
-      addMedDemo({ name, dose, freq: f, times, instructions: inst, warnings: warn, foodWaitMinutes: 0, supply: Number.parseInt(sup, 10) || 30, total: Number.parseInt(sup, 10) || 30, dosesPerDay: f })
-      onClose()
-      return
-    }
-
     try {
       await createBundleAsync({
         medication: {
@@ -899,8 +879,7 @@ function AddMedModal({ onClose, createBundleAsync, isDemo, isSaving, initialDraf
           </div>
         )}
 
-        {!isDemo && (
-          <>
+        <>
             <input
               ref={labelPhotoInputRef}
               type="file"
@@ -996,7 +975,6 @@ function AddMedModal({ onClose, createBundleAsync, isDemo, isSaving, initialDraf
               Photograph all sides of your pill bottle for best results. You can add up to 5 photos.
             </p>
           </>
-        )}
 
         <div className="flex items-center gap-3 mb-4">
           <div className="flex-1 h-px bg-[var(--color-border-primary)]" />

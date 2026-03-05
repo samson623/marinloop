@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Routes, Route, Navigate, useLocation, useNavigate, Outlet } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
+import * as Sentry from '@sentry/react'
 import { queryClient } from '@/shared/lib/query-client'
 import { useThemeStore } from '@/shared/stores/theme-store'
 import { useAppStore, type Tab } from '@/shared/stores/app-store'
@@ -17,10 +18,13 @@ import { ProfileView } from '@/app/views/ProfileView'
 import { LandingScreen } from '@/app/LandingScreen'
 import { LoginScreen } from '@/app/LoginScreen'
 import { AuthCallbackScreen } from '@/app/AuthCallbackScreen'
+import { InstallGuideScreen } from '@/app/InstallGuideScreen'
 import { PrivateRoute } from '@/app/PrivateRoute'
 import { isMobile, isStandalone } from '@/shared/lib/device'
 import { AddToHomeScreenPrompt } from '@/shared/components/AddToHomeScreenPrompt'
 import { getAddToHomeScreenSeen, setAddToHomeScreenSeen } from '@/shared/lib/add-to-home-screen-storage'
+import { BetaTermsModal, useBetaTermsAccepted } from '@/shared/components/BetaTermsModal'
+import { FeedbackWidget } from '@/shared/components/FeedbackWidget'
 import { Modal } from '@/shared/components/Modal'
 import { IconButton } from '@/shared/components/IconButton'
 import { Button, Input } from '@/shared/components/ui'
@@ -95,6 +99,7 @@ function AppInner() {
       <Route path="/landing" element={<LandingScreen />} />
       <Route path="/login" element={<LoginScreen />} />
       <Route path="/auth/callback" element={<AuthCallbackScreen />} />
+      <Route path="/install" element={<InstallGuideScreen />} />
       <Route element={<PrivateRoute />}>
         <Route element={<AppShell />}>
           <Route path="/timeline" element={<TimelineView />} />
@@ -110,7 +115,7 @@ function AppInner() {
 }
 
 function AppShell() {
-  const { session, isDemo } = useAuthStore()
+  const { session } = useAuthStore()
   const { resolvedTheme, toggleTheme } = useThemeStore()
   const { logDose } = useDoseLogs()
   const { addNote: addNoteReal } = useNotes()
@@ -119,6 +124,7 @@ function AppShell() {
   const { pathname } = useLocation()
   const [notifOpen, setNotifOpen] = useState(false)
   const notifTriggerRef = useRef<HTMLButtonElement>(null)
+  const { accepted: betaTermsAccepted, accept: acceptBetaTerms } = useBetaTermsAccepted()
   const [showVoiceTest] = useState(() => {
     try {
       return new URLSearchParams(window.location.search).get('voiceTest') === '1'
@@ -139,11 +145,11 @@ function AppShell() {
   }, [pathname])
 
   useEffect(() => {
-    if (!session || isDemo) return
+    if (!session) return
     if (!isMobile() || isStandalone() || getAddToHomeScreenSeen()) return
     const t = setTimeout(() => setShowAddToHomeScreenOnboarding(true), 1500)
     return () => clearTimeout(t)
-  }, [session, isDemo])
+  }, [session])
 
   const handleAddToHomeScreenDismiss = () => {
     setAddToHomeScreenSeen()
@@ -153,7 +159,9 @@ function AppShell() {
   const activeTab = pathname.slice(1) as Tab
 
   return (
+    <Sentry.ErrorBoundary fallback={<div className="fixed inset-0 flex items-center justify-center bg-[var(--color-bg-primary)] p-6 text-center text-[var(--color-text-secondary)]">Something went wrong. Please refresh.</div>}>
     <ErrorBoundary>
+    {!betaTermsAccepted && <BetaTermsModal onAccept={acceptBetaTerms} />}
     <div className="flex flex-col min-h-screen bg-[var(--color-bg-primary)] w-full">
       {showAddToHomeScreenOnboarding && (
         <AddToHomeScreenPrompt
@@ -174,11 +182,9 @@ function AppShell() {
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
           </div>
           <span className="text-[var(--text-subtitle)] font-extrabold tracking-[-0.02em] text-[var(--color-text-primary)] truncate">marinloop</span>
-          {isDemo && (
-            <span className="text-[var(--text-caption)] font-bold tracking-[0.08em] text-[var(--color-amber)] bg-[var(--color-amber-bg)] border border-[var(--color-amber-border)] rounded-md py-1 px-2 shrink-0">
-              DEMO
-            </span>
-          )}
+          <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-md bg-[var(--color-accent)] text-[var(--color-text-inverse)] opacity-80 select-none">
+            BETA
+          </span>
         </div>
 
         <div className="flex flex-row items-center gap-2 sm:gap-3 shrink-0">
@@ -357,11 +363,13 @@ function AppShell() {
         </Modal>
       )}
 
-      {notifOpen && <NotificationsPanel isDemo={isDemo} onClose={() => setNotifOpen(false)} triggerRef={notifTriggerRef} />}
+      {notifOpen && <NotificationsPanel onClose={() => setNotifOpen(false)} triggerRef={notifTriggerRef} />}
 
       <Toasts toasts={toasts} />
+      <FeedbackWidget />
     </div>
     </ErrorBoundary>
+    </Sentry.ErrorBoundary>
   )
 }
 
@@ -387,17 +395,10 @@ function Toasts({ toasts }: { toasts: { id: string; msg: string; cls: string }[]
   )
 }
 
-function NotificationsPanel({ onClose, isDemo, triggerRef }: { onClose: () => void; isDemo: boolean; triggerRef?: React.RefObject<HTMLButtonElement | null> }) {
+function NotificationsPanel({ onClose, triggerRef }: { onClose: () => void; triggerRef?: React.RefObject<HTMLButtonElement | null> }) {
   const { notifications, isLoading, markRead } = useNotifications()
 
-  const demoNotifs: NotificationItem[] = [
-    { id: 'd-1', icon: '?', msg: 'Levothyroxine - 8:00 AM', sub: 'Take on empty stomach', time: '5m ago' },
-    { id: 'd-2', icon: '?', msg: 'Metformin logged', sub: 'Taken at 8:32 AM', time: '28m ago' },
-    { id: 'd-3', icon: '?', msg: 'Lisinopril supply low', sub: '8 pills remaining', time: '2h ago' },
-    { id: 'd-4', icon: '??', msg: 'Dr. Chen - Today at 3:30 PM', sub: 'City Medical Center', time: '4h ago' },
-  ]
-
-  const liveNotifs: NotificationItem[] = notifications.map((n) => ({
+  const notifs: NotificationItem[] = notifications.map((n) => ({
     id: n.id,
     icon: n.type === 'warning' ? '?' : n.type === 'success' ? '?' : n.type === 'error' ? '!' : '?',
     msg: n.title,
@@ -406,12 +407,10 @@ function NotificationsPanel({ onClose, isDemo, triggerRef }: { onClose: () => vo
     read: n.read,
   }))
 
-  const notifs = isDemo ? demoNotifs : liveNotifs
-
   return (
     <Modal open onOpenChange={(o) => !o && onClose()} title="Notifications" variant="center" triggerRef={triggerRef}>
       <div className="py-2.5">
-        {isLoading && !isDemo && (
+        {isLoading && (
           <div className="text-[var(--color-text-secondary)] py-2 [font-size:var(--text-body)]">Loading notifications...</div>
         )}
         {!isLoading && notifs.length === 0 && (
@@ -422,9 +421,9 @@ function NotificationsPanel({ onClose, isDemo, triggerRef }: { onClose: () => vo
             key={n.id}
             type="button"
             onClick={() => {
-              if (!isDemo && !n.read) markRead(n.id)
+              if (!n.read) markRead(n.id)
             }}
-            className={`w-full bg-transparent border-none text-left flex gap-3 min-h-[56px] py-4 border-b border-[var(--color-border-secondary)] cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${!isDemo && n.read ? 'opacity-60' : ''}`}
+            className={`w-full bg-transparent border-none text-left flex gap-3 min-h-[56px] py-4 border-b border-[var(--color-border-secondary)] cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${n.read ? 'opacity-60' : ''}`}
           >
             <span className="text-xl w-9 text-center shrink-0">{n.icon}</span>
             <div className="flex-1 min-w-0">

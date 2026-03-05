@@ -519,14 +519,12 @@ function NotificationsPanel({ onClose, triggerRef }: { onClose: () => void; trig
     groups[seen.get(label)!].items.push(n)
   }
 
-  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
-    const s = new Set<string>()
-    groups.forEach((g) => { if (g.label !== 'Today') s.add(g.label) })
-    return s
-  })
+  // Track which day labels are explicitly expanded. Default: only Today.
+  // Initialized unconditionally so it doesn't depend on data being loaded yet.
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(['Today']))
 
   const toggle = (label: string) =>
-    setCollapsed((prev) => { const next = new Set(prev); next.has(label) ? next.delete(label) : next.add(label); return next })
+    setExpanded((prev) => { const next = new Set(prev); next.has(label) ? next.delete(label) : next.add(label); return next })
 
   const totalUnread = notifs.filter((n) => !n.read).length
 
@@ -555,7 +553,7 @@ function NotificationsPanel({ onClose, triggerRef }: { onClose: () => void; trig
         )}
 
         {groups.map((group, gi) => {
-          const isCollapsed = collapsed.has(group.label)
+          const isCollapsed = !expanded.has(group.label)
           const unread = group.items.filter((i) => !i.read).length
           return (
             <div key={group.label} className={gi > 0 ? 'mt-2' : ''}>

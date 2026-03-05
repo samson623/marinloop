@@ -1,0 +1,323 @@
+import { useState } from 'react'
+import { useAppStore, fT } from '@/shared/stores/app-store'
+import { Modal } from '@/shared/components/Modal'
+import { ConfirmDeleteModal } from '@/shared/components/ConfirmDeleteModal'
+import { Button, Input } from '@/shared/components/ui'
+import { generateEvenlySpacedTimes } from '@/shared/lib/scheduling'
+import { getSupplyInfo } from '@/shared/lib/medication-utils'
+
+type DisplayMed = {
+  id: string
+  name: string
+  dose: string
+  freq: number
+  times: string[]
+  instructions: string
+  warnings: string
+  supply: number
+  total: number
+  dosesPerDay: number
+}
+
+function FormField({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
+  return (
+    <div className="mb-4 flex-1">
+      <label htmlFor={id} className="block font-bold text-[var(--color-text-secondary)] mb-1.5 [font-size:var(--text-label)]">
+        {label}
+      </label>
+      {children}
+    </div>
+  )
+}
+
+export default function MedDetailModal({ med, isDeleting, onClose, onUpdate, onDelete, onUpdateSupply, refills, scheds, addSchedAsync, updateSched, deleteSched }: {
+  med: DisplayMed
+  isDeleting: boolean
+  onClose: () => void
+  onUpdate: (id: string, updates: Record<string, unknown>) => void
+  onDelete: (id: string) => void
+  onUpdateSupply: (refillId: string, qty: number) => void
+  refills: Array<{ id: string; medication_id: string; current_quantity: number; total_quantity: number }>
+  scheds: Array<{ id: string; medication_id: string; time: string; days: number[]; food_context_minutes: number; active: boolean }>
+  addSchedAsync: (input: { medication_id: string; time: string; days: number[]; food_context_minutes: number; active: boolean }) => Promise<unknown>
+  updateSched: (input: { id: string; updates: Record<string, unknown> }) => void
+  deleteSched: (id: string) => void
+}) {
+  const { toast } = useAppStore()
+  const [isEditing, setIsEditing] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [editingSupply, setEditingSupply] = useState(false)
+  const [supplyVal, setSupplyVal] = useState(String(med.supply))
+
+  // Edit form state — initialized from current medication data
+  const [editName, setEditName] = useState(med.name)
+  const [editDose, setEditDose] = useState(med.dose)
+  const [editFreq, setEditFreq] = useState(String(med.freq))
+  const [editTimes, setEditTimes] = useState<string[]>(med.times.length > 0 ? med.times : ['08:00'])
+  const [editSup, setEditSup] = useState(String(med.supply))
+  const [editInst, setEditInst] = useState(med.instructions)
+  const [editWarn, setEditWarn] = useState(med.warnings)
+
+  const { pct: p, days, color: barColor } = getSupplyInfo(med.supply, med.total, med.dosesPerDay)
+
+  const refill = refills.find((r) => r.medication_id === med.id)
+  const medScheds = scheds.filter((s) => s.medication_id === med.id).sort((a, b) => a.time.localeCompare(b.time))
+
+  const handleEditFreqChange = (newFreq: string) => {
+    const n = Number.parseInt(newFreq, 10) || 1
+    setEditFreq(newFreq)
+    setEditTimes((prev) => {
+      if (prev.length === n) return prev
+      if (prev.length < n) return generateEvenlySpacedTimes(n, prev[0])
+      return prev.slice(0, n)
+    })
+  }
+
+  const updateEditTimeAtIndex = (index: number, value: string) => {
+    setEditTimes((prev) => prev.map((v, i) => (i === index ? value : v)))
+  }
+
+  const handleSaveEdit = async () => {
+    const newFreq = Number.parseInt(editFreq, 10) || 1
+    const newSup = Math.max(0, parseInt(editSup, 10) || 0)
+
+    // 1. Update medication record
+    onUpdate(med.id, {
+      name: editName,
+      dosage: editDose,
+      freq: newFreq,
+      instructions: editInst,
+      warnings: editWarn,
+    })
+
+    // 2. Update schedules: match existing schedules to new times
+    try {
+      // Update existing schedules that still have a matching time slot
+      for (let i = 0; i < Math.min(medScheds.length, editTimes.length); i++) {
+        if (medScheds[i].time.slice(0, 5) !== editTimes[i]) {
+          updateSched({ id: medScheds[i].id, updates: { time: editTimes[i] } })
+        }
+      }
+      // Create new schedules if frequency increased
+      for (let i = medScheds.length; i < editTimes.length; i++) {
+        await addSchedAsync({
+          medication_id: med.id,
+          time: editTimes[i],
+          days: [0, 1, 2, 3, 4, 5, 6],
+          food_context_minutes: 0,
+          active: true,
+        })
+      }
+      // Delete extra schedules if frequency decreased
+      for (let i = editTimes.length; i < medScheds.length; i++) {
+        deleteSched(medScheds[i].id)
+      }
+      toast('Medication updated', 'ts')
+    } catch {
+      toast('Failed to update some schedules', 'te')
+    }
+
+    // 3. Update supply/refill
+    if (refill && newSup !== med.supply) {
+      onUpdateSupply(refill.id, newSup)
+    }
+  }
+
+  const handleSaveSupply = () => {
+    if (!refill) return
+    const qty = Math.max(0, parseInt(supplyVal, 10) || 0)
+    onUpdateSupply(refill.id, qty)
+    setEditingSupply(false)
+  }
+
+  if (isEditing) {
+    return (
+      <Modal open onOpenChange={(o) => !o && setIsEditing(false)} title="Edit Medication" variant="responsive">
+        <form onSubmit={(e) => { e.preventDefault(); void handleSaveEdit() }}>
+          <FormField label="Name" id="edit-med-name">
+            <Input id="edit-med-name" value={editName} onChange={(e) => setEditName(e.target.value)} required />
+          </FormField>
+
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="Dosage" id="edit-med-dose">
+              <Input id="edit-med-dose" value={editDose} onChange={(e) => setEditDose(e.target.value)} placeholder="e.g. 500mg" />
+            </FormField>
+            <FormField label="Frequency" id="edit-med-freq">
+              <select
+                id="edit-med-freq"
+                value={editFreq}
+                onChange={(e) => handleEditFreqChange(e.target.value)}
+                className="fi w-full cursor-pointer"
+              >
+                <option value="1">Once daily</option>
+                <option value="2">Twice daily</option>
+                <option value="3">Three times daily</option>
+              </select>
+            </FormField>
+          </div>
+
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-[11px] font-semibold uppercase tracking-widest text-[var(--color-text-tertiary)]">Schedule & Supply</span>
+              <div className="flex-1 h-px bg-[var(--color-border-primary)]" />
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-5">
+              {editTimes.map((t, i) => (
+                <div key={i}>
+                  <label htmlFor={`edit-med-time-${i}`} className="block font-bold text-[var(--color-text-secondary)] mb-1.5 [font-size:var(--text-label)]">
+                    {editTimes.length > 1 ? `Time ${i + 1}` : 'Time'}
+                  </label>
+                  <Input type="time" id={`edit-med-time-${i}`} value={t} onChange={(e) => updateEditTimeAtIndex(i, e.target.value)} />
+                </div>
+              ))}
+              <div>
+                <label htmlFor="edit-med-sup" className="block font-bold text-[var(--color-text-secondary)] mb-1.5 [font-size:var(--text-label)]">
+                  Pills in Bottle
+                </label>
+                <Input type="number" id="edit-med-sup" value={editSup} onChange={(e) => setEditSup(e.target.value)} min={0} />
+              </div>
+            </div>
+          </div>
+
+          <FormField label="Instructions" id="edit-med-inst">
+            <textarea id="edit-med-inst" value={editInst} onChange={(e) => setEditInst(e.target.value)} rows={3} className="fi w-full resize-y min-h-[2.5rem]" placeholder="e.g. Take with food" />
+          </FormField>
+          <FormField label="Warnings" id="edit-med-warn">
+            <textarea id="edit-med-warn" value={editWarn} onChange={(e) => setEditWarn(e.target.value)} rows={3} className="fi w-full resize-y min-h-[2.5rem]" placeholder="e.g. May cause drowsiness" />
+          </FormField>
+
+          <div className="flex gap-3 mt-2">
+            <Button type="button" variant="ghost" size="md" className="flex-1" onClick={() => setIsEditing(false)}>Cancel</Button>
+            <Button type="submit" variant="primary" size="md" className="flex-1">Save Changes</Button>
+          </div>
+        </form>
+      </Modal>
+    )
+  }
+
+  return (
+    <>
+      <Modal open onOpenChange={(o) => !o && onClose()} title={med.name} variant="center" closeLabel="Close">
+        <div className="rounded-2xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)] p-6 sm:p-8 -mt-2 -mx-2 sm:-mx-4">
+          <div className="text-[var(--color-text-secondary)] [font-size:var(--text-body)] font-semibold mb-6">
+            {med.dose || 'No dosage specified'}
+          </div>
+
+          <div className="space-y-5 [font-size:var(--text-body)]">
+            <div className="flex items-start gap-3">
+              <span className="text-[var(--color-text-tertiary)] shrink-0 w-28">Schedule</span>
+              <span className="text-[var(--color-text-primary)]">
+                {med.times.length > 0 ? med.times.map((t) => fT(t)).join(', ') : 'No time set'}
+              </span>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-[var(--color-text-tertiary)] shrink-0 w-28">Frequency</span>
+              <span className="text-[var(--color-text-primary)]">{med.freq}x daily</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-[var(--color-text-tertiary)] shrink-0 w-28">Supply</span>
+              <div className="flex items-center gap-2">
+                {editingSupply ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      value={supplyVal}
+                      onChange={(e) => setSupplyVal(e.target.value)}
+                      min={0}
+                      className="w-20 !py-1 !px-2 [font-size:var(--text-body)]"
+                      autoFocus
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleSaveSupply(); if (e.key === 'Escape') setEditingSupply(false) }}
+                    />
+                    <button type="button" onClick={handleSaveSupply} className="text-[var(--color-accent)] font-bold [font-size:var(--text-caption)] cursor-pointer">Save</button>
+                    <button type="button" onClick={() => setEditingSupply(false)} className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] cursor-pointer">Cancel</button>
+                  </div>
+                ) : (
+                  <>
+                    <span className="text-[var(--color-text-primary)]">
+                      {med.supply} of {med.total} pills · {days} days left
+                      {days <= 5 && <span className="text-[var(--color-red)] font-bold"> — Refill soon</span>}
+                    </span>
+                    {refill && (
+                      <button
+                        type="button"
+                        onClick={() => { setSupplyVal(String(med.supply)); setEditingSupply(true) }}
+                        className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-tertiary)] hover:text-[var(--color-accent)] cursor-pointer transition-colors"
+                        aria-label="Update supply count"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+            {med.instructions && (
+              <div className="flex items-start gap-3">
+                <span className="text-[var(--color-text-tertiary)] shrink-0 w-28">Instructions</span>
+                <p className="text-[var(--color-text-primary)] leading-relaxed">{med.instructions}</p>
+              </div>
+            )}
+            {med.warnings && (
+              <div className="flex items-start gap-3">
+                <span className="text-[var(--color-text-tertiary)] shrink-0 w-28">Warnings</span>
+                <p className="text-[var(--color-red)] font-medium leading-relaxed">{med.warnings}</p>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-6 pt-5 border-t border-[var(--color-border-primary)]">
+            <div className="h-3 bg-[var(--color-ring-track)] rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-[width] duration-300"
+                style={{ width: `${p}%`, background: barColor }}
+              />
+            </div>
+            <div className="flex justify-between mt-2 [font-size:var(--text-caption)] text-[var(--color-text-secondary)] [font-family:var(--font-mono)]">
+              <span>Supply remaining</span>
+              <span>{Math.round(p)}%</span>
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="mt-5 pt-4 border-t border-[var(--color-border-primary)] flex gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setIsEditing(true)
+              }}
+              className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold text-[var(--color-accent)] bg-[var(--color-accent-bg)] border border-[var(--color-green-border)] cursor-pointer transition-all hover:brightness-105 active:scale-[0.97] [font-size:var(--text-body)]"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowDeleteConfirm(true)
+              }}
+              className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold text-[var(--color-red)] bg-[color-mix(in_srgb,var(--color-red)_8%,transparent)] border border-[color-mix(in_srgb,var(--color-red)_20%,transparent)] cursor-pointer transition-all hover:brightness-105 active:scale-[0.97] [font-size:var(--text-body)]"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+              Delete
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <ConfirmDeleteModal
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        itemName={med.name}
+        description="This will also remove its schedule and refill data."
+        onConfirm={() => onDelete(med.id)}
+        isPending={isDeleting}
+      />
+    </>
+  )
+}

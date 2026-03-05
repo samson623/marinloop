@@ -39,7 +39,11 @@ export function AddReminderModal({ open, onClose }: Props) {
       fireAt = new Date(Date.now() + selectedPreset * 60_000)
     } else {
       if (!customDatetime) return
-      fireAt = new Date(customDatetime) // datetime-local → local time → Date (UTC internally)
+      // Parse parts explicitly — new Date(string) without timezone is ambiguous on older iOS
+      const [dp, tp] = customDatetime.split('T')
+      const [yr, mo, dy] = dp.split('-').map(Number)
+      const [hr, mn] = tp.split(':').map(Number)
+      fireAt = new Date(yr, mo - 1, dy, hr, mn)
       if (isNaN(fireAt.getTime())) return
     }
 

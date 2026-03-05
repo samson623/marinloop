@@ -345,7 +345,7 @@ export function ProfileView() {
 
       {user?.id === ADMIN_USER_ID && (
         <Card className="p-4 mb-5 rounded-xl border-2 border-[var(--color-amber)]">
-          <div className="font-bold uppercase tracking-[0.08em] text-[var(--color-amber)] mb-3 [font-size:var(--text-label)]">
+          <div className="font-bold uppercase tracking-[0.08em] text-[var(--color-amber)] mb-3 [font-size:var(--text-label)] text-center">
             Admin &mdash; Beta Stats
           </div>
           <AdminBetaStats />

@@ -69,7 +69,7 @@ export function RemindersPanel() {
         open={showRemindersPanel}
         onOpenChange={(o) => !o && closeRemindersPanel()}
         title="Reminders"
-        variant="bottom"
+        variant="center"
       >
         <div className="pb-2">
           {/* Create button */}

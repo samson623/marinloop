@@ -51,6 +51,7 @@ self.addEventListener('push', (event) => {
 })
 
 // On notification click: focus existing app window and navigate to payload url, or open new window.
+// Uses postMessage for iOS Safari (client.navigate not supported) + navigate for Chrome/Android.
 self.addEventListener('notificationclick', (event) => {
     if (DEBUG) console.log('[marinloop SW] Notification clicked:', event.notification.tag)
     event.notification.close()
@@ -64,8 +65,14 @@ self.addEventListener('notificationclick', (event) => {
         self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
             const existing = clients.find((c) => c.url && c.url.startsWith(base))
             if (existing) {
+                // postMessage first — iOS Safari falls back to this since navigate() is unsupported
+                existing.postMessage({ type: 'SW_NAVIGATE', url })
                 existing.focus()
-                return existing.navigate(url)
+                // navigate() works on Chrome/Android; ignore if unsupported
+                if (typeof existing.navigate === 'function') {
+                    return existing.navigate(url)
+                }
+                return
             }
             return self.clients.openWindow(url)
         })

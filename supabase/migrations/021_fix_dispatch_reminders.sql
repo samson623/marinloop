@@ -1,33 +1,11 @@
 -- =============================================================================
--- marinloop Reminders
--- =============================================================================
--- Persistent user-created reminders. Cron fires push notifications at fire_at.
--- Mirrors the pattern from 008_cron_push_dispatcher.sql.
+-- Fix dispatch_due_reminders() — improved fallback notification content
+-- Also ensures snooze_reminder RPC and cron job are up to date.
+-- Safe to run against a DB where 019 was applied via SQL editor.
+-- All statements are CREATE OR REPLACE / idempotent.
 -- =============================================================================
 
--- Table
-CREATE TABLE public.reminders (
-  id         uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id    uuid        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  title      text        NOT NULL,
-  body       text        NOT NULL DEFAULT '',
-  fire_at    timestamptz NOT NULL,
-  fired      boolean     NOT NULL DEFAULT false,
-  fired_at   timestamptz,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-
--- RLS
-ALTER TABLE public.reminders ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "users_own_reminders" ON public.reminders
-  FOR ALL TO authenticated USING (user_id = auth.uid());
-
--- Fast index for cron polling
-CREATE INDEX reminders_pending_idx ON public.reminders(fire_at) WHERE fired = false;
-
--- =============================================================================
--- Snooze RPC — atomic: insert new reminder + delete original in one transaction
--- =============================================================================
+-- Updated snooze RPC (idempotent)
 CREATE OR REPLACE FUNCTION public.snooze_reminder(
   p_reminder_id    uuid,
   p_snooze_minutes int DEFAULT 10
@@ -63,10 +41,7 @@ BEGIN
 END;
 $$;
 
--- =============================================================================
--- Dispatch function — called by pg_cron every minute
--- Mirrors dispatch_due_notifications() from migration 008.
--- =============================================================================
+-- Updated dispatch function — improved fallback notification message
 CREATE OR REPLACE FUNCTION public.dispatch_due_reminders()
 RETURNS void
 LANGUAGE plpgsql
@@ -80,7 +55,7 @@ DECLARE
   now_utc          timestamptz := now();
   has_subs         boolean;
 BEGIN
-  -- Read vault secrets (same fallback pattern as dispatch_due_notifications)
+  -- Read vault secrets
   supabase_url     := current_setting('app.settings.supabase_url', true);
   service_role_key := current_setting('app.settings.service_role_key', true);
 
@@ -146,23 +121,23 @@ BEGIN
       rec.title, rec.user_id, has_subs;
   END LOOP;
 
-  -- 30-day cleanup of fired reminders (runs every minute, cheap due to index)
+  -- 30-day cleanup of fired reminders
   DELETE FROM public.reminders
     WHERE fired = true AND fired_at < now_utc - interval '30 days';
 END;
 $$;
 
--- =============================================================================
--- pg_cron job — idempotent (only schedules if not already present)
--- =============================================================================
+-- Ensure cron job is correctly scheduled (idempotent)
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'marinloop-dispatch-reminders') THEN
-    PERFORM cron.schedule(
-      'marinloop-dispatch-reminders',
-      '* * * * *',
-      $c$ SELECT public.dispatch_due_reminders(); $c$
-    );
+  IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'marinloop-dispatch-reminders') THEN
+    PERFORM cron.unschedule('marinloop-dispatch-reminders');
   END IF;
 END;
 $$;
+
+SELECT cron.schedule(
+  'marinloop-dispatch-reminders',
+  '* * * * *',
+  $c$ SELECT public.dispatch_due_reminders(); $c$
+);

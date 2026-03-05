@@ -17,6 +17,7 @@ export function useReminders() {
     mutationFn: (input: ReminderCreateInput) => RemindersService.create(input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['reminders'] })
+      toast('Reminder set', 'ts')
     },
     onError: (err: unknown) => handleMutationError(err, 'useReminders', 'Failed to create reminder', toast),
   })
@@ -55,9 +56,12 @@ export function useReminders() {
     isLoading,
     error,
     addReminder: createMutation.mutate,
+    addReminderAsync: createMutation.mutateAsync,
     updateReminder: updateMutation.mutate,
+    updateReminderAsync: updateMutation.mutateAsync,
     deleteReminder: deleteMutation.mutate,
     snoozeReminder: snoozeMutation.mutate,
+    snoozeReminderAsync: snoozeMutation.mutateAsync,
     isAdding: createMutation.isPending,
   }
 }

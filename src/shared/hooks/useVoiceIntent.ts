@@ -31,7 +31,7 @@ export type NotificationsServiceLike = {
 export type UseVoiceIntentOptions = {
   logDose: (input: DoseLogCreateInput) => void
   addNoteReal: (payload: { content: string; medication_id: string | null }) => void
-  createReminder?: (payload: { userId: string; title: string; body: string; fireAt: Date }) => void
+  createReminder?: (payload: { userId: string; title: string; body: string; fireAt: Date }) => Promise<string | null>
   voiceIntentService?: VoiceIntentServiceLike
   notificationsService?: NotificationsServiceLike
 }
@@ -144,7 +144,7 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
     return pendingMeds.find((item) => item.isNext) ?? pendingMeds[0]
   }
 
-  const scheduleReminder = (intent: VoiceIntentResult) => {
+  const scheduleReminder = async (intent: VoiceIntentResult) => {
     const draft = intent.entities.reminder
     const inMinutes = draft?.in_minutes
     if (!inMinutes || inMinutes <= 0) {
@@ -152,14 +152,26 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
       return
     }
     const title = draft?.title || 'Medication reminder'
-    const body = draft?.message || ''
     const fireAt = new Date(Date.now() + inMinutes * 60 * 1000)
+    const timeStr = fireAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })
+    // Build a descriptive body: use the original transcript if available, otherwise describe the time
+    const body = draft?.message || `Reminder: ${title} at ${timeStr}`
 
     if (createReminder && session?.user?.id) {
-      createReminder({ userId: session.user.id, title, body, fireAt })
+      const reminderId = await createReminder({ userId: session.user.id, title, body, fireAt })
+      // Send an immediate push notification to confirm the reminder was set
+      if (session.user.id && reminderId) {
+        try {
+          await notificationsService.sendPush(session.user.id, {
+            title: `Reminder set: ${title}`,
+            body: `Will fire at ${timeStr}`,
+            url: '/timeline?reminders=open',
+            tag: `reminder-confirm-${reminderId}`,
+          })
+        } catch { /* push may not be subscribed — that's OK */ }
+      }
     }
 
-    const timeStr = fireAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })
     useAppStore.getState().toast(`Reminder set for ${timeStr}`, 'ts')
   }
 
@@ -273,15 +285,25 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
         })
         return
       }
-      case 'create_reminder':
+      case 'create_reminder': {
+        const reminderDraft = intent.entities.reminder
+        const reminderMinutes = reminderDraft?.in_minutes
+        if (!reminderMinutes || reminderMinutes <= 0) {
+          store.toast('How many minutes? Say "remind me in 10 minutes".', 'tw')
+          return
+        }
+        const reminderTitle = reminderDraft?.title || 'Reminder'
+        const reminderFireAt = new Date(Date.now() + reminderMinutes * 60 * 1000)
+        const reminderTimeStr = reminderFireAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })
         setVoiceConfirmation({
-          message: 'Create this reminder?',
+          message: `"${reminderTitle}" at ${reminderTimeStr}?`,
           onConfirm: () => {
             scheduleReminder(intent)
             setVoiceConfirmation(null)
           },
         })
         return
+      }
       case 'add_note': {
         const noteText = intent.entities.note?.text?.trim()
         if (!noteText) {

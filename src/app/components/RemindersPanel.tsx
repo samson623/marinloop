@@ -23,13 +23,25 @@ function formatFiredAt(firedAt: string): string {
 }
 
 export function RemindersPanel() {
-  const { showRemindersPanel, closeRemindersPanel } = useAppStore()
+  const { showRemindersPanel, closeRemindersPanel, autoEditReminderId } = useAppStore()
   const { reminders, isLoading } = useReminders()
   const [showAddModal, setShowAddModal] = useState(false)
   const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null)
+  const [autoEditConsumed, setAutoEditConsumed] = useState<string | null>(null)
   const [showRecent, setShowRecent] = useState(false)
   const [tick, setTick] = useState(0)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Auto-open the detail modal for a newly created reminder (for editing)
+  useEffect(() => {
+    if (autoEditReminderId && autoEditReminderId !== autoEditConsumed && reminders.length > 0) {
+      const target = reminders.find((r) => r.id === autoEditReminderId)
+      if (target) {
+        setSelectedReminder(target)
+        setAutoEditConsumed(autoEditReminderId)
+      }
+    }
+  }, [autoEditReminderId, autoEditConsumed, reminders])
 
   const now = Date.now()
   const upcoming = reminders.filter((r) => !r.fired && new Date(r.fire_at).getTime() > now)
@@ -159,6 +171,7 @@ export function RemindersPanel() {
         <ReminderDetailModal
           reminder={selectedReminder}
           onClose={() => setSelectedReminder(null)}
+          startEditing={!selectedReminder.fired && autoEditReminderId === selectedReminder.id}
         />
       )}
     </>

@@ -36,6 +36,10 @@ For open_add_med: entities.medication = { name?, dosage?, freq?, time?, instruct
   - entry_method: "scan" | "photo" | "manual"
   - Extract medication name, dosage (e.g. "500mg"), frequency (1/2/3), time (HH:mm) from speech
 For open_add_appt: entities.appointment = { title?, date? (YYYY-MM-DD), time?, location?, notes? }
+For create_reminder: entities.reminder = { title?, message?, in_minutes? }
+  - title: short human label (e.g. "Take Metformin", "Call pharmacy"). Default "Reminder" if not specified.
+  - in_minutes: integer minutes from now. Convert ALL word numbers ("five"→5, "ten"→10, "thirty"→30, "one hour"→60, "two hours"→120, "an hour"→60, "half an hour"→30, "fifteen minutes"→15). Required.
+  - message: optional extra user-provided detail only; leave empty if the user did not provide one
 For add_note: entities.note = { text, medication_name? }
 For query: entities.query = { question: the user's exact question }
 For navigate: entities.navigate = { target: "timeline"|"meds"|"appts"|"summary" }
@@ -91,6 +95,43 @@ export function coerceResult(raw: unknown): VoiceIntentResult {
   }
 }
 
+const WORD_NUMBERS: Record<string, number> = {
+  zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7,
+  eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14,
+  fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20,
+  thirty: 30, forty: 40, fifty: 50, sixty: 60, ninety: 90,
+}
+
+/** Parse "in X minutes/hours" from a lowercased reminder transcript, returns total minutes or null. */
+function parseReminderMinutes(lowered: string): number | null {
+  // "half an hour" → 30
+  if (/half\s+an?\s+hour/.test(lowered)) return 30
+  // "an hour" → 60
+  if (/\ban\s+hour\b/.test(lowered)) return 60
+
+  // Digit form: "in 5 minutes", "in 2 hours"
+  const digitMin = lowered.match(/\bin\s+(\d+)\s*(?:minute|minutes|min|mins)\b/)
+  if (digitMin) return Number.parseInt(digitMin[1], 10)
+  const digitHr = lowered.match(/\bin\s+(\d+)\s*(?:hour|hours|hr|hrs)\b/)
+  if (digitHr) return Number.parseInt(digitHr[1], 10) * 60
+
+  // Word form: "in five minutes", "in two hours"
+  const wordPattern = /\bin\s+([\w\s-]+?)\s*(?:minute|minutes|min|mins|hour|hours|hr|hrs)\b/
+  const wordMatch = lowered.match(wordPattern)
+  if (wordMatch) {
+    const phrase = wordMatch[1].trim()
+    const isHours = /\b(hour|hours|hr|hrs)\b/.test(lowered.slice(lowered.indexOf(phrase)))
+    const num = WORD_NUMBERS[phrase] ?? null
+    if (num != null) return isHours ? num * 60 : num
+  }
+
+  return null
+}
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
 function extractJsonObject(text: string): string | null {
   const first = text.indexOf('{')
   const last = text.lastIndexOf('}')
@@ -139,19 +180,24 @@ export function heuristicParse(text: string): VoiceIntentResult {
   }
 
   if (lowered.includes('remind')) {
-    const minutesMatch = lowered.match(/\bin\s+(\d+)\s*(minute|minutes|min)\b/)
-    const inMinutes = minutesMatch ? Number.parseInt(minutesMatch[1], 10) : undefined
+    const inMinutes = parseReminderMinutes(lowered)
+    // Extract a meaningful title: "remind me to TAKE MY MEDS in 5 minutes" → "Take my meds"
+    const titleMatch = lowered.match(/remind\s+(?:me\s+)?(?:to\s+)(.+?)(?:\s+in\s+\d|\s+in\s+\w+\s+(?:minute|hour)|\s+after\s+|$)/i)
+    const rawTitle = titleMatch?.[1]?.trim()
+    // Reject titles that are just time references (e.g. "in 5 minutes") or too short
+    const isTimeRef = rawTitle ? /^(?:in\s+)?\d+\s*(?:min|minute|hour|hr)/i.test(rawTitle) : true
+    const title = rawTitle && rawTitle.length > 2 && rawTitle.length < 60 && !isTimeRef ? capitalize(rawTitle) : 'Reminder'
     return {
       intent: 'create_reminder',
       entities: {
         reminder: {
-          title: 'Medication reminder',
+          title,
           message: text,
-          in_minutes: Number.isFinite(inMinutes) ? inMinutes : undefined,
+          in_minutes: inMinutes ?? undefined,
         },
       },
       confidence: 0.7,
-      missing: inMinutes ? [] : ['reminder.time'],
+      missing: inMinutes != null ? [] : ['reminder.time'],
       requires_confirmation: true,
     }
   }

@@ -3,6 +3,8 @@ import { Modal } from '@/shared/components/Modal'
 import { Button, Input } from '@/shared/components/ui'
 import { useReminders } from '@/shared/hooks/useReminders'
 import { useAuthStore } from '@/shared/stores/auth-store'
+import { useAppStore } from '@/shared/stores/app-store'
+import { NotificationsService } from '@/shared/services/notifications'
 
 const QUICK_PRESETS = [
   { label: '15 min', minutes: 15 },
@@ -19,7 +21,8 @@ type Props = {
 
 export function AddReminderModal({ open, onClose }: Props) {
   const { session } = useAuthStore()
-  const { addReminder, isAdding } = useReminders()
+  const { addReminderAsync, isAdding } = useReminders()
+  const { openRemindersPanel } = useAppStore()
 
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
@@ -27,7 +30,7 @@ export function AddReminderModal({ open, onClose }: Props) {
   const [selectedPreset, setSelectedPreset] = useState<number | null>(60)
   const [customDatetime, setCustomDatetime] = useState('')
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!title.trim() || !session?.user?.id) return
 
     let fireAt: Date
@@ -40,13 +43,28 @@ export function AddReminderModal({ open, onClose }: Props) {
       if (isNaN(fireAt.getTime())) return
     }
 
-    addReminder({
-      user_id: session.user.id,
-      title: title.trim(),
-      body: body.trim(),
-      fire_at: fireAt.toISOString(),
-    })
-    onClose()
+    const timeStr = fireAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })
+
+    try {
+      const reminder = await addReminderAsync({
+        user_id: session.user.id,
+        title: title.trim(),
+        body: body.trim() || `Reminder: ${title.trim()} at ${timeStr}`,
+        fire_at: fireAt.toISOString(),
+      })
+      onClose()
+      // Open the reminders panel with the new reminder selected for editing
+      openRemindersPanel(reminder.id)
+      // Send an immediate push notification to confirm the reminder was set
+      try {
+        await NotificationsService.sendPush(session.user.id, {
+          title: `Reminder set: ${title.trim()}`,
+          body: `Will fire at ${timeStr}`,
+          url: '/timeline?reminders=open',
+          tag: `reminder-confirm-${reminder.id}`,
+        })
+      } catch { /* push may not be subscribed */ }
+    } catch { /* creation error handled by mutation hook */ }
   }
 
   const canSubmit = title.trim().length > 0 && (

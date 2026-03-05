@@ -3,10 +3,13 @@ import { Modal } from '@/shared/components/Modal'
 import { Button, Input } from '@/shared/components/ui'
 import { useReminders } from '@/shared/hooks/useReminders'
 import type { Reminder } from '@/shared/services/reminders'
+import { useAuthStore } from '@/shared/stores/auth-store'
+import { NotificationsService } from '@/shared/services/notifications'
 
 type Props = {
   reminder: Reminder
   onClose: () => void
+  startEditing?: boolean
 }
 
 function formatFireAt(fireAt: string): string {
@@ -29,9 +32,11 @@ function toDatetimeLocal(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-export function ReminderDetailModal({ reminder, onClose }: Props) {
-  const { updateReminder, deleteReminder, snoozeReminder } = useReminders()
-  const [editing, setEditing] = useState(false)
+export function ReminderDetailModal({ reminder, onClose, startEditing = false }: Props) {
+  const { updateReminderAsync, deleteReminder, snoozeReminderAsync } = useReminders()
+  const { session } = useAuthStore()
+  const [editing, setEditing] = useState(startEditing)
+  const [saving, setSaving] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [editTitle, setEditTitle] = useState(reminder.title)
   const [editBody, setEditBody] = useState(reminder.body)
@@ -39,13 +44,27 @@ export function ReminderDetailModal({ reminder, onClose }: Props) {
 
   const isFired = reminder.fired
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const fireAt = new Date(editDatetime)
     if (!editTitle.trim() || isNaN(fireAt.getTime())) return
-    updateReminder({
-      id: reminder.id,
-      updates: { title: editTitle.trim(), body: editBody.trim(), fire_at: fireAt.toISOString() },
-    })
+    setSaving(true)
+    const timeStr = fireAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })
+    try {
+      await updateReminderAsync({
+        id: reminder.id,
+        updates: { title: editTitle.trim(), body: editBody.trim(), fire_at: fireAt.toISOString() },
+      })
+      if (session?.user?.id) {
+        try {
+          await NotificationsService.sendPush(session.user.id, {
+            title: `Reminder updated: ${editTitle.trim()}`,
+            body: `Now scheduled for ${timeStr}`,
+            url: '/timeline?reminders=open',
+            tag: `reminder-confirm-${reminder.id}`,
+          })
+        } catch { /* push may not be subscribed */ }
+      }
+    } catch { /* handled by mutation hook */ } finally { setSaving(false) }
     setEditing(false)
     onClose()
   }
@@ -55,8 +74,22 @@ export function ReminderDetailModal({ reminder, onClose }: Props) {
     onClose()
   }
 
-  const handleSnooze = () => {
-    snoozeReminder({ id: reminder.id, minutes: 10 })
+  const handleSnooze = async () => {
+    try {
+      await snoozeReminderAsync({ id: reminder.id, minutes: 10 })
+      if (session?.user?.id) {
+        try {
+          const snoozeAt = new Date(Date.now() + 10 * 60_000)
+          const timeStr = snoozeAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })
+          await NotificationsService.sendPush(session.user.id, {
+            title: `Snoozed: ${reminder.title}`,
+            body: `Will fire again at ${timeStr}`,
+            url: '/timeline?reminders=open',
+            tag: `reminder-confirm-${reminder.id}`,
+          })
+        } catch { /* push may not be subscribed */ }
+      }
+    } catch { /* handled by mutation hook */ }
     onClose()
   }
 
@@ -126,8 +159,8 @@ export function ReminderDetailModal({ reminder, onClose }: Props) {
             />
           </div>
           <div className="flex gap-2">
-            <Button type="button" variant="primary" size="md" className="flex-1 py-2.5" onClick={handleSave} disabled={!editTitle.trim()}>
-              Save
+            <Button type="button" variant="primary" size="md" className="flex-1 py-2.5" onClick={handleSave} disabled={!editTitle.trim() || saving}>
+              {saving ? 'Saving...' : 'Save'}
             </Button>
             <Button type="button" variant="secondary" size="md" className="flex-1 py-2.5" onClick={() => setEditing(false)}>
               Cancel

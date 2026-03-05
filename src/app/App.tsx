@@ -121,8 +121,8 @@ function AppShell() {
   const { resolvedTheme, toggleTheme } = useThemeStore()
   const { logDose } = useDoseLogs()
   const { addNote: addNoteReal } = useNotes()
-  const { addReminder, reminders } = useReminders()
-  const { showRemindersPanel, openRemindersPanel, closeRemindersPanel } = useAppStore()
+  const { addReminderAsync, reminders } = useReminders()
+  const { showRemindersPanel, openRemindersPanel } = useAppStore()
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -130,11 +130,19 @@ function AppShell() {
   const notifTriggerRef = useRef<HTMLButtonElement>(null)
 
   // Build a stable createReminder function to inject into useVoiceIntent
+  // Returns the new reminder ID (or null on failure) and opens the edit panel
   const createReminder = useCallback(
-    ({ userId, title, body, fireAt }: { userId: string; title: string; body: string; fireAt: Date }) => {
-      addReminder({ user_id: userId, title, body, fire_at: fireAt.toISOString() })
+    async ({ userId, title, body, fireAt }: { userId: string; title: string; body: string; fireAt: Date }): Promise<string | null> => {
+      try {
+        const reminder = await addReminderAsync({ user_id: userId, title, body, fire_at: fireAt.toISOString() })
+        // Open the reminders panel with auto-edit for the newly created reminder
+        openRemindersPanel(reminder.id)
+        return reminder.id
+      } catch {
+        return null
+      }
     },
-    [addReminder]
+    [addReminderAsync, openRemindersPanel]
   )
 
   const voice = useVoiceIntent({ logDose, addNoteReal, createReminder })
@@ -158,6 +166,24 @@ function AppShell() {
       setSearchParams((prev) => { prev.delete('reminders'); return prev }, { replace: true })
     }
   }, [searchParams, openRemindersPanel, setSearchParams])
+
+  // iOS Safari: client.navigate() is unsupported in SW, so the SW sends a postMessage instead.
+  // Listen for SW_NAVIGATE and handle it via React Router so ?reminders=open triggers the effect above.
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === 'SW_NAVIGATE' && typeof event.data.url === 'string') {
+        try {
+          const u = new URL(event.data.url)
+          if (u.origin === window.location.origin) {
+            navigate(u.pathname + u.search, { replace: true })
+          }
+        } catch { /* ignore malformed urls */ }
+      }
+    }
+    navigator.serviceWorker.addEventListener('message', handler)
+    return () => navigator.serviceWorker.removeEventListener('message', handler)
+  }, [navigate])
 
   useEffect(() => {
     // Only clean up the hash if it's just an empty '#' (cosmetic)
@@ -214,7 +240,7 @@ function AppShell() {
           <IconButton
             size="md"
             aria-label="Open reminders"
-            onClick={openRemindersPanel}
+            onClick={() => openRemindersPanel()}
             className="relative"
           >
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>

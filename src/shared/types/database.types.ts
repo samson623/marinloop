@@ -242,6 +242,36 @@ export interface Database {
         }
         Relationships: []
       }
+      reminders: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          body: string
+          fire_at: string
+          fired: boolean
+          fired_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          body?: string
+          fire_at: string
+          fired?: boolean
+          fired_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          title?: string
+          body?: string
+          fire_at?: string
+          fired?: boolean
+          fired_at?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           id: string
@@ -344,6 +374,13 @@ export interface Database {
           refill_total_quantity: number
           refill_date: string | null
           refill_pharmacy: string | null
+        }
+        Returns: string
+      }
+      snooze_reminder: {
+        Args: {
+          p_reminder_id: string
+          p_snooze_minutes?: number
         }
         Returns: string
       }

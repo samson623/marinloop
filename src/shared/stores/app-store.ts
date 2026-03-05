@@ -92,6 +92,7 @@ interface AppState {
     showAddApptModal: boolean
     showQuickCaptureModal: boolean
     showRemindersPanel: boolean
+    autoEditReminderId: string | null
     draftMed: MedDraft | null
     draftAppt: ApptDraft | null
     addMedModalOptions: AddMedModalOptions | null
@@ -99,7 +100,7 @@ interface AppState {
     // actions
     login: () => void
     logout: () => void
-    openRemindersPanel: () => void
+    openRemindersPanel: (autoEditReminderId?: string) => void
     closeRemindersPanel: () => void
     buildSched: () => void
     markDone: (id: string) => void
@@ -130,6 +131,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     showAddApptModal: false,
     showQuickCaptureModal: false,
     showRemindersPanel: false,
+    autoEditReminderId: null,
     draftMed: null,
     draftAppt: null,
     addMedModalOptions: null,
@@ -154,13 +156,14 @@ export const useAppStore = create<AppState>((set, get) => ({
         showAddApptModal: false,
         showQuickCaptureModal: false,
         showRemindersPanel: false,
+        autoEditReminderId: null,
         draftMed: null,
         draftAppt: null,
         addMedModalOptions: null,
         assistantState: { pendingIntent: null, missing: [], prompt: null },
     }),
-    openRemindersPanel: () => set({ showRemindersPanel: true }),
-    closeRemindersPanel: () => set({ showRemindersPanel: false }),
+    openRemindersPanel: (autoEditReminderId?: string) => set({ showRemindersPanel: true, autoEditReminderId: autoEditReminderId ?? null }),
+    closeRemindersPanel: () => set({ showRemindersPanel: false, autoEditReminderId: null }),
     setVoice: (v) => set({ voice: v }),
     openAddMedModal: (draft = null, options = null) => set({ showAddMedModal: true, draftMed: draft, addMedModalOptions: options }),
     closeAddMedModal: () => set({ showAddMedModal: false, draftMed: null, addMedModalOptions: null }),

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Modal } from '@/shared/components/Modal'
 import { useAppStore } from '@/shared/stores/app-store'
 import { useReminders } from '@/shared/hooks/useReminders'
+import { usePushNotifications } from '@/shared/hooks/usePushNotifications'
 import type { Reminder } from '@/shared/services/reminders'
 import { AddReminderModal } from '@/app/components/AddReminderModal'
 import { ReminderDetailModal } from '@/app/components/ReminderDetailModal'
@@ -25,6 +26,7 @@ function formatFiredAt(firedAt: string): string {
 export function RemindersPanel() {
   const { showRemindersPanel, closeRemindersPanel, autoEditReminderId } = useAppStore()
   const { reminders, isLoading } = useReminders()
+  const { isSupported, isSubscribed, subscribe, isLoading: isPushLoading } = usePushNotifications()
   const [showAddModal, setShowAddModal] = useState(false)
   const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null)
   const [autoEditConsumed, setAutoEditConsumed] = useState<string | null>(null)
@@ -84,6 +86,23 @@ export function RemindersPanel() {
             </svg>
             New Reminder
           </button>
+
+          {/* Push subscription warning */}
+          {isSupported && !isSubscribed && (
+            <div className="flex items-center justify-between gap-3 mb-4 px-3 py-2.5 rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)]">
+              <p className="text-[12px] text-[var(--color-text-secondary)] leading-snug">
+                Push off — you may miss reminders when the app is closed.
+              </p>
+              <button
+                type="button"
+                onClick={subscribe}
+                disabled={isPushLoading}
+                className="shrink-0 text-[12px] font-semibold text-[var(--color-accent)] bg-transparent border-none cursor-pointer p-0 disabled:opacity-50"
+              >
+                Enable
+              </button>
+            </div>
+          )}
 
           {isLoading && (
             <p className="text-[var(--color-text-secondary)] text-[13px] py-2">Loading...</p>

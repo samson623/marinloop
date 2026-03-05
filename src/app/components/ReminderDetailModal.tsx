@@ -45,7 +45,11 @@ export function ReminderDetailModal({ reminder, onClose, startEditing = false }:
   const isFired = reminder.fired
 
   const handleSave = async () => {
-    const fireAt = new Date(editDatetime)
+    // Parse parts explicitly — new Date(string) without timezone is ambiguous on older iOS
+    const [dp, tp] = editDatetime.split('T')
+    const [yr, mo, dy] = dp.split('-').map(Number)
+    const [hr, mn] = tp.split(':').map(Number)
+    const fireAt = new Date(yr, mo - 1, dy, hr, mn)
     if (!editTitle.trim() || isNaN(fireAt.getTime())) return
     setSaving(true)
     const timeStr = fireAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })

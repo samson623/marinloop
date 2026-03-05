@@ -36,10 +36,10 @@ import { RemindersPanel } from '@/app/components/RemindersPanel'
 
 type NotificationItem = {
   id: string
-  icon: string
+  type: string
   msg: string
   sub: string
-  time: string
+  rawDate: Date
   read?: boolean
 }
 
@@ -463,46 +463,127 @@ function Toasts({ toasts }: { toasts: { id: string; msg: string; cls: string }[]
   )
 }
 
+function notifDayLabel(date: Date): string {
+  const today = new Date()
+  const yesterday = new Date(today)
+  yesterday.setDate(today.getDate() - 1)
+  const sameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+  if (sameDay(date, today)) return 'Today'
+  if (sameDay(date, yesterday)) return 'Yesterday'
+  return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+}
+
 function NotificationsPanel({ onClose, triggerRef }: { onClose: () => void; triggerRef?: React.RefObject<HTMLButtonElement | null> }) {
   const { notifications, isLoading, markRead } = useNotifications()
 
   const notifs: NotificationItem[] = notifications.map((n) => ({
     id: n.id,
-    icon: n.type === 'warning' ? '?' : n.type === 'success' ? '?' : n.type === 'error' ? '!' : '?',
+    type: n.type,
     msg: n.title,
     sub: n.message,
-    time: new Date(n.created_at).toLocaleString(),
+    rawDate: new Date(n.created_at),
     read: n.read,
   }))
 
+  // Group by day label, preserving insertion order
+  const groups: { label: string; items: NotificationItem[] }[] = []
+  const seen = new Map<string, number>()
+  for (const n of notifs) {
+    const label = notifDayLabel(n.rawDate)
+    if (!seen.has(label)) {
+      seen.set(label, groups.length)
+      groups.push({ label, items: [] })
+    }
+    groups[seen.get(label)!].items.push(n)
+  }
+
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
+    const s = new Set<string>()
+    groups.forEach((g) => { if (g.label !== 'Today') s.add(g.label) })
+    return s
+  })
+
+  const toggle = (label: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev)
+      next.has(label) ? next.delete(label) : next.add(label)
+      return next
+    })
+
   return (
     <Modal open onOpenChange={(o) => !o && onClose()} title="Notifications" variant="center" triggerRef={triggerRef}>
-      <div className="py-2.5">
+      <div className="py-1">
         {isLoading && (
-          <div className="text-[var(--color-text-secondary)] py-2 [font-size:var(--text-body)]">Loading notifications...</div>
+          <div className="text-[var(--color-text-secondary)] py-2 [font-size:var(--text-body)]">Loading...</div>
         )}
         {!isLoading && notifs.length === 0 && (
           <div className="text-[var(--color-text-secondary)] py-2 [font-size:var(--text-body)]">No notifications</div>
         )}
-        {notifs.map((n) => (
-          <button
-            key={n.id}
-            type="button"
-            onClick={() => {
-              if (!n.read) markRead(n.id)
-            }}
-            className={`w-full bg-transparent border-none text-left flex gap-3 min-h-[56px] py-4 border-b border-[var(--color-border-secondary)] cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${n.read ? 'opacity-60' : ''}`}
-          >
-            <span className="text-xl w-9 text-center shrink-0">{n.icon}</span>
-            <div className="flex-1 min-w-0">
-              <div className="font-semibold text-[var(--color-text-primary)] [font-size:var(--text-body)]">{n.msg}</div>
-              <div className="text-[var(--color-text-secondary)] [font-size:var(--text-label)]">{n.sub}</div>
+        {groups.map((group) => {
+          const isCollapsed = collapsed.has(group.label)
+          const unread = group.items.filter((i) => !i.read).length
+          return (
+            <div key={group.label} className="mb-1">
+              {/* Day header */}
+              <button
+                type="button"
+                onClick={() => toggle(group.label)}
+                className="w-full flex items-center justify-between gap-2 py-2 bg-transparent border-none cursor-pointer text-left outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">{group.label}</span>
+                  {unread > 0 && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--color-accent)] text-[var(--color-text-inverse)]">{unread}</span>
+                  )}
+                </div>
+                <svg
+                  width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  className={`text-[var(--color-text-tertiary)] transition-transform ${isCollapsed ? '' : 'rotate-180'}`}
+                  aria-hidden
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+              {/* Items */}
+              {!isCollapsed && (
+                <ul className="flex flex-col">
+                  {group.items.map((n) => (
+                    <li key={n.id}>
+                      <button
+                        type="button"
+                        onClick={() => { if (!n.read) markRead(n.id) }}
+                        className={`w-full bg-transparent border-none text-left flex gap-3 py-3 border-b border-[var(--color-border-secondary)] cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${n.read ? 'opacity-50' : ''}`}
+                      >
+                        <div className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center mt-0.5"
+                          style={{ background: n.type === 'error' ? 'color-mix(in srgb, var(--color-red) 15%, transparent)' : n.type === 'warning' ? 'color-mix(in srgb, orange 15%, transparent)' : n.type === 'success' ? 'color-mix(in srgb, var(--color-accent) 15%, transparent)' : 'color-mix(in srgb, var(--color-text-tertiary) 12%, transparent)' }}
+                        >
+                          {n.type === 'error' ? (
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--color-red)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                          ) : n.type === 'warning' ? (
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="orange" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                          ) : n.type === 'success' ? (
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="20 6 9 17 4 12"/></svg>
+                          ) : (
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-[var(--color-text-primary)] text-[13px] leading-snug">{n.msg}</div>
+                          {n.sub && <div className="text-[var(--color-text-secondary)] text-[12px] mt-0.5 leading-snug">{n.sub}</div>}
+                        </div>
+                        <span className="text-[var(--color-text-tertiary)] whitespace-nowrap shrink-0 text-[11px] mt-0.5">
+                          {n.rawDate.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-            <span className="text-[var(--color-text-tertiary)] whitespace-nowrap shrink-0 [font-family:var(--font-mono)] [font-size:var(--text-caption)]">
-              {n.time}
-            </span>
-          </button>
-        ))}
+          )
+        })}
       </div>
     </Modal>
   )

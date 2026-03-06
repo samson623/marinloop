@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAppStore, fT } from '@/shared/stores/app-store'
 import { Modal } from '@/shared/components/Modal'
 import { ConfirmDeleteModal } from '@/shared/components/ConfirmDeleteModal'
@@ -8,6 +8,9 @@ import { generateEvenlySpacedTimes } from '@/shared/lib/scheduling'
 import { getSupplyInfo } from '@/shared/lib/medication-utils'
 import { useInteractions } from '@/shared/hooks/useInteractions'
 import { getTimingPatterns } from '@/shared/services/schedule-analysis'
+import { SymptomsService } from '@/shared/services/symptoms'
+import type { Symptom } from '@/shared/services/symptoms'
+import { SymptomModal } from '@/app/components/SymptomModal'
 
 type DisplayMed = {
   id: string
@@ -53,6 +56,8 @@ export default function MedDetailModal({ med, isDeleting, onClose, onUpdate, onD
   const { toast } = useAppStore()
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showSymptomModal, setShowSymptomModal] = useState(false)
+  const queryClient = useQueryClient()
   const [editingSupply, setEditingSupply] = useState(false)
   const [supplyVal, setSupplyVal] = useState(String(med.supply))
 
@@ -81,6 +86,13 @@ export default function MedDetailModal({ med, isDeleting, onClose, onUpdate, onD
     queryKey: ['timing-patterns', med.id],
     queryFn: () => getTimingPatterns(med.id),
     staleTime: 30 * 60 * 1000,
+  })
+
+  // Side effects logged for this medication
+  const { data: medSymptoms = [] } = useQuery({
+    queryKey: ['symptoms', 'by-med', med.id],
+    queryFn: () => SymptomsService.getByMedication(med.id),
+    staleTime: 1000 * 60 * 5,
   })
 
   // Allergy check — find allergens that appear in the med's warnings
@@ -375,6 +387,42 @@ export default function MedDetailModal({ med, isDeleting, onClose, onUpdate, onD
             )}
           </div>
 
+          {/* Side Effects */}
+          <div className="mt-5 pt-4 border-t border-[var(--color-border-primary)]">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[var(--color-text-secondary)] [font-size:var(--text-label)] font-semibold">Side Effects</span>
+              <button
+                type="button"
+                onClick={() => setShowSymptomModal(true)}
+                className="text-[var(--color-accent)] [font-size:var(--text-caption)] font-semibold cursor-pointer hover:underline bg-transparent border-none p-0"
+              >
+                + Log
+              </button>
+            </div>
+            {medSymptoms.length === 0 ? (
+              <p className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] italic">No side effects logged for this medication.</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {medSymptoms.slice(0, 5).map((s: Symptom) => {
+                  const severityColor = s.severity <= 3 ? 'var(--color-green)' : s.severity <= 6 ? '#f59e0b' : 'var(--color-red)'
+                  return (
+                    <div key={s.id} className="flex items-center justify-between gap-3 py-2 border-b border-[var(--color-border-secondary)] last:border-0">
+                      <div className="flex-1 min-w-0">
+                        <span className="font-semibold text-[var(--color-text-primary)] [font-size:var(--text-body)]">{s.name}</span>
+                        {s.resolved_at ? (
+                          <span className="ml-2 text-[var(--color-green)] [font-size:var(--text-caption)] font-medium">· Resolved</span>
+                        ) : (
+                          <span className="ml-2 text-[var(--color-text-tertiary)] [font-size:var(--text-caption)]">· Ongoing</span>
+                        )}
+                      </div>
+                      <span className="shrink-0 text-sm font-bold" style={{ color: severityColor }}>{s.severity}/10</span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
           {/* Supply bar */}
           <div className="mt-6 pt-5 border-t border-[var(--color-border-primary)]">
             <div className="h-3 bg-[var(--color-ring-track)] rounded-full overflow-hidden">
@@ -418,6 +466,20 @@ export default function MedDetailModal({ med, isDeleting, onClose, onUpdate, onD
           </div>
         </div>
       </Modal>
+
+      <SymptomModal
+        open={showSymptomModal}
+        onOpenChange={setShowSymptomModal}
+        medicationId={med.id}
+        medicationName={med.name}
+        onSubmit={async (data) => {
+          await SymptomsService.create(data)
+          void queryClient.invalidateQueries({ queryKey: ['symptoms', 'by-med', med.id] })
+          void queryClient.invalidateQueries({ queryKey: ['symptoms'] })
+          toast('Side effect logged', 'ts')
+          setShowSymptomModal(false)
+        }}
+      />
 
       <ConfirmDeleteModal
         open={showDeleteConfirm}

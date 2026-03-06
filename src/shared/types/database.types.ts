@@ -435,6 +435,123 @@ export interface Database {
         }
         Relationships: []
       }
+      vitals: {
+        Row: {
+          id: string
+          user_id: string
+          recorded_at: string
+          bp_systolic: number | null
+          bp_diastolic: number | null
+          heart_rate: number | null
+          glucose: number | null
+          weight: number | null
+          temperature: number | null
+          o2_saturation: number | null
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string
+          recorded_at?: string
+          bp_systolic?: number | null
+          bp_diastolic?: number | null
+          heart_rate?: number | null
+          glucose?: number | null
+          weight?: number | null
+          temperature?: number | null
+          o2_saturation?: number | null
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          recorded_at?: string
+          bp_systolic?: number | null
+          bp_diastolic?: number | null
+          heart_rate?: number | null
+          glucose?: number | null
+          weight?: number | null
+          temperature?: number | null
+          o2_saturation?: number | null
+          notes?: string | null
+        }
+        Relationships: []
+      }
+      journal_entries: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          content: string
+          mood: number | null
+          tags: string[]
+          linked_medication_id: string | null
+          linked_appointment_id: string | null
+          entry_date: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string
+          title?: string
+          content: string
+          mood?: number | null
+          tags?: string[]
+          linked_medication_id?: string | null
+          linked_appointment_id?: string | null
+          entry_date?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          title?: string
+          content?: string
+          mood?: number | null
+          tags?: string[]
+          linked_medication_id?: string | null
+          linked_appointment_id?: string | null
+          entry_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      symptoms: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          severity: number
+          onset_at: string
+          resolved_at: string | null
+          linked_medication_id: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string
+          name: string
+          severity?: number
+          onset_at?: string
+          resolved_at?: string | null
+          linked_medication_id?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          name?: string
+          severity?: number
+          onset_at?: string
+          resolved_at?: string | null
+          linked_medication_id?: string | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {

@@ -8,8 +8,28 @@ import { useTimeline } from '@/shared/hooks/useTimeline'
 import { useMedications } from '@/shared/hooks/useMedications'
 import { useAppointments } from '@/shared/hooks/useAppointments'
 import { useAppStore } from '@/shared/stores/app-store'
+import { useRefillPredictions } from '@/shared/hooks/useRefillPredictions'
+import { useStreak } from '@/shared/hooks/useStreak'
+import { useAdherenceInsights } from '@/shared/hooks/useAdherenceInsights'
+import { useVitals } from '@/shared/hooks/useVitals'
+import { useJournal } from '@/shared/hooks/useJournal'
 import { renderWithProviders } from '@/test/utils'
 import type { SchedItem } from '@/shared/stores/app-store'
+
+// matchMedia not available in jsdom — stub it before any component renders
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+})
 
 vi.mock('@/shared/hooks/useAdherenceHistory')
 vi.mock('@/shared/hooks/useNotes')
@@ -17,15 +37,30 @@ vi.mock('@/shared/hooks/useTimeline')
 vi.mock('@/shared/hooks/useMedications')
 vi.mock('@/shared/hooks/useAppointments')
 vi.mock('@/shared/stores/app-store')
+vi.mock('@/shared/hooks/useRefillPredictions')
+vi.mock('@/shared/hooks/useStreak')
+vi.mock('@/shared/hooks/useAdherenceInsights')
+vi.mock('@/shared/hooks/useVitals')
+vi.mock('@/shared/hooks/useJournal')
 
-// Stub portal-heavy components
-vi.mock('@/shared/components/QuickCaptureModal', () => ({
-  QuickCaptureModal: () => null,
+// Stub portal-heavy / motion components
+vi.mock('@/shared/components/QuickCaptureModal', () => ({ QuickCaptureModal: () => null }))
+vi.mock('@/shared/components/ConfirmDeleteModal', () => ({ ConfirmDeleteModal: () => null }))
+vi.mock('@/app/components/VitalEntryModal', () => ({ VitalEntryModal: () => null }))
+vi.mock('@/app/components/JournalEntryModal', () => ({ JournalEntryModal: () => null }))
+
+// recharts ResizeObserver / SVG not available in jsdom — swap for a minimal stub
+vi.mock('recharts', () => ({
+  LineChart: ({ children }: { children: React.ReactNode }) => <div data-testid="line-chart">{children}</div>,
+  Line: () => null,
+  XAxis: () => null,
+  YAxis: () => null,
+  Tooltip: () => null,
+  CartesianGrid: () => null,
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
-vi.mock('@/shared/components/ConfirmDeleteModal', () => ({
-  ConfirmDeleteModal: () => null,
-}))
-// Card component is a simple wrapper — use a pass-through stub so children render
+
+// Card and Button pass-through stubs so children render
 vi.mock('@/shared/components/ui', async () => {
   const actual = await vi.importActual<typeof import('@/shared/components/ui')>('@/shared/components/ui')
   return {
@@ -45,11 +80,17 @@ const mockUseTimeline = vi.mocked(useTimeline)
 const mockUseMedications = vi.mocked(useMedications)
 const mockUseAppointments = vi.mocked(useAppointments)
 const mockUseAppStore = vi.mocked(useAppStore)
+const mockUseRefillPredictions = vi.mocked(useRefillPredictions)
+const mockUseStreak = vi.mocked(useStreak)
+const mockUseAdherenceInsights = vi.mocked(useAdherenceInsights)
+const mockUseVitals = vi.mocked(useVitals)
+const mockUseJournal = vi.mocked(useJournal)
 
 const baseAppStore = {
   showQuickCaptureModal: false,
   openQuickCaptureModal: vi.fn(),
   closeQuickCaptureModal: vi.fn(),
+  openRemindersPanel: vi.fn(),
   toast: vi.fn(),
 }
 
@@ -86,6 +127,11 @@ describe('SummaryView', () => {
     mockUseTimeline.mockReturnValue({ timeline: [], isLoading: false, error: null, refetch: vi.fn() })
     mockUseMedications.mockReturnValue({ meds: [], isLoading: false } as unknown as ReturnType<typeof useMedications>)
     mockUseAppointments.mockReturnValue({ appts: [], isLoading: false } as unknown as ReturnType<typeof useAppointments>)
+    mockUseRefillPredictions.mockReturnValue({ predictions: [], isLoading: false } as unknown as ReturnType<typeof useRefillPredictions>)
+    mockUseStreak.mockReturnValue({ currentStreak: 0, longestStreak: 0, isLoading: false } as unknown as ReturnType<typeof useStreak>)
+    mockUseAdherenceInsights.mockReturnValue({ insights: [], isLoading: false } as unknown as ReturnType<typeof useAdherenceInsights>)
+    mockUseVitals.mockReturnValue({ vitals: [], isLoading: false, addVital: vi.fn(), isAdding: false } as unknown as ReturnType<typeof useVitals>)
+    mockUseJournal.mockReturnValue({ entries: [], isLoading: false, addEntry: vi.fn(), isAdding: false } as unknown as ReturnType<typeof useJournal>)
   })
 
   it('renders all three stat cards (Completed, Late, Missed)', () => {
@@ -108,17 +154,16 @@ describe('SummaryView', () => {
     renderWithProviders(<SummaryView />)
 
     // done(2) + late(1) → completed=3, late=1, missed=1
-    // We have at least the numeric values in the DOM
     expect(screen.getByText('3')).toBeInTheDocument() // completed (done+late)
     expect(screen.getAllByText('1').length).toBeGreaterThanOrEqual(2) // late=1, missed=1
   })
 
-  it('renders the 7-day adherence chart with day labels', () => {
+  it('renders the sub-tab switcher with Adherence, Vitals, and Journal tabs', () => {
     renderWithProviders(<SummaryView />)
 
-    // The chart always renders 7 day labels: S M T W T F S
-    const dayLabels = screen.getAllByText(/^[SMTWTFS]$/)
-    expect(dayLabels.length).toBe(7)
+    expect(screen.getByRole('tab', { name: /Adherence/i })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /Vitals/i })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /Journal/i })).toBeInTheDocument()
   })
 
   it('renders notes when they exist', () => {
@@ -148,9 +193,9 @@ describe('SummaryView', () => {
     expect(screen.getByText('No notes yet')).toBeInTheDocument()
   })
 
-  it('shows the 7-Day Adherence section heading', () => {
+  it('shows the 30-Day Adherence section heading', () => {
     renderWithProviders(<SummaryView />)
 
-    expect(screen.getByText('7-Day Adherence')).toBeInTheDocument()
+    expect(screen.getByText('30-Day Adherence')).toBeInTheDocument()
   })
 })

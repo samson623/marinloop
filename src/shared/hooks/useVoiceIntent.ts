@@ -32,6 +32,7 @@ export type UseVoiceIntentOptions = {
   logDose: (input: DoseLogCreateInput) => void
   addNoteReal: (payload: { content: string; medication_id: string | null }) => void
   createReminder?: (payload: { userId: string; title: string; body: string; fireAt: Date }) => Promise<string | null>
+  onAdherenceSummary?: () => void
   voiceIntentService?: VoiceIntentServiceLike
   notificationsService?: NotificationsServiceLike
 }
@@ -44,6 +45,7 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
     logDose,
     addNoteReal,
     createReminder,
+    onAdherenceSummary,
     voiceIntentService = defaultVoiceIntentService,
     notificationsService = defaultNotificationsService,
   } = options
@@ -317,6 +319,11 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
         setVoiceBubble(med ? `Note added for ${med.name}.` : 'Note saved.')
         return
       }
+      case 'adherence_summary':
+        navigate('/summary')
+        store.toast('Loading your adherence summary...', 'ts')
+        onAdherenceSummary?.()
+        return
       case 'query': {
         const question = intent.entities.query?.question ?? transcript
         const timelineStr = timeline
@@ -338,6 +345,10 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
         const notesStr = notesForContext
           .map((n) => `- ${n.text}${n.medicationId ? ` (med link)` : ''}`)
           .join('\n')
+        // TODO: Phase 2 AI context upgrade — inject 7-day adherence percentages per day and
+        // refill alerts (meds running low) into the context below. These require access to
+        // useAdherenceHistory(7) and useRefillPredictions() which can be added to this hook
+        // or passed in via UseVoiceIntentOptions without breaking the existing test surface.
         const context = `Today is ${todayLocal()}.
 
 ## Today's schedule (timeline)

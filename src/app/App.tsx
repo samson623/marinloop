@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Routes, Route, Navigate, useLocation, useNavigate, useSearchParams, Outlet } from 'react-router-dom'
-import { QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider, useQueryClient } from '@tanstack/react-query'
 import * as Sentry from '@sentry/react'
 import { queryClient } from '@/shared/lib/query-client'
 import { useThemeStore } from '@/shared/stores/theme-store'
@@ -10,16 +10,18 @@ import { useNotifications } from '@/shared/hooks/useNotifications'
 import { useDoseLogs } from '@/shared/hooks/useDoseLogs'
 import { useNotes } from '@/shared/hooks/useNotes'
 import { useVoiceIntent } from '@/shared/hooks/useVoiceIntent'
+import { PrivateRoute } from '@/app/PrivateRoute'
 import { TimelineView } from '@/app/views/TimelineView'
-import { MedsView } from '@/app/views/MedsView'
-import { ApptsView } from '@/app/views/ApptsView'
-import { SummaryView } from '@/app/views/SummaryView'
-import { ProfileView } from '@/app/views/ProfileView'
 import { LandingScreen } from '@/app/LandingScreen'
 import { LoginScreen } from '@/app/LoginScreen'
 import { AuthCallbackScreen } from '@/app/AuthCallbackScreen'
-import { InstallGuideScreen } from '@/app/InstallGuideScreen'
-import { PrivateRoute } from '@/app/PrivateRoute'
+
+// Non-critical routes — code-split to reduce initial bundle
+const MedsView = React.lazy(() => import('@/app/views/MedsView').then((m) => ({ default: m.MedsView })))
+const ApptsView = React.lazy(() => import('@/app/views/ApptsView').then((m) => ({ default: m.ApptsView })))
+const SummaryView = React.lazy(() => import('@/app/views/SummaryView').then((m) => ({ default: m.SummaryView })))
+const ProfileView = React.lazy(() => import('@/app/views/ProfileView').then((m) => ({ default: m.ProfileView })))
+const InstallGuideScreen = React.lazy(() => import('@/app/InstallGuideScreen').then((m) => ({ default: m.InstallGuideScreen })))
 import { isMobile, isStandalone } from '@/shared/lib/device'
 import { AddToHomeScreenPrompt } from '@/shared/components/AddToHomeScreenPrompt'
 import { getAddToHomeScreenSeen, setAddToHomeScreenSeen } from '@/shared/lib/add-to-home-screen-storage'
@@ -74,6 +76,21 @@ const tabs: { id: Tab; label: string; icon: (active: boolean) => React.ReactNode
   },
 ]
 
+function PageLoader() {
+  return (
+    <div
+      className="flex items-center justify-center min-h-screen bg-[var(--color-bg-primary)]"
+      role="status"
+      aria-label="Loading"
+    >
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-10 h-10 rounded-full border-2 border-[var(--color-accent)] border-t-transparent animate-spin" />
+        <p className="text-[var(--color-text-tertiary)] text-sm">Loading…</p>
+      </div>
+    </div>
+  )
+}
+
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -101,14 +118,15 @@ function AppInner() {
       <Route path="/landing" element={<LandingScreen />} />
       <Route path="/login" element={<LoginScreen />} />
       <Route path="/auth/callback" element={<AuthCallbackScreen />} />
-      <Route path="/install" element={<InstallGuideScreen />} />
+      <Route path="/install" element={<React.Suspense fallback={<PageLoader />}><InstallGuideScreen /></React.Suspense>} />
       <Route element={<PrivateRoute />}>
         <Route element={<AppShell />}>
+          {/* TODO: TimelineView supports ?date=YYYY-MM-DD deep-links — implement with useSearchParams() */}
           <Route path="/timeline" element={<TimelineView />} />
-          <Route path="/meds" element={<MedsView />} />
-          <Route path="/appts" element={<ApptsView />} />
-          <Route path="/summary" element={<SummaryView />} />
-          <Route path="/profile" element={<ProfileView />} />
+          <Route path="/meds" element={<React.Suspense fallback={<PageLoader />}><MedsView /></React.Suspense>} />
+          <Route path="/appts" element={<React.Suspense fallback={<PageLoader />}><ApptsView /></React.Suspense>} />
+          <Route path="/summary" element={<React.Suspense fallback={<PageLoader />}><SummaryView /></React.Suspense>} />
+          <Route path="/profile" element={<React.Suspense fallback={<PageLoader />}><ProfileView /></React.Suspense>} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/timeline" replace />} />
@@ -145,7 +163,14 @@ function AppShell() {
     [addReminderAsync, openRemindersPanel]
   )
 
-  const voice = useVoiceIntent({ logDose, addNoteReal, createReminder })
+  const voice = useVoiceIntent({
+    logDose,
+    addNoteReal,
+    createReminder,
+    onAdherenceSummary: () => {
+      void queryClient.invalidateQueries({ queryKey: ['adherence-insights'] })
+    },
+  })
   const { accepted: betaTermsAccepted, accept: acceptBetaTerms } = useBetaTermsAccepted()
   const [showVoiceTest] = useState(() => {
     try {
@@ -167,23 +192,37 @@ function AppShell() {
     }
   }, [searchParams, openRemindersPanel, setSearchParams])
 
-  // iOS Safari: client.navigate() is unsupported in SW, so the SW sends a postMessage instead.
-  // Listen for SW_NAVIGATE and handle it via React Router so ?reminders=open triggers the effect above.
+  const queryClient = useQueryClient()
+
+  // iOS Safari: client.navigate() is unsupported in SW, so the SW sends postMessages instead.
+  // Handle SW_NAVIGATE (navigation), DOSE_TAKEN (refresh timeline), SNOOZE_REMINDER (refresh reminders).
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return
     const handler = (event: MessageEvent) => {
-      if (event.data?.type === 'SW_NAVIGATE' && typeof event.data.url === 'string') {
-        try {
-          const u = new URL(event.data.url)
-          if (u.origin === window.location.origin) {
-            navigate(u.pathname + u.search, { replace: true })
+      const { type, url } = event.data ?? {}
+      switch (type) {
+        case 'SW_NAVIGATE':
+          if (url && typeof url === 'string') {
+            try {
+              const u = new URL(url)
+              if (u.origin === window.location.origin) {
+                navigate(u.pathname + u.search, { replace: true })
+              }
+            } catch { /* ignore malformed urls */ }
           }
-        } catch { /* ignore malformed urls */ }
+          break
+        case 'DOSE_TAKEN':
+          void queryClient.invalidateQueries({ queryKey: ['dose_logs'] })
+          void queryClient.invalidateQueries({ queryKey: ['dose_logs', 'today'] })
+          break
+        case 'SNOOZE_REMINDER':
+          void queryClient.invalidateQueries({ queryKey: ['reminders'] })
+          break
       }
     }
     navigator.serviceWorker.addEventListener('message', handler)
     return () => navigator.serviceWorker.removeEventListener('message', handler)
-  }, [navigate])
+  }, [navigate, queryClient])
 
   useEffect(() => {
     // Only clean up the hash if it's just an empty '#' (cosmetic)

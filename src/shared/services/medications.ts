@@ -49,6 +49,7 @@ export const MedsService = {
       medication_freq: input.medication.freq ?? 1,
       medication_color: input.medication.color ?? 'sky',
       medication_icon: input.medication.icon ?? null,
+      medication_rxcui: input.medication.rxcui ?? null,
       schedule_times: scheduleTimes,
       schedule_days: scheduleDays,
       refill_current_quantity: input.refill.current_quantity ?? 0,

@@ -22,6 +22,7 @@ export interface Database {
           avatar_url: string | null
           timezone: string
           plan: Database['public']['Enums']['plan_type']
+          allergies: string[]
           created_at: string
           updated_at: string
         }
@@ -32,6 +33,7 @@ export interface Database {
           avatar_url?: string | null
           timezone?: string
           plan?: Database['public']['Enums']['plan_type']
+          allergies?: string[]
           created_at?: string
           updated_at?: string
         }
@@ -41,6 +43,7 @@ export interface Database {
           avatar_url?: string | null
           timezone?: string
           plan?: Database['public']['Enums']['plan_type']
+          allergies?: string[]
           updated_at?: string
         }
         Relationships: []
@@ -57,6 +60,7 @@ export interface Database {
           color: string
           icon: string | null
           barcode: string | null
+          rxcui: string | null
           created_at: string
           updated_at: string
         }
@@ -71,6 +75,7 @@ export interface Database {
           color?: string
           icon?: string | null
           barcode?: string | null
+          rxcui?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -83,6 +88,7 @@ export interface Database {
           color?: string
           icon?: string | null
           barcode?: string | null
+          rxcui?: string | null
           updated_at?: string
         }
         Relationships: []

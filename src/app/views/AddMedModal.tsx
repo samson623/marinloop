@@ -4,6 +4,9 @@ import { BarcodeScanner } from '@/shared/components/BarcodeScanner'
 import { Modal } from '@/shared/components/Modal'
 import { lookupByBarcode } from '@/shared/services/openfda'
 import { extractFromImages } from '@/shared/services/label-extract'
+import { lookupRxCUI, getOpenFDALabel } from '@/shared/services/rxnorm'
+import { useInteractions } from '@/shared/hooks/useInteractions'
+import type { DrugInteraction } from '@/shared/services/rxnorm'
 import { handleMutationError } from '@/shared/lib/errors'
 import { Button, Input } from '@/shared/components/ui'
 import { generateEvenlySpacedTimes } from '@/shared/lib/scheduling'
@@ -22,14 +25,16 @@ type AddMedModalProps = {
   } | null
   openScanner?: boolean
   openPhoto?: boolean
+  allMeds?: Array<{ id: string; name: string; rxcui?: string | null }>
+  upcomingAppts?: Array<{ title: string; start_time: string; commute_minutes: number | null | undefined }>
   createBundleAsync: (input: {
-    medication: { name: string; dosage: string; freq: number; instructions: string; warnings: string; color: string; icon: string }
+    medication: { name: string; dosage: string; freq: number; instructions: string; warnings: string; color: string; icon: string; rxcui?: string }
     schedules: Array<{ time: string; days: number[]; food_context_minutes: number; active: boolean }>
     refill: { current_quantity: number; total_quantity: number; refill_date: string | null; pharmacy: string | null }
   }) => Promise<string>
 }
 
-export default function AddMedModal({ onClose, createBundleAsync, isSaving, initialDraft, openScanner: openScannerProp, openPhoto: openPhotoProp }: AddMedModalProps) {
+export default function AddMedModal({ onClose, createBundleAsync, isSaving, initialDraft, openScanner: openScannerProp, openPhoto: openPhotoProp, allMeds = [], upcomingAppts = [] }: AddMedModalProps) {
   const { toast } = useAppStore()
   const [name, setName] = useState('')
   const [dose, setDose] = useState('')
@@ -43,13 +48,33 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
   const [barcodeInputValue, setBarcodeInputValue] = useState('')
   const [isLooking, setIsLooking] = useState(false)
   const [showVerifyModal, setShowVerifyModal] = useState(false)
-  const [pendingExtract, setPendingExtract] = useState<{ name?: string; dosage?: string; freq?: number; time?: string; quantity?: number; instructions?: string; warnings?: string; confidence?: number } | null>(null)
+  const [pendingExtract, setPendingExtract] = useState<{
+    name?: string
+    dosage?: string
+    freq?: number
+    time?: string
+    quantity?: number
+    instructions?: string
+    warnings?: string
+    confidence?: number
+    imprint?: string
+    color?: string
+    shape?: string
+  } | null>(null)
   const [labelPhotos, setLabelPhotos] = useState<File[]>([])
   const [photoThumbs, setPhotoThumbs] = useState<string[]>([])
+  const [photoMode, setPhotoMode] = useState<'label' | 'pill'>('label')
+  const [rxcui, setRxcui] = useState<string | null>(null)
+  const [isLookingUpRxcui, setIsLookingUpRxcui] = useState(false)
+  const [foodNote, setFoodNote] = useState<string | null>(null)
   const scannerInputRef = useRef<HTMLInputElement>(null)
   const labelPhotoInputRef = useRef<HTMLInputElement>(null)
   const barcodeInputRef = useRef<HTMLInputElement>(null)
   const scannerRapidTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Drug interaction check (background, non-blocking)
+  const { interactions } = useInteractions(allMeds, name)
+
   const canLookupCode = (value: string) => {
     const trimmed = value.trim()
     const digits = trimmed.replace(/\D/g, '')
@@ -158,6 +183,51 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
     }
   }, [openPhotoProp])
 
+  // Background rxcui lookup on name blur + food interaction fetch
+  const handleNameBlur = async () => {
+    const trimmed = name.trim()
+    if (trimmed.length <= 2) return
+    setIsLookingUpRxcui(true)
+    try {
+      const code = await lookupRxCUI(trimmed)
+      setRxcui(code)
+      if (code) {
+        const labelData = await getOpenFDALabel(code)
+        if (labelData.foodInteractions && labelData.foodInteractions.trim()) {
+          setFoodNote(labelData.foodInteractions.trim())
+        }
+      }
+    } finally {
+      setIsLookingUpRxcui(false)
+    }
+  }
+
+  // Appointment conflict check (pure computed, no async)
+  const apptConflicts: Array<{ apptTitle: string; apptTime: string; medTime: string }> = []
+  const now = new Date()
+  const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+  for (const appt of upcomingAppts) {
+    const apptStart = new Date(appt.start_time)
+    if (apptStart < now || apptStart > sevenDaysLater) continue
+    const commute = appt.commute_minutes ?? 0
+    const windowStart = new Date(apptStart.getTime() - commute * 60 * 1000)
+    const windowEnd = new Date(apptStart.getTime() + 60 * 60 * 1000)
+    const apptTimeStr = apptStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    for (const t of times) {
+      const [h, m] = t.split(':').map(Number)
+      // Use today's date for comparison
+      const medDate = new Date(apptStart)
+      medDate.setHours(h, m, 0, 0)
+      if (medDate >= windowStart && medDate <= windowEnd) {
+        apptConflicts.push({
+          apptTitle: appt.title,
+          apptTime: apptTimeStr,
+          medTime: t,
+        })
+      }
+    }
+  }
+
   const handleBarcodeLookup = async () => {
     const code = barcodeInputValue.trim()
     if (canLookupCode(code)) {
@@ -213,30 +283,31 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
       return
     }
     setIsLooking(true)
-    toast(labelPhotos.length > 1 ? `Reading ${labelPhotos.length} label photos...` : 'Reading label...', 'ts')
+    const modeLabel = photoMode === 'pill' ? 'Identifying pill...' : (labelPhotos.length > 1 ? `Reading ${labelPhotos.length} label photos...` : 'Reading label...')
+    toast(modeLabel, 'ts')
     try {
-      const result = await extractFromImages(labelPhotos)
+      const result = await extractFromImages(labelPhotos, photoMode)
       const conf = result.confidence ?? 0.5
       const hasUsefulData = Boolean(
         result.name?.trim() || result.dosage?.trim() || result.instructions?.trim() || result.warnings?.trim()
       )
       if (!hasUsefulData) {
-        toast("Couldn't read enough from the label. Please enter manually.", 'tw')
+        toast(photoMode === 'pill' ? "Couldn't identify the pill. Please enter manually." : "Couldn't read enough from the label. Please enter manually.", 'tw')
         return
       }
       if (conf < 0.6) {
-        setPendingExtract(result)
+        setPendingExtract(result as typeof pendingExtract)
         setShowVerifyModal(true)
       } else {
         applyExtractToForm(result)
-        toast('Label info loaded. Please verify before saving.', 'ts')
+        toast(photoMode === 'pill' ? 'Pill identified. Please verify before saving.' : 'Label info loaded. Please verify before saving.', 'ts')
       }
       // Clear photos after successful processing
       photoThumbs.forEach((url) => URL.revokeObjectURL(url))
       setLabelPhotos([])
       setPhotoThumbs([])
     } catch (e) {
-      handleMutationError(e, 'label-extract', "Couldn't read the label. Please enter manually.", toast)
+      handleMutationError(e, 'label-extract', photoMode === 'pill' ? "Couldn't identify the pill. Please enter manually." : "Couldn't read the label. Please enter manually.", toast)
     } finally {
       setIsLooking(false)
     }
@@ -307,6 +378,7 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
           warnings: warn,
           color: 'sky',
           icon: 'pill',
+          rxcui: rxcui ?? undefined,
         },
         schedules: times.map((t) => ({
           time: t,
@@ -327,6 +399,11 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
       // Don't close modal so user can retry
     }
   }
+
+  // Deduplicate appointment conflicts by apptTitle+medTime
+  const uniqueApptConflicts = apptConflicts.filter(
+    (c, i, arr) => arr.findIndex((x) => x.apptTitle === c.apptTitle && x.medTime === c.medTime) === i
+  )
 
   return (
     <>
@@ -431,6 +508,7 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
                     {labelPhotos.length} photo{labelPhotos.length !== 1 ? 's' : ''} added
+                    {photoMode === 'pill' && <span className="ml-1 text-[var(--color-text-tertiary)]">(pill mode)</span>}
                   </span>
                   <span className="text-xs text-[var(--color-text-tertiary)]">
                     (up to 5 — add multiple sides of the bottle)
@@ -470,35 +548,54 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
                   {isLooking ? (
                     <>
                       <div className="w-5 h-5 border-2 border-white/30 border-t-2 border-t-white rounded-full spin-loading shrink-0" />
-                      <span>Reading {labelPhotos.length > 1 ? `${labelPhotos.length} photos` : 'label'}...</span>
+                      <span>{photoMode === 'pill' ? 'Identifying pill...' : `Reading ${labelPhotos.length > 1 ? `${labelPhotos.length} photos` : 'label'}...`}</span>
                     </>
                   ) : (
                     <>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-                      <span>Process {labelPhotos.length > 1 ? `${labelPhotos.length} photos` : 'photo'}</span>
+                      <span>{photoMode === 'pill' ? 'Identify pill' : `Process ${labelPhotos.length > 1 ? `${labelPhotos.length} photos` : 'photo'}`}</span>
                     </>
                   )}
                 </button>
               </div>
             )}
 
+            {/* Photo mode split buttons — shown when no photos loaded yet */}
             {labelPhotos.length === 0 && (
-              <button
-                type="button"
-                onClick={() => labelPhotoInputRef.current?.click()}
-                disabled={isLooking}
-                aria-label="Take or upload photos of prescription label or pill bottle"
-                aria-busy={isLooking}
-                aria-live="polite"
-                className="w-full py-3 px-6 mb-3 rounded-2xl font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border-primary)] hover:bg-[var(--color-bg-secondary)] cursor-pointer disabled:opacity-60 flex items-center justify-center gap-3 [font-size:var(--text-body)]"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden>
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                  <polyline points="21 15 16 10 5 21" />
-                </svg>
-                <span>📸 Photo label (multiple sides)</span>
-              </button>
+              <div className="flex gap-2 mb-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPhotoMode('label')
+                    labelPhotoInputRef.current?.click()
+                  }}
+                  disabled={isLooking}
+                  aria-label="Take or upload photos of prescription label or pill bottle"
+                  aria-busy={isLooking}
+                  aria-live="polite"
+                  className="flex-1 py-3 px-4 rounded-2xl font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border-primary)] hover:bg-[var(--color-bg-secondary)] cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 [font-size:var(--text-body)]"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden>
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21 15 16 10 5 21" />
+                  </svg>
+                  <span>📸 Label photo</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPhotoMode('pill')
+                    labelPhotoInputRef.current?.click()
+                  }}
+                  disabled={isLooking}
+                  aria-label="Take or upload a photo of the pill to identify it"
+                  aria-busy={isLooking}
+                  className="flex-1 py-3 px-4 rounded-2xl font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border-primary)] hover:bg-[var(--color-bg-secondary)] cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 [font-size:var(--text-body)]"
+                >
+                  <span>💊 Identify pill</span>
+                </button>
+              </div>
             )}
             <p className="text-[var(--color-text-tertiary)] text-xs mb-4 -mt-1 px-1">
               Photograph all sides of your pill bottle for best results. You can add up to 5 photos.
@@ -515,7 +612,15 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
           {/* Name */}
           <div>
             <label htmlFor="med-name" className="block font-bold text-[var(--color-text-secondary)] mb-1.5 [font-size:var(--text-label)]">Name</label>
-            <Input id="med-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Amoxicillin" required />
+            <Input
+              id="med-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onBlur={() => { void handleNameBlur() }}
+              placeholder="e.g. Amoxicillin"
+              aria-busy={isLookingUpRxcui}
+              required
+            />
           </div>
 
           {/* Dosage | Frequency */}
@@ -556,6 +661,17 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
             </div>
           </div>
 
+          {/* Appointment conflict warnings */}
+          {uniqueApptConflicts.length > 0 && (
+            <div className="rounded-xl border border-[var(--color-amber,#d97706)] bg-[color-mix(in_srgb,var(--color-amber,#d97706)_10%,transparent)] px-4 py-3 flex flex-col gap-1" role="alert">
+              {uniqueApptConflicts.map((c, i) => (
+                <p key={i} className="text-[var(--color-amber,#d97706)] font-semibold [font-size:var(--text-label)]">
+                  ⚠️ {c.apptTitle} is at {c.apptTime} — this time may conflict with your appointment
+                </p>
+              ))}
+            </div>
+          )}
+
           {/* Instructions */}
           <div>
             <label htmlFor="med-inst" className="block font-bold text-[var(--color-text-secondary)] mb-1.5 [font-size:var(--text-label)]">Instructions</label>
@@ -581,6 +697,60 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
               className="fi w-full resize-y min-h-[2.5rem]"
             />
           </div>
+
+          {/* Food interaction note */}
+          {foodNote && (
+            <div className="rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] px-4 py-3 flex items-start gap-3" role="note">
+              <span className="text-base shrink-0">💊</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[var(--color-text-secondary)] [font-size:var(--text-label)] leading-snug">
+                  <span className="font-semibold">Food note:</span> {foodNote}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setWarn((prev) => prev ? `${prev}\n${foodNote}` : foodNote)
+                  setFoodNote(null)
+                }}
+                className="shrink-0 text-xs font-semibold text-[var(--color-accent)] underline cursor-pointer whitespace-nowrap"
+              >
+                Add to warnings
+              </button>
+            </div>
+          )}
+
+          {/* Drug interaction warning banner */}
+          {interactions.length > 0 && (
+            <div
+              className={`rounded-xl border px-4 py-3 flex flex-col gap-2 ${
+                interactions.some((i: DrugInteraction) => i.severity === 'high')
+                  ? 'border-[var(--color-red)] bg-[color-mix(in_srgb,var(--color-red)_10%,transparent)]'
+                  : 'border-[var(--color-amber,#d97706)] bg-[color-mix(in_srgb,var(--color-amber,#d97706)_10%,transparent)]'
+              }`}
+              role="alert"
+            >
+              <p className={`font-bold [font-size:var(--text-label)] ${
+                interactions.some((i: DrugInteraction) => i.severity === 'high')
+                  ? 'text-[var(--color-red)]'
+                  : 'text-[var(--color-amber,#d97706)]'
+              }`}>
+                ⚠️ Drug Interaction{interactions.length > 1 ? 's' : ''} Detected
+              </p>
+              {interactions.map((interaction: DrugInteraction, idx: number) => (
+                <p
+                  key={idx}
+                  className={`[font-size:var(--text-label)] leading-snug ${
+                    interaction.severity === 'high'
+                      ? 'text-[var(--color-red)]'
+                      : 'text-[var(--color-amber,#d97706)]'
+                  }`}
+                >
+                  {interaction.description}
+                </p>
+              ))}
+            </div>
+          )}
 
           <Button type="submit" variant="primary" size="md" className="mt-1" disabled={isSaving || isLooking}>
             {isSaving ? (
@@ -615,6 +785,10 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
             {pendingExtract.quantity != null && <p><strong>Quantity:</strong> {pendingExtract.quantity}</p>}
             {pendingExtract.instructions && <p><strong>Instructions:</strong> {pendingExtract.instructions}</p>}
             {pendingExtract.warnings && <p><strong>Warnings:</strong> {pendingExtract.warnings}</p>}
+            {/* Pill identification extra fields */}
+            {pendingExtract.color && <p><strong>Color:</strong> {pendingExtract.color}</p>}
+            {pendingExtract.shape && <p><strong>Shape:</strong> {pendingExtract.shape}</p>}
+            {pendingExtract.imprint && <p><strong>Imprint:</strong> {pendingExtract.imprint}</p>}
           </div>
           <div className="flex gap-2">
             <Button variant="primary" size="md" onClick={handleVerifyConfirm}>

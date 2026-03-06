@@ -90,6 +90,10 @@ Output JSON schema:
   "confidence": number
 }`
 
+const PILL_IDENTIFICATION_SYSTEM_PROMPT = `Identify this pill from the photo. Describe its color, shape, size, and any imprint text or markings.
+Then provide your best identification of the drug name, generic name, and dosage strength based on the visual characteristics.
+Return ONLY a JSON object: {"name":"...","dosage":"...","imprint":"...","color":"...","shape":"...","confidence":0.0-1.0}`
+
 function scrubError(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err)
   if (msg.includes('OPENAI') || msg.includes('sk-') || msg.includes('api.openai.com')) {
@@ -101,6 +105,29 @@ function scrubError(err: unknown): string {
 interface LabelExtractPayload {
   imageBase64?: unknown
   images?: unknown
+  mode?: unknown
+}
+
+interface PillIdentifyResult {
+  name?: string | null
+  dosage?: string | null
+  imprint?: string | null
+  color?: string | null
+  shape?: string | null
+  confidence?: number
+}
+
+function parseAndValidatePill(body: unknown): PillIdentifyResult | null {
+  if (!body || typeof body !== 'object') return null
+  const obj = body as Record<string, unknown>
+  const result: PillIdentifyResult = {}
+  if (obj.name != null && typeof obj.name === 'string') result.name = obj.name
+  if (obj.dosage != null && typeof obj.dosage === 'string') result.dosage = obj.dosage
+  if (obj.imprint != null && typeof obj.imprint === 'string') result.imprint = obj.imprint
+  if (obj.color != null && typeof obj.color === 'string') result.color = obj.color
+  if (obj.shape != null && typeof obj.shape === 'string') result.shape = obj.shape
+  if (obj.confidence != null && typeof obj.confidence === 'number') result.confidence = obj.confidence
+  return result
 }
 
 interface LabelExtractResult {
@@ -255,15 +282,27 @@ serve(async (req) => {
       )
     }
 
+    const mode = typeof body.mode === 'string' && body.mode === 'pill' ? 'pill' : 'label'
+    const isPillMode = mode === 'pill'
+
     const imageCount = imageList.length
-    const textInstruction = imageCount > 1
-      ? `Extract and MERGE medication information from these ${imageCount} prescription label photos (different sides of the same bottle). Return only valid JSON.`
-      : 'Extract medication information from this prescription label. Return only valid JSON.'
+    let textInstruction: string
+    if (isPillMode) {
+      textInstruction = imageCount > 1
+        ? `Identify the pill shown in these ${imageCount} photos. Return only valid JSON.`
+        : 'Identify the pill shown in this photo. Return only valid JSON.'
+    } else {
+      textInstruction = imageCount > 1
+        ? `Extract and MERGE medication information from these ${imageCount} prescription label photos (different sides of the same bottle). Return only valid JSON.`
+        : 'Extract medication information from this prescription label. Return only valid JSON.'
+    }
 
     const userContent: Array<{ type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string; detail: string } }> = [
       { type: 'text', text: textInstruction },
       ...imageList.map((img) => ({ type: 'image_url' as const, image_url: { url: img, detail: 'low' } })),
     ]
+
+    const systemPrompt = isPillMode ? PILL_IDENTIFICATION_SYSTEM_PROMPT : EXTRACTION_SYSTEM_PROMPT
 
     const response = await fetchWithRetry('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -274,7 +313,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: ALLOWED_MODEL,
         messages: [
-          { role: 'system', content: EXTRACTION_SYSTEM_PROMPT },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: userContent },
         ],
         max_tokens: 1024,
@@ -312,7 +351,7 @@ serve(async (req) => {
       )
     }
 
-    const result = parseAndValidate(parsed)
+    const result = isPillMode ? parseAndValidatePill(parsed) : parseAndValidate(parsed)
     if (!result) {
       return new Response(
         JSON.stringify({ error: 'Invalid extraction structure' }),

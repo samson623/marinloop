@@ -3,10 +3,34 @@ import { useAppStore, fT } from '@/shared/stores/app-store'
 import { useMedications } from '@/shared/hooks/useMedications'
 import { useSchedules } from '@/shared/hooks/useSchedules'
 import { useRefills } from '@/shared/hooks/useRefillsList'
+import { useAppointments } from '@/shared/hooks/useAppointments'
 import { Button } from '@/shared/components/ui'
 import { getSupplyInfo } from '@/shared/lib/medication-utils'
 import MedDetailModal from './MedDetailModal'
 import AddMedModal from './AddMedModal'
+
+function MedCardSkeleton() {
+  return (
+    <div className="rounded-2xl border border-[var(--color-border-primary)] p-5 bg-[var(--color-bg-secondary)] animate-pulse mb-4">
+      <div className="flex items-start gap-4 mb-3">
+        <div className="flex-1 min-w-0">
+          <div className="h-4 w-1/2 rounded bg-[var(--color-bg-tertiary)] mb-2" />
+          <div className="h-3 w-1/4 rounded bg-[var(--color-bg-tertiary)]" />
+        </div>
+        <div className="h-7 w-16 rounded-lg bg-[var(--color-bg-tertiary)] shrink-0" />
+      </div>
+      <div className="flex gap-5 mb-4">
+        <div className="h-3 w-24 rounded bg-[var(--color-bg-tertiary)]" />
+        <div className="h-3 w-16 rounded bg-[var(--color-bg-tertiary)]" />
+      </div>
+      <div className="h-2 w-full rounded-full bg-[var(--color-bg-tertiary)]" />
+      <div className="flex justify-between mt-2">
+        <div className="h-3 w-20 rounded bg-[var(--color-bg-tertiary)]" />
+        <div className="h-3 w-16 rounded bg-[var(--color-bg-tertiary)]" />
+      </div>
+    </div>
+  )
+}
 
 type DisplayMed = {
   id: string
@@ -30,9 +54,10 @@ export function MedsView() {
     closeAddMedModal,
   } = useAppStore()
   const [selectedMed, setSelectedMed] = useState<DisplayMed | null>(null)
-  const { meds: realMeds, addMedBundleAsync, updateMed, deleteMed, isAdding, isDeleting } = useMedications()
+  const { meds: realMeds, isLoading: medsLoading, addMedBundleAsync, updateMed, deleteMed, isAdding, isDeleting } = useMedications()
   const { scheds, addSchedAsync, updateSched, deleteSched } = useSchedules()
   const { refills, updateRefill } = useRefills()
+  const { appts } = useAppointments()
 
   const displayMeds = realMeds.map((m) => {
     const myScheds = scheds.filter((s) => s.medication_id === m.id)
@@ -62,24 +87,51 @@ export function MedsView() {
         Medications
       </h2>
 
-      <div className="stagger-children">
+      {medsLoading ? (
+        <div>
+          <MedCardSkeleton />
+          <MedCardSkeleton />
+          <MedCardSkeleton />
+        </div>
+      ) : (
+      <div className="stagger-children" role="list">
         {displayMeds.length === 0 && (
-          <div className="py-10 px-6 text-center border-2 border-dashed border-[var(--color-border-secondary)] rounded-2xl">
-            <p className="text-[var(--color-text-secondary)] [font-size:var(--text-body)] font-medium">No medications found. Add one below.</p>
-            <p className="mt-3 text-[var(--color-text-tertiary)] [font-size:var(--text-caption)]">Add your first medication to get started</p>
+          <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+            <svg
+              width="64" height="64" viewBox="0 0 24 24"
+              fill="none" stroke="var(--color-accent)" strokeWidth="1.5"
+              strokeLinecap="round" strokeLinejoin="round"
+              className="mb-4 opacity-70" aria-hidden="true"
+            >
+              <path d="M12 2a4 4 0 0 1 4 4v12a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z" />
+              <line x1="8" y1="12" x2="16" y2="12" />
+            </svg>
+            <p className="text-[var(--color-text-primary)] font-semibold text-lg mb-2">No medications yet</p>
+            <p className="text-[var(--color-text-secondary)] text-sm mb-6 max-w-xs leading-relaxed">
+              Add your first medication to start tracking doses, refills, and your adherence.
+            </p>
+            <Button type="button" variant="primary" size="md" onClick={() => openAddMedModal(null)} className="flex items-center justify-center gap-2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Add Medication
+            </Button>
           </div>
         )}
 
         {displayMeds.map((m, i) => {
           const { pct: p, days, color: sc } = getSupplyInfo(m.supply, m.total, m.dosesPerDay)
+          const isLowSupply = m.total > 0 && m.supply / m.total < 0.2
 
           return (
             <button
               key={m.id}
               type="button"
+              role="listitem"
+              tabIndex={0}
+              aria-label={`${m.name}${m.dose ? ', ' + m.dose : ''}, ${m.freq}x daily`}
               className="animate-slide-r card-interactive w-full text-left bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] rounded-2xl p-5 mb-4 min-h-[88px] cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
               style={{ animationDelay: `${i * 0.04}s` }}
               onClick={() => setSelectedMed(m)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedMed(m) } }}
             >
               <div className="flex items-start justify-between gap-4 mb-3">
                 <span className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-body)] leading-snug">{m.name}</span>
@@ -95,20 +147,32 @@ export function MedsView() {
                   {m.freq}x daily
                 </span>
               </div>
-              <div className="mt-4 h-2 bg-[var(--color-ring-track)] rounded-full overflow-hidden">
+              <div
+                className="mt-4 h-2 bg-[var(--color-ring-track)] rounded-full overflow-hidden"
+                aria-label={`${m.supply} of ${m.total} pills remaining`}
+              >
                 <div
                   className="h-full rounded-full transition-[width] duration-300"
                   style={{ width: `${p}%`, background: sc }}
                 />
               </div>
               <div className="text-[var(--color-text-secondary)] mt-2 flex justify-between [font-family:var(--font-mono)] [font-size:var(--text-caption)] font-medium">
-                <span>{m.supply} pills left</span>
+                <span className="flex items-center gap-1">
+                  {m.supply} pills left
+                  {isLowSupply && (
+                    <span
+                      className="inline-block w-2 h-2 rounded-full bg-[var(--color-red)] animate-pulse ml-1"
+                      aria-label="Low supply warning"
+                    />
+                  )}
+                </span>
                 <span className={days <= 5 ? 'text-[var(--color-red)] font-bold' : ''}>{days} days{days <= 5 ? ' — Refill soon' : ''}</span>
               </div>
             </button>
           )
         })}
       </div>
+      )}
 
       <Button
         type="button"
@@ -142,6 +206,8 @@ export function MedsView() {
           addSchedAsync={addSchedAsync}
           updateSched={updateSched}
           deleteSched={deleteSched}
+          allMeds={realMeds.map((m) => ({ id: m.id, name: m.name, rxcui: m.rxcui }))}
+          userAllergies={[]}
         />
       )}
 
@@ -153,6 +219,8 @@ export function MedsView() {
           initialDraft={draftMed}
           openScanner={addMedModalOptions?.openScanner}
           openPhoto={addMedModalOptions?.openPhoto}
+          allMeds={realMeds.map((m) => ({ id: m.id, name: m.name, rxcui: m.rxcui }))}
+          upcomingAppts={appts.map((a) => ({ title: a.title, start_time: a.start_time, commute_minutes: a.commute_minutes }))}
         />
       )}
     </div>

@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useAppStore } from '@/shared/stores/app-store'
 import { toLocalDateString } from '@/shared/lib/dates'
 import { useTimeline } from '@/shared/hooks/useTimeline'
@@ -6,21 +7,82 @@ import { useNotes } from '@/shared/hooks/useNotes'
 import { useMedications } from '@/shared/hooks/useMedications'
 import { useAppointments } from '@/shared/hooks/useAppointments'
 import { useAdherenceHistory } from '@/shared/hooks/useAdherenceHistory'
+import { useRefillPredictions } from '@/shared/hooks/useRefillPredictions'
+import { useStreak } from '@/shared/hooks/useStreak'
+import { useAdherenceInsights } from '@/shared/hooks/useAdherenceInsights'
+import { getMissPatterns } from '@/shared/services/schedule-analysis'
 import { Card, Button } from '@/shared/components/ui'
 import { QuickCaptureModal } from '@/shared/components/QuickCaptureModal'
 import { ConfirmDeleteModal } from '@/shared/components/ConfirmDeleteModal'
+import {
+  SkeletonStatCard,
+  SkeletonChartBar,
+  SkeletonNoteRow,
+} from '@/shared/components/Skeleton'
+
+const DISMISSED_KEY = 'marinloop-dismissed-insights'
+
+function getDismissed(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DISMISSED_KEY)
+    return raw ? new Set(JSON.parse(raw) as string[]) : new Set()
+  } catch {
+    return new Set()
+  }
+}
+
+function saveDismissed(ids: Set<string>): void {
+  try {
+    localStorage.setItem(DISMISSED_KEY, JSON.stringify([...ids]))
+  } catch { /* ignore */ }
+}
 
 export function SummaryView() {
   const {
     showQuickCaptureModal,
     openQuickCaptureModal,
     closeQuickCaptureModal,
+    openRemindersPanel,
   } = useAppStore()
   const { adherence: adh } = useAdherenceHistory(7)
   const { timeline } = useTimeline()
-  const { notes: realNotes, addNote: addNoteReal, isAdding, updateNote, deleteNote, isDeleting } = useNotes()
+  const { notes: realNotes, isLoading: notesLoading, addNote: addNoteReal, isAdding, updateNote, deleteNote, isDeleting } = useNotes()
   const { meds: realMeds } = useMedications()
   const { appts: realAppts } = useAppointments()
+
+  // --- Phase 2 hooks ---
+  const { predictions, isLoading: refillLoading } = useRefillPredictions()
+  const { currentStreak, longestStreak, isLoading: streakLoading } = useStreak()
+  const { insights, isLoading: insightsLoading } = useAdherenceInsights()
+
+  const { data: missPatterns = [] } = useQuery({
+    queryKey: ['miss-patterns'],
+    queryFn: () => getMissPatterns(28),
+    staleTime: 60 * 60 * 1000, // 1 hour
+  })
+
+  // Dismissed insight card IDs
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => getDismissed())
+
+  const dismissInsight = (id: string) => {
+    setDismissedIds((prev) => {
+      const next = new Set(prev)
+      next.add(id)
+      saveDismissed(next)
+      return next
+    })
+  }
+
+  const visibleInsights = useMemo(
+    () => insights.filter((ins) => !dismissedIds.has(ins.id)),
+    [insights, dismissedIds],
+  )
+
+  // Refill alerts: only critical (<=3) and warning (<=7)
+  const alertPredictions = useMemo(
+    () => predictions.filter((p) => p.severity === 'critical' || p.severity === 'warning'),
+    [predictions],
+  )
 
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
   const [editingNoteText, setEditingNoteText] = useState('')
@@ -69,29 +131,180 @@ export function SummaryView() {
       </h2>
 
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <StatCard n={dn} label="Completed" color="var(--color-green)" />
-        <StatCard n={lt} label="Late" color="var(--color-amber)" />
-        <StatCard n={ms} label="Missed" color="var(--color-red)" />
+        {notesLoading ? (
+          <>
+            <SkeletonStatCard />
+            <SkeletonStatCard />
+            <SkeletonStatCard />
+          </>
+        ) : (
+          <>
+            <StatCard n={dn} label="Completed" color="var(--color-green)" />
+            <StatCard n={lt} label="Late" color="var(--color-amber)" />
+            <StatCard n={ms} label="Missed" color="var(--color-red)" />
+          </>
+        )}
       </div>
+
+      {/* A. Refill Alert Cards */}
+      {!refillLoading && alertPredictions.length > 0 && (
+        <div className="mb-5 flex flex-col gap-2">
+          {alertPredictions.map((p) => {
+            const isCritical = p.severity === 'critical'
+            const borderColor = isCritical ? 'var(--color-red)' : 'var(--color-amber)'
+            const textColor = isCritical ? 'var(--color-red)' : 'var(--color-amber)'
+            const bgColor = isCritical
+              ? 'color-mix(in srgb, var(--color-red) 6%, var(--color-bg-secondary))'
+              : 'color-mix(in srgb, var(--color-amber) 6%, var(--color-bg-secondary))'
+            return (
+              <div
+                key={p.medId}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl border-l-4 text-sm font-semibold"
+                style={{ borderLeftColor: borderColor, background: bgColor, color: textColor }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+                <span>
+                  Refill {p.medName} · {p.daysLeft} day{p.daysLeft === 1 ? '' : 's'} left
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* B. Streak Card */}
+      {streakLoading ? (
+        <div className="mb-5 h-[88px] rounded-2xl bg-[var(--color-bg-secondary)] animate-pulse" />
+      ) : (
+        <Card className="mb-5">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1 text-center">
+              <div
+                className="font-extrabold tracking-[-0.03em] [font-size:var(--text-subtitle)]"
+                style={{
+                  color:
+                    currentStreak > 7
+                      ? 'var(--color-green)'
+                      : currentStreak >= 1
+                        ? 'var(--color-amber)'
+                        : 'var(--color-text-tertiary)',
+                }}
+              >
+                {currentStreak}
+              </div>
+              <div className="font-semibold text-[var(--color-text-secondary)] mt-1 [font-size:var(--text-caption)]">
+                Current streak
+              </div>
+            </div>
+            <div className="w-px h-10 bg-[var(--color-border-secondary)] shrink-0" />
+            <div className="flex-1 text-center">
+              <div className="font-extrabold tracking-[-0.03em] [font-size:var(--text-subtitle)] text-[var(--color-text-primary)]">
+                {longestStreak}
+              </div>
+              <div className="font-semibold text-[var(--color-text-secondary)] mt-1 [font-size:var(--text-caption)]">
+                Best streak
+              </div>
+            </div>
+          </div>
+          {currentStreak === 0 && (
+            <p className="mt-3 text-center text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] font-medium">
+              Start your streak today — take all your doses!
+            </p>
+          )}
+        </Card>
+      )}
+
+      {/* C. AI Adherence Insights */}
+      {insightsLoading ? (
+        <div className="mb-5 flex flex-col gap-3">
+          <div className="h-[64px] rounded-xl bg-[var(--color-bg-secondary)] animate-pulse" />
+          <div className="h-[64px] rounded-xl bg-[var(--color-bg-secondary)] animate-pulse" />
+        </div>
+      ) : visibleInsights.length > 0 ? (
+        <div className="mb-5 flex flex-col gap-3">
+          {visibleInsights.slice(0, 3).map((ins) => (
+            <Card key={ins.id} className="relative pr-10">
+              <div className="flex items-start gap-3">
+                <span className="text-xl leading-none mt-0.5 shrink-0" aria-hidden>
+                  {ins.type === 'pattern' ? '📊' : ins.type === 'praise' ? '⭐' : '💡'}
+                </span>
+                <div className="min-w-0">
+                  <div className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-body)]">
+                    {ins.title}
+                  </div>
+                  <div className="text-[var(--color-text-secondary)] [font-size:var(--text-caption)] mt-1 leading-snug">
+                    {ins.body}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => dismissInsight(ins.id)}
+                aria-label={`Dismiss insight: ${ins.title}`}
+                className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded-md text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] transition-colors cursor-pointer"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </Card>
+          ))}
+        </div>
+      ) : missPatterns.length > 0 ? (
+        /* D. Miss Pattern Cards — shown when AI insights unavailable */
+        <div className="mb-5 flex flex-col gap-3">
+          {missPatterns.slice(0, 2).map((mp) => (
+            <Card key={`${mp.scheduleId}-${mp.dayOfWeek}`}>
+              <div className="flex items-start gap-3">
+                <span className="text-xl leading-none mt-0.5 shrink-0" aria-hidden>💡</span>
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-body)]">
+                    Missed dose pattern detected
+                  </div>
+                  <div className="text-[var(--color-text-secondary)] [font-size:var(--text-caption)] mt-1 leading-snug">
+                    You tend to miss {mp.medName} on {mp.dayLabel}s at {mp.scheduledTime} — want to add an earlier reminder?
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openRemindersPanel()}
+                    className="mt-2 text-[var(--color-accent)] [font-size:var(--text-caption)] font-semibold cursor-pointer hover:underline bg-transparent border-none p-0"
+                  >
+                    Add reminder
+                  </button>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : null}
 
       <Card className="mb-6">
         <h3 className="font-bold mb-5 text-[var(--color-text-primary)] [font-size:var(--text-label)]">7-Day Adherence</h3>
         <div className="flex items-end gap-3 h-[110px] pb-7 relative">
-          {days.map((d, i) => {
-            const bc = d.pct >= 80 ? 'var(--color-green)' : d.pct >= 50 ? 'var(--color-amber)' : d.pct > 0 ? 'var(--color-red)' : 'var(--color-ring-track)'
-            return (
-              <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-1 relative">
-                <div className="font-bold text-[var(--color-text-tertiary)] [font-family:var(--font-mono)] text-sm sm:[font-size:var(--text-caption)]">{d.pct}%</div>
-                <div
-                  className="w-full rounded-full min-h-[4px] transition-[width] duration-300"
-                  style={{ background: bc, height: `${Math.max(d.pct * 0.7, 4)}%` }}
-                />
-                <div className={`absolute bottom-0 font-bold [font-family:var(--font-mono)] text-sm sm:[font-size:var(--text-caption)] ${i === 6 ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-tertiary)]'}`}>
-                  {d.label}
+          {notesLoading ? (
+            Array.from({ length: 7 }).map((_, i) => <SkeletonChartBar key={i} />)
+          ) : (
+            days.map((d, i) => {
+              const bc = d.pct >= 80 ? 'var(--color-green)' : d.pct >= 50 ? 'var(--color-amber)' : d.pct > 0 ? 'var(--color-red)' : 'var(--color-ring-track)'
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-1 relative">
+                  <div className="font-bold text-[var(--color-text-tertiary)] [font-family:var(--font-mono)] text-sm sm:[font-size:var(--text-caption)]">{d.pct}%</div>
+                  <div
+                    className="w-full rounded-full min-h-[4px] transition-[width] duration-300"
+                    style={{ background: bc, height: `${Math.max(d.pct * 0.7, 4)}%` }}
+                  />
+                  <div className={`absolute bottom-0 font-bold [font-family:var(--font-mono)] text-sm sm:[font-size:var(--text-caption)] ${i === 6 ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-tertiary)]'}`}>
+                    {d.label}
+                  </div>
                 </div>
-              </div>
-            )
-          })}
+              )
+            })
+          )}
         </div>
       </Card>
 
@@ -99,10 +312,37 @@ export function SummaryView() {
         <h3 className="font-bold mb-4 text-[var(--color-text-primary)] [font-size:var(--text-label)]">
           Notes for your doctor
         </h3>
-        {notes.length === 0 ? (
-          <p className="text-[var(--color-text-tertiary)] [font-size:var(--text-body)]">
-            Jot down side effects or questions for your doctor
-          </p>
+        {notesLoading ? (
+          <>
+            <SkeletonNoteRow />
+            <SkeletonNoteRow />
+            <SkeletonNoteRow />
+          </>
+        ) : notes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 gap-3 text-center">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--color-accent)"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+              <line x1="9" y1="12" x2="15" y2="12" />
+              <line x1="9" y1="16" x2="13" y2="16" />
+            </svg>
+            <div>
+              <p className="text-[var(--color-text-primary)] font-semibold text-lg leading-snug">No notes yet</p>
+              <p className="text-[var(--color-text-secondary)] text-sm mt-1 max-w-xs">
+                Capture observations, questions for your doctor, or anything that matters.
+              </p>
+            </div>
+          </div>
         ) : (
           notes.slice(0, 8).map((n) => (
             <div key={n.id} className="mb-4 pb-4 border-b border-[var(--color-border-secondary)] last:border-0 last:mb-0 last:pb-0 group">

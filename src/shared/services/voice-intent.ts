@@ -28,7 +28,8 @@ Do not include markdown fences.
 - log_dose: mark a dose as taken or missed
 - query_next_dose: when is the next dose
 - add_note: add a note (standalone or for a medication)
-- query: any question about the user's schedule, medications, appointments, notes, adherence, agenda. Use for: "what's my schedule?", "what meds do I have?", "where is my agenda?", "what are my notes?", "how's my adherence?"
+- adherence_summary: user wants to see their adherence overview or weekly report. Use for: "how am I doing?", "my adherence", "weekly summary", "adherence summary", "how'm I doing?"
+- query: any question about the user's schedule, medications, appointments, notes, agenda. Use for: "what's my schedule?", "what meds do I have?", "where is my agenda?", "what are my notes?"
 - unknown: cannot determine intent
 
 ## Entity schemas
@@ -66,7 +67,7 @@ function clampConfidence(v: unknown): number {
 
 function isIntent(value: unknown): value is VoiceIntentType {
   return typeof value === 'string'
-    && ['navigate', 'open_add_med', 'open_add_appt', 'create_reminder', 'log_dose', 'query_next_dose', 'add_note', 'query', 'unknown'].includes(value)
+    && ['navigate', 'open_add_med', 'open_add_appt', 'create_reminder', 'log_dose', 'query_next_dose', 'add_note', 'query', 'adherence_summary', 'unknown'].includes(value)
 }
 
 export function coerceResult(raw: unknown): VoiceIntentResult {
@@ -285,6 +286,18 @@ export function heuristicParse(text: string): VoiceIntentResult {
       entities: { note: { text: noteText } },
       confidence: 0.72,
       missing: !noteText ? ['note.text'] : [],
+      requires_confirmation: false,
+    }
+  }
+
+  // Adherence summary intent — dedicated patterns
+  const adherenceSummaryPattern = /(how am i doing|my adherence|weekly (summary|report)|adherence summary|how('?m| am) i doing)/i
+  if (adherenceSummaryPattern.test(lowered)) {
+    return {
+      intent: 'adherence_summary',
+      entities: {},
+      confidence: 0.9,
+      missing: [],
       requires_confirmation: false,
     }
   }

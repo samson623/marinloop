@@ -66,8 +66,9 @@ function mapApiError(msg: string): string {
 /**
  * Extract medication info from one or more prescription label photos.
  * Images are compressed client-side before sending to the Edge Function.
+ * Pass mode='pill' to identify a pill by visual characteristics instead of reading a label.
  */
-export async function extractFromImages(files: File[]): Promise<LabelExtractResult> {
+export async function extractFromImages(files: File[], mode?: 'label' | 'pill'): Promise<LabelExtractResult> {
   if (files.length === 0) {
     throw new Error('At least one image is required.')
   }
@@ -77,7 +78,7 @@ export async function extractFromImages(files: File[]): Promise<LabelExtractResu
 
   // Race between the actual call and a timeout
   const invokePromise = supabase.functions.invoke<LabelExtractResult>('extract-label', {
-    body: { images },
+    body: mode ? { images, mode } : { images },
   })
 
   const timeoutPromise = new Promise<never>((_, reject) => {
@@ -118,6 +119,6 @@ export async function extractFromImages(files: File[]): Promise<LabelExtractResu
 }
 
 /** Single-file convenience wrapper (backwards compatible). */
-export async function extractFromImage(file: File): Promise<LabelExtractResult> {
-  return extractFromImages([file])
+export async function extractFromImage(file: File, mode?: 'label' | 'pill'): Promise<LabelExtractResult> {
+  return extractFromImages([file], mode)
 }

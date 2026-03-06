@@ -1,10 +1,13 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useAppStore, fT } from '@/shared/stores/app-store'
 import { Modal } from '@/shared/components/Modal'
 import { ConfirmDeleteModal } from '@/shared/components/ConfirmDeleteModal'
 import { Button, Input } from '@/shared/components/ui'
 import { generateEvenlySpacedTimes } from '@/shared/lib/scheduling'
 import { getSupplyInfo } from '@/shared/lib/medication-utils'
+import { useInteractions } from '@/shared/hooks/useInteractions'
+import { getTimingPatterns } from '@/shared/services/schedule-analysis'
 
 type DisplayMed = {
   id: string
@@ -19,6 +22,8 @@ type DisplayMed = {
   dosesPerDay: number
 }
 
+type MedRef = { id: string; name: string; rxcui?: string | null }
+
 function FormField({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
   return (
     <div className="mb-4 flex-1">
@@ -30,7 +35,7 @@ function FormField({ label, id, children }: { label: string; id: string; childre
   )
 }
 
-export default function MedDetailModal({ med, isDeleting, onClose, onUpdate, onDelete, onUpdateSupply, refills, scheds, addSchedAsync, updateSched, deleteSched }: {
+export default function MedDetailModal({ med, isDeleting, onClose, onUpdate, onDelete, onUpdateSupply, refills, scheds, addSchedAsync, updateSched, deleteSched, allMeds, userAllergies }: {
   med: DisplayMed
   isDeleting: boolean
   onClose: () => void
@@ -42,6 +47,8 @@ export default function MedDetailModal({ med, isDeleting, onClose, onUpdate, onD
   addSchedAsync: (input: { medication_id: string; time: string; days: number[]; food_context_minutes: number; active: boolean }) => Promise<unknown>
   updateSched: (input: { id: string; updates: Record<string, unknown> }) => void
   deleteSched: (id: string) => void
+  allMeds: MedRef[]
+  userAllergies?: string[]
 }) {
   const { toast } = useAppStore()
   const [isEditing, setIsEditing] = useState(false)
@@ -62,6 +69,26 @@ export default function MedDetailModal({ med, isDeleting, onClose, onUpdate, onD
 
   const refill = refills.find((r) => r.medication_id === med.id)
   const medScheds = scheds.filter((s) => s.medication_id === med.id).sort((a, b) => a.time.localeCompare(b.time))
+
+  // Drug interactions — exclude this med from the list passed to the hook
+  const otherMeds = allMeds.filter((m) => m.id !== med.id)
+  const thisMedRef: MedRef = { id: med.id, name: med.name }
+  const medsForInteractions = [thisMedRef, ...otherMeds]
+  const { interactions, isLoading: interactionsLoading } = useInteractions(medsForInteractions)
+
+  // Timing insight — query timing patterns for this medication
+  const { data: timingPatterns } = useQuery({
+    queryKey: ['timing-patterns', med.id],
+    queryFn: () => getTimingPatterns(med.id),
+    staleTime: 30 * 60 * 1000,
+  })
+
+  // Allergy check — find allergens that appear in the med's warnings
+  const matchedAllergen = (userAllergies && userAllergies.length > 0 && med.warnings)
+    ? userAllergies.find((allergy) =>
+        med.warnings.toLowerCase().includes(allergy.toLowerCase())
+      )
+    : undefined
 
   const handleEditFreqChange = (newFreq: string) => {
     const n = Number.parseInt(newFreq, 10) || 1
@@ -210,6 +237,34 @@ export default function MedDetailModal({ med, isDeleting, onClose, onUpdate, onD
                 {med.times.length > 0 ? med.times.map((t) => fT(t)).join(', ') : 'No time set'}
               </span>
             </div>
+
+            {/* Timing Insight — shown below the schedule row */}
+            {timingPatterns && timingPatterns.length > 0 && (
+              <div className="ml-28 -mt-2">
+                {timingPatterns.map((pattern) => (
+                  <div
+                    key={pattern.scheduleId}
+                    className="flex items-center gap-2 flex-wrap text-[var(--color-text-secondary)] [font-size:var(--text-caption)] bg-[var(--color-bg-tertiary)] rounded-lg px-3 py-2 mb-1.5"
+                  >
+                    <span>
+                      You usually take this at <strong className="text-[var(--color-text-primary)]">{fT(pattern.avgActualTime)}</strong>
+                      {' '}— want to reschedule from <strong className="text-[var(--color-text-primary)]">{fT(pattern.scheduledTime)}</strong>?
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateSched({ id: pattern.scheduleId, updates: { time: pattern.avgActualTime } })
+                        toast(`Schedule updated to ${fT(pattern.avgActualTime)}`, 'ts')
+                      }}
+                      className="shrink-0 text-[var(--color-accent)] font-semibold [font-size:var(--text-caption)] cursor-pointer hover:underline"
+                    >
+                      Reschedule
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="flex items-start gap-3">
               <span className="text-[var(--color-text-tertiary)] shrink-0 w-28">Frequency</span>
               <span className="text-[var(--color-text-primary)]">{med.freq}x daily</span>
@@ -265,8 +320,62 @@ export default function MedDetailModal({ med, isDeleting, onClose, onUpdate, onD
                 <p className="text-[var(--color-red)] font-medium leading-relaxed">{med.warnings}</p>
               </div>
             )}
+
+            {/* Allergy Alert — shown after warnings */}
+            {matchedAllergen && (
+              <div className="flex items-start gap-3 rounded-xl border border-[color-mix(in_srgb,var(--color-red)_30%,transparent)] bg-[color-mix(in_srgb,var(--color-red)_8%,transparent)] px-4 py-3">
+                <span className="text-[var(--color-red)] font-semibold leading-relaxed [font-size:var(--text-body)]">
+                  ⚠️ Allergy Alert: This medication may contain {matchedAllergen}
+                </span>
+              </div>
+            )}
+
+            {/* Drug Interactions */}
+            {interactionsLoading && (
+              <div className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] italic">
+                Checking interactions...
+              </div>
+            )}
+            {!interactionsLoading && interactions.length > 0 && (
+              <div
+                className={[
+                  'rounded-xl border px-4 py-3 space-y-2',
+                  interactions.some((i) => i.severity === 'high')
+                    ? 'border-[color-mix(in_srgb,var(--color-red)_30%,transparent)] bg-[color-mix(in_srgb,var(--color-red)_8%,transparent)]'
+                    : 'border-[color-mix(in_srgb,var(--color-amber,#f59e0b)_30%,transparent)] bg-[color-mix(in_srgb,var(--color-amber,#f59e0b)_8%,transparent)]',
+                ].join(' ')}
+              >
+                <div className="flex items-center gap-2">
+                  <svg
+                    width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke={interactions.some((i) => i.severity === 'high') ? 'var(--color-red)' : '#f59e0b'}
+                    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden
+                  >
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                  <span
+                    className={[
+                      'font-semibold [font-size:var(--text-body)]',
+                      interactions.some((i) => i.severity === 'high') ? 'text-[var(--color-red)]' : 'text-[#b45309]',
+                    ].join(' ')}
+                  >
+                    Drug Interactions
+                  </span>
+                </div>
+                <ul className="space-y-1.5">
+                  {interactions.map((interaction, idx) => (
+                    <li key={idx} className="text-[var(--color-text-secondary)] [font-size:var(--text-caption)] leading-relaxed">
+                      {interaction.description}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
+          {/* Supply bar */}
           <div className="mt-6 pt-5 border-t border-[var(--color-border-primary)]">
             <div className="h-3 bg-[var(--color-ring-track)] rounded-full overflow-hidden">
               <div

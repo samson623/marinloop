@@ -6,7 +6,7 @@ export type NotificationType = Database['public']['Enums']['notification_type']
 export type MedicationRow = Database['public']['Tables']['medications']['Row']
 export type MedicationCreateInput = Pick<
   Database['public']['Tables']['medications']['Insert'],
-  'name' | 'dosage' | 'instructions' | 'warnings' | 'freq' | 'color' | 'icon'
+  'name' | 'dosage' | 'instructions' | 'warnings' | 'freq' | 'color' | 'icon' | 'rxcui'
 >
 export type MedicationUpdateInput = Partial<MedicationCreateInput>
 
@@ -55,6 +55,7 @@ export type VoiceIntentType =
   | 'query_next_dose'
   | 'add_note'
   | 'query'
+  | 'adherence_summary'
   | 'unknown'
 
 export type VoiceAddMedEntryMethod = 'scan' | 'photo' | 'manual'

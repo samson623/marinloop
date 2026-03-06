@@ -592,6 +592,68 @@ textarea {
 }
 
 /* ============================================
+   SHIMMER ANIMATION — Skeleton loading
+   ============================================ */
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-secondary) 25%,
+    var(--color-bg-tertiary) 50%,
+    var(--color-bg-secondary) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+/* ============================================
+   PREFERS-REDUCED-MOTION — Accessibility
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-pulse-ring {
+    animation: none !important;
+  }
+
+  .stagger-children > * {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .animate-view-in,
+  .animate-slide-r,
+  .animate-fade-in {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ============================================
+   HIGH CONTRAST MODE — Forced colors
+   ============================================ */
+@media (forced-colors: active) {
+  *:focus-visible {
+    outline: 3px solid ButtonText !important;
+    outline-offset: 2px !important;
+  }
+
+  .animate-pulse,
+  .animate-shimmer {
+    animation: none !important;
+    forced-color-adjust: auto;
+  }
+}
+
+/* ============================================
    BARCODE SCANNER
    ============================================ */
 @keyframes spin {

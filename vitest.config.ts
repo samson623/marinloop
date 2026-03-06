@@ -16,5 +16,24 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     mockReset: true,
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: [
+        'src/**/*.test.*',
+        'src/**/*.spec.*',
+        'src/test/**',
+        'src/shared/types/**',
+        'src/main.tsx',
+      ],
+      reporter: ['text', 'lcov', 'html'],
+      thresholds: {
+        lines: 60,
+        functions: 60,
+        branches: 55,
+        statements: 60,
+      },
+      reportsDirectory: './coverage',
+    },
   },
 })

@@ -147,20 +147,20 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 
 export function TimelineView() {
   const { timeline: sched, isLoading, error, refetch } = useTimeline()
-  const { buildSched } = useAppStore()
   const [, setTick] = useState(0)
 
   // Ref attached to the card for the "next" item
   const nextItemRef = useRef<HTMLButtonElement>(null)
   const [showJumpButton, setShowJumpButton] = useState(false)
 
+  // Refresh timeline data and clock display every minute
   useEffect(() => {
     const iv = setInterval(() => {
-      buildSched()
+      refetch()
       setTick((t) => t + 1)
     }, 60000)
     return () => clearInterval(iv)
-  }, [buildSched])
+  }, [refetch])
 
   // Track whether the "next" item is in the viewport
   useEffect(() => {

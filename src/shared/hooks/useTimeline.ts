@@ -1,4 +1,5 @@
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAppointments } from '@/shared/hooks/useAppointments'
 import { useDoseLogs } from '@/shared/hooks/useDoseLogs'
 import { useMedications } from '@/shared/hooks/useMedications'
@@ -8,10 +9,21 @@ import { todayLocal, isoToLocalDate, toLocalTimeString } from '@/shared/lib/date
 import { timeToMinutes, nowMinutes, sortAndMarkNext } from '@/shared/lib/timeline-utils'
 
 export function useTimeline() {
-  const { meds } = useMedications()
-  const { scheds } = useSchedules()
-  const { todayLogs } = useDoseLogs()
-  const { appts } = useAppointments()
+  const queryClient = useQueryClient()
+  const { meds, isLoading: medsLoading, error: medsError } = useMedications()
+  const { scheds, isLoading: schedsLoading } = useSchedules()
+  const { todayLogs, isLoading: logsLoading } = useDoseLogs()
+  const { appts, isLoading: apptsLoading, error: apptsError } = useAppointments()
+
+  const isLoading = medsLoading || schedsLoading || logsLoading || apptsLoading
+  const error = medsError ?? apptsError ?? null
+
+  const refetch = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ['medications'] })
+    void queryClient.invalidateQueries({ queryKey: ['schedules'] })
+    void queryClient.invalidateQueries({ queryKey: ['dose_logs'] })
+    void queryClient.invalidateQueries({ queryKey: ['appointments'] })
+  }, [queryClient])
 
   const timelineItems = useMemo(() => {
     const byMedication = new Map(meds.map((m) => [m.id, m]))
@@ -66,6 +78,8 @@ export function useTimeline() {
 
   return {
     timeline: timelineItems,
-    isLoading: false,
+    isLoading,
+    error,
+    refetch,
   }
 }

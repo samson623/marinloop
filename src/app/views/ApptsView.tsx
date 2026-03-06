@@ -4,7 +4,8 @@ import { todayLocal, isoToLocalDate, toLocalTimeString } from '@/shared/lib/date
 import { useAppointments } from '@/shared/hooks/useAppointments'
 import { Modal } from '@/shared/components/Modal'
 import { ConfirmDeleteModal } from '@/shared/components/ConfirmDeleteModal'
-import { Button, Input } from '@/shared/components/ui'
+import { Button, Input, Pill } from '@/shared/components/ui'
+import { SkeletonApptCard } from '@/shared/components/Skeleton'
 
 type DisplayAppt = {
   id: string
@@ -24,7 +25,7 @@ export function ApptsView() {
     openAddApptModal,
     closeAddApptModal,
   } = useAppStore()
-  const { appts: realAppts, addAppt, updateAppt, deleteAppt } = useAppointments()
+  const { appts: realAppts, isLoading: apptsLoading, addAppt, updateAppt, deleteAppt } = useAppointments()
   const [selectedAppt, setSelectedAppt] = useState<DisplayAppt | null>(null)
 
   const displayAppts: DisplayAppt[] = realAppts.map((a) => ({
@@ -46,32 +47,66 @@ export function ApptsView() {
         Appointments
       </h2>
 
-      <div className="stagger-children">
-        {sorted.length === 0 && (
-          <div className="py-8 px-5 text-center border-2 border-dashed border-[var(--color-border-secondary)] rounded-2xl sm:py-6 sm:px-4">
-            <p className="text-[var(--color-text-secondary)] text-lg font-medium sm:text-base">No upcoming appointments.</p>
-            <p className="mt-2 text-[var(--color-text-tertiary)] text-sm sm:[font-size:var(--text-caption)]">Tap the button below to add one</p>
-          </div>
-        )}
-
-        {sorted.map((a, i) => {
-          const past = new Date(`${a.date}T${a.time}`) < new Date()
-          return (
-            <button
-              key={a.id}
-              type="button"
-              className="animate-slide-r card-interactive w-full text-left bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] border-l-4 border-l-[var(--color-text-primary)] rounded-2xl p-4 mb-3 min-h-[56px] cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
-              style={{ animationDelay: `${i * 0.04}s`, opacity: past ? 0.45 : 1 }}
-              onClick={() => setSelectedAppt(a)}
+      <div className="stagger-children" role="list">
+        {apptsLoading ? (
+          <>
+            <SkeletonApptCard />
+            <SkeletonApptCard />
+            <SkeletonApptCard />
+          </>
+        ) : sorted.length === 0 ? (
+          <div className="py-8 px-5 text-center flex flex-col items-center gap-3 border-2 border-dashed border-[var(--color-border-secondary)] rounded-2xl sm:py-6 sm:px-4">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--color-accent)"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
             >
-              <div className="text-[var(--color-text-tertiary)] mb-1 [font-family:var(--font-mono)] text-sm sm:[font-size:var(--text-caption)]">
-                {fD(a.date)} at {fT(a.time)}
-              </div>
-              <div className="font-bold mb-0.5 text-[var(--color-text-primary)] text-base sm:[font-size:var(--text-body)]">{a.title}</div>
-              <div className="text-[var(--color-text-secondary)] text-sm sm:[font-size:var(--text-label)]">{a.loc}</div>
-            </button>
-          )
-        })}
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            <div>
+              <p className="text-[var(--color-text-primary)] font-semibold text-lg leading-snug">No appointments scheduled</p>
+              <p className="mt-1 text-[var(--color-text-secondary)] text-sm max-w-xs">
+                Stay on top of your care — add upcoming visits, tests, or check-ins.
+              </p>
+            </div>
+          </div>
+        ) : (
+          sorted.map((a, i) => {
+            const past = new Date(`${a.date}T${a.time}`) < new Date()
+            const formattedDate = `${fD(a.date)} at ${fT(a.time)}`
+            return (
+              <button
+                key={a.id}
+                type="button"
+                role="listitem"
+                aria-label={`${a.title} on ${formattedDate}`}
+                className="animate-slide-r card-interactive w-full text-left bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] border-l-4 border-l-[var(--color-text-primary)] rounded-2xl p-4 mb-3 min-h-[56px] cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                style={{ animationDelay: `${i * 0.04}s`, opacity: past ? 0.45 : 1 }}
+                onClick={() => setSelectedAppt(a)}
+              >
+                <div className="text-[var(--color-text-tertiary)] mb-1 [font-family:var(--font-mono)] text-sm sm:[font-size:var(--text-caption)]">
+                  {formattedDate}
+                </div>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="font-bold text-[var(--color-text-primary)] text-base sm:[font-size:var(--text-body)]">{a.title}</span>
+                  {past && (
+                    <Pill variant="neutral" className="py-0.5 px-2 min-h-0 text-xs">Past</Pill>
+                  )}
+                </div>
+                <div className="text-[var(--color-text-secondary)] text-sm sm:[font-size:var(--text-label)]">{a.loc}</div>
+              </button>
+            )
+          })
+        )}
       </div>
 
       <Button

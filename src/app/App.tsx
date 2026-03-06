@@ -149,7 +149,7 @@ function AppInner() {
 }
 
 function AppShell() {
-  const { session } = useAuthStore()
+  const { session, profile, user } = useAuthStore()
   const { resolvedTheme, toggleTheme } = useThemeStore()
   const { logDose } = useDoseLogs()
   const { addNote: addNoteReal } = useNotes()
@@ -322,7 +322,16 @@ function AppShell() {
               : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" /></svg>}
           </IconButton>
           <IconButton size="md" aria-label="Open profile" onClick={() => navigate('/profile')} className="overflow-hidden p-0">
-            <img src="https://ui-avatars.com/api/?name=marinloop+User&background=0D9488&color=fff" alt="" className="w-full h-full object-cover" />
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt={profile.name ?? 'Profile'} className="w-full h-full object-cover" />
+            ) : (
+              <span
+                className="w-full h-full flex items-center justify-center bg-[var(--color-accent)] text-[var(--color-text-inverse)] font-bold text-sm"
+                aria-hidden
+              >
+                {(profile?.name?.[0] ?? user?.email?.[0] ?? 'U').toUpperCase()}
+              </span>
+            )}
           </IconButton>
         </div>
         </div>

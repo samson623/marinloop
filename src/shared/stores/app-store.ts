@@ -43,7 +43,7 @@ export interface NoteEntry {
     id: string; text: string; time: string; medicationId: string
 }
 export type AddNotePayload = { content: string; medication_id?: string | null; appointment_id?: string | null }
-export type Tab = 'timeline' | 'meds' | 'appts' | 'summary'
+export type Tab = 'timeline' | 'meds' | 'appts' | 'summary' | 'care'
 export type ToastType = 'ts' | 'tw' | 'te'
 export interface Toast {
     id: string; msg: string; cls: ToastType

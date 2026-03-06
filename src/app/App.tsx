@@ -21,6 +21,7 @@ const MedsView = React.lazy(() => import('@/app/views/MedsView').then((m) => ({ 
 const ApptsView = React.lazy(() => import('@/app/views/ApptsView').then((m) => ({ default: m.ApptsView })))
 const SummaryView = React.lazy(() => import('@/app/views/SummaryView').then((m) => ({ default: m.SummaryView })))
 const ProfileView = React.lazy(() => import('@/app/views/ProfileView').then((m) => ({ default: m.ProfileView })))
+const CareView = React.lazy(() => import('@/app/views/CareView').then((m) => ({ default: m.CareView })))
 const InstallGuideScreen = React.lazy(() => import('@/app/InstallGuideScreen').then((m) => ({ default: m.InstallGuideScreen })))
 import { isMobile, isStandalone } from '@/shared/lib/device'
 import { AddToHomeScreenPrompt } from '@/shared/components/AddToHomeScreenPrompt'
@@ -72,6 +73,18 @@ const tabs: { id: Tab; label: string; icon: (active: boolean) => React.ReactNode
     label: 'Summary',
     icon: (a) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={a ? 2.2 : 1.6} strokeLinecap="round" strokeLinejoin="round"><path d="M18 20V10" /><path d="M12 20V4" /><path d="M6 20v-6" /></svg>
+    ),
+  },
+  {
+    id: 'care',
+    label: 'Care',
+    icon: (a) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={a ? 2.2 : 1.6} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
     ),
   },
 ]
@@ -126,6 +139,7 @@ function AppInner() {
           <Route path="/meds" element={<React.Suspense fallback={<PageLoader />}><MedsView /></React.Suspense>} />
           <Route path="/appts" element={<React.Suspense fallback={<PageLoader />}><ApptsView /></React.Suspense>} />
           <Route path="/summary" element={<React.Suspense fallback={<PageLoader />}><SummaryView /></React.Suspense>} />
+          <Route path="/care" element={<React.Suspense fallback={<PageLoader />}><CareView /></React.Suspense>} />
           <Route path="/profile" element={<React.Suspense fallback={<PageLoader />}><ProfileView /></React.Suspense>} />
         </Route>
       </Route>

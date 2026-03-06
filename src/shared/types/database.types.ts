@@ -23,6 +23,7 @@ export interface Database {
           timezone: string
           plan: Database['public']['Enums']['plan_type']
           allergies: string[]
+          emergency_contacts: Json
           created_at: string
           updated_at: string
         }
@@ -34,6 +35,7 @@ export interface Database {
           timezone?: string
           plan?: Database['public']['Enums']['plan_type']
           allergies?: string[]
+          emergency_contacts?: Json
           created_at?: string
           updated_at?: string
         }
@@ -44,6 +46,77 @@ export interface Database {
           timezone?: string
           plan?: Database['public']['Enums']['plan_type']
           allergies?: string[]
+          emergency_contacts?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      care_connections: {
+        Row: {
+          id: string
+          user_id: string
+          caregiver_email: string
+          caregiver_name: string
+          relationship: string
+          status: string
+          notify_on_miss: boolean
+          invite_token: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string
+          caregiver_email: string
+          caregiver_name: string
+          relationship?: string
+          status?: string
+          notify_on_miss?: boolean
+          invite_token?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          caregiver_name?: string
+          relationship?: string
+          status?: string
+          notify_on_miss?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      providers: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          specialty: string
+          phone: string | null
+          email: string | null
+          address: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string
+          name: string
+          specialty?: string
+          phone?: string | null
+          email?: string | null
+          address?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          name?: string
+          specialty?: string
+          phone?: string | null
+          email?: string | null
+          address?: string | null
+          notes?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -389,6 +462,12 @@ export interface Database {
           p_snooze_minutes?: number
         }
         Returns: string
+      }
+      accept_care_invite: {
+        Args: {
+          p_token: string
+        }
+        Returns: Database['public']['Tables']['care_connections']['Row'][]
       }
     }
     CompositeTypes: Record<string, never>

@@ -42,5 +42,21 @@ vitest.config.ts.timestamp-*.mjs
 # Supabase local temp
 supabase/.temp/
 
+# Secret export / dump artifacts
+*secrets*.txt
+*secret*.txt
+*secrets*.log
+*secret*.log
+*secrets*.csv
+*secret*.csv
+supabase_secrets*.txt
+secrets_full*.txt
+.env.backup*
+.env.export*
+.env.dump*
+
 .vercel
 .env*.local
+
+# Keep sanitized docs templates tracked
+!docs/templates/*.template.txt

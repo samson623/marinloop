@@ -44,9 +44,9 @@ export function useReminders() {
   const snoozeMutation = useMutation({
     mutationFn: ({ id, minutes }: { id: string; minutes?: number }) =>
       RemindersService.snooze(id, minutes),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['reminders'] })
-      toast('Snoozed 10 min', 'ts')
+      toast(`Snoozed ${variables.minutes ?? 10} min`, 'ts')
     },
     onError: (err: unknown) => handleMutationError(err, 'useReminders', 'Failed to snooze reminder', toast),
   })

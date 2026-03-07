@@ -9,6 +9,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { buildRateLimitHeaders, runQuotaTrackedRequest } from '../_shared/quota-tracker.ts'
 
 const ALLOWED_MODEL = 'gpt-5-nano'
 const MAX_MESSAGES = 20
@@ -143,117 +144,151 @@ serve(async (req) => {
     }
     const supabaseService = createClient(supabaseUrl, serviceRoleKey)
     const today = new Date().toISOString().slice(0, 10)
-    const { data: newCount, error: rpcError } = await supabaseService.rpc('increment_ai_daily_usage', {
-      p_user_id: user.id,
-      p_usage_date: today,
-    })
-    if (rpcError) {
+    const { data: usageRow, error: usageError } = await supabaseService
+      .from('ai_daily_usage')
+      .select('request_count')
+      .eq('user_id', user.id)
+      .eq('usage_date', today)
+      .maybeSingle()
+    if (usageError) {
       return new Response(
-        JSON.stringify({ error: scrubError(rpcError) }),
+        JSON.stringify({ error: scrubError(usageError) }),
         { status: 500, headers: corsHeaders },
       )
     }
-    const requestCount = typeof newCount === 'number' ? newCount : (newCount as number[])?.[0] ?? 0
+
     const limit = getAiDailyLimit()
-    if (requestCount > limit) {
-      const resetAt = getMidnightUtcNext()
-      const retryAfter = getSecondsUntilMidnightUtc()
-      const headers = {
-        ...corsHeaders,
-        'X-RateLimit-Limit': String(limit),
-        'X-RateLimit-Remaining': '0',
-        'X-RateLimit-Reset': String(resetAt),
-        'Retry-After': String(retryAfter),
-      }
-      return new Response(
-        JSON.stringify({ error: 'Daily AI usage limit reached; resets at midnight UTC.' }),
-        { status: 429, headers },
-      )
-    }
+    const currentUsage = usageRow?.request_count ?? 0
+    let validatedMessages: ChatMessage[] = []
+    const quotaResult = await runQuotaTrackedRequest({
+      limit,
+      currentUsage,
+      resetAt: getMidnightUtcNext(),
+      retryAfterSeconds: getSecondsUntilMidnightUtc(),
+      baseHeaders: corsHeaders,
+      limitReachedMessage: 'Daily AI usage limit reached; resets at midnight UTC.',
+      validate: async () => {
+        let body: ChatPayload
+        try {
+          body = (await req.json()) as ChatPayload
+        } catch {
+          return {
+            ok: false,
+            response: new Response(
+              JSON.stringify({ error: 'Invalid JSON body' }),
+              { status: 400, headers: corsHeaders },
+            ),
+          }
+        }
 
-    let body: ChatPayload
-    try {
-      body = (await req.json()) as ChatPayload
-    } catch {
-      return new Response(
-        JSON.stringify({ error: 'Invalid JSON body' }),
-        { status: 400, headers: corsHeaders },
-      )
-    }
+        const rawMessages = body.messages
+        if (!Array.isArray(rawMessages) || rawMessages.length === 0) {
+          return {
+            ok: false,
+            response: new Response(
+              JSON.stringify({ error: 'messages array is required and must be non-empty' }),
+              { status: 400, headers: corsHeaders },
+            ),
+          }
+        }
+        if (rawMessages.length > MAX_MESSAGES) {
+          return {
+            ok: false,
+            response: new Response(
+              JSON.stringify({ error: `Too many messages; maximum ${MAX_MESSAGES}` }),
+              { status: 400, headers: corsHeaders },
+            ),
+          }
+        }
 
-    const rawMessages = body.messages
-    if (!Array.isArray(rawMessages) || rawMessages.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'messages array is required and must be non-empty' }),
-        { status: 400, headers: corsHeaders },
-      )
-    }
-    if (rawMessages.length > MAX_MESSAGES) {
-      return new Response(
-        JSON.stringify({ error: `Too many messages; maximum ${MAX_MESSAGES}` }),
-        { status: 400, headers: corsHeaders },
-      )
-    }
+        const messages: ChatMessage[] = []
+        for (let i = 0; i < rawMessages.length; i++) {
+          const m = rawMessages[i]
+          if (!m || typeof m !== 'object' || typeof (m as ChatMessage).content !== 'string') {
+            return {
+              ok: false,
+              response: new Response(
+                JSON.stringify({ error: `messages[${i}] must have role and content` }),
+                { status: 400, headers: corsHeaders },
+              ),
+            }
+          }
+          const role = (m as ChatMessage).role
+          if (!['system', 'user', 'assistant'].includes(role)) {
+            return {
+              ok: false,
+              response: new Response(
+                JSON.stringify({ error: `messages[${i}].role must be system, user, or assistant` }),
+                { status: 400, headers: corsHeaders },
+              ),
+            }
+          }
+          const content = String((m as ChatMessage).content)
+          if (content.length > MAX_CONTENT_LENGTH) {
+            return {
+              ok: false,
+              response: new Response(
+                JSON.stringify({ error: `messages[${i}].content exceeds ${MAX_CONTENT_LENGTH} characters` }),
+                { status: 400, headers: corsHeaders },
+              ),
+            }
+          }
+          messages.push({ role, content })
+        }
 
-    const messages: ChatMessage[] = []
-    for (let i = 0; i < rawMessages.length; i++) {
-      const m = rawMessages[i]
-      if (!m || typeof m !== 'object' || typeof (m as ChatMessage).content !== 'string') {
-        return new Response(
-          JSON.stringify({ error: `messages[${i}] must have role and content` }),
-          { status: 400, headers: corsHeaders },
-        )
-      }
-      const role = (m as ChatMessage).role
-      if (!['system', 'user', 'assistant'].includes(role)) {
-        return new Response(
-          JSON.stringify({ error: `messages[${i}].role must be system, user, or assistant` }),
-          { status: 400, headers: corsHeaders },
-        )
-      }
-      const content = String((m as ChatMessage).content)
-      if (content.length > MAX_CONTENT_LENGTH) {
-        return new Response(
-          JSON.stringify({ error: `messages[${i}].content exceeds ${MAX_CONTENT_LENGTH} characters` }),
-          { status: 400, headers: corsHeaders },
-        )
-      }
-      messages.push({ role, content })
-    }
-
-    const response = await fetchWithRetry('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
+        validatedMessages = messages
+        return { ok: true, data: undefined }
       },
-      body: JSON.stringify({
-        model: ALLOWED_MODEL,
-        messages: messages.map((m) => ({ role: m.role, content: m.content })),
-        max_tokens: 1024,
-      }),
+      callProvider: async () => {
+        const response = await fetchWithRetry('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: ALLOWED_MODEL,
+            messages: validatedMessages.map((m) => ({ role: m.role, content: m.content })),
+            max_tokens: 1024,
+          }),
+        })
+
+        if (!response.ok) {
+          await response.text()
+          const safeMessage = response.status === 429
+            ? 'Too many requests; try again later'
+            : 'Request failed'
+          return {
+            ok: false,
+            response: new Response(
+              JSON.stringify({ error: safeMessage }),
+              { status: response.status, headers: corsHeaders },
+            ),
+          }
+        }
+
+        const data = await response.json()
+        return { ok: true, data }
+      },
+      incrementUsage: async () => {
+        const { data: newCount, error: rpcError } = await supabaseService.rpc('increment_ai_daily_usage', {
+          p_user_id: user.id,
+          p_usage_date: today,
+        })
+        if (rpcError) throw rpcError
+        return typeof newCount === 'number' ? newCount : (newCount as number[])?.[0] ?? currentUsage + 1
+      },
     })
 
-    if (!response.ok) {
-      await response.text()
-      const safeMessage = response.status === 429
-        ? 'Too many requests; try again later'
-        : 'Request failed'
-      return new Response(
-        JSON.stringify({ error: safeMessage }),
-        { status: response.status, headers: corsHeaders },
-      )
+    if (!quotaResult.ok) {
+      return quotaResult.response!
     }
 
-    const data = await response.json()
-    const remaining = Math.max(0, limit - requestCount)
     const successHeaders = {
       ...corsHeaders,
-      'X-RateLimit-Limit': String(limit),
-      'X-RateLimit-Remaining': String(remaining),
-      'X-RateLimit-Reset': String(getMidnightUtcNext()),
+      ...buildRateLimitHeaders(limit, quotaResult.newUsage ?? currentUsage + 1, getMidnightUtcNext()),
     }
-    return new Response(JSON.stringify(data), {
+    return new Response(JSON.stringify(quotaResult.data), {
       headers: successHeaders,
     })
   } catch (err) {

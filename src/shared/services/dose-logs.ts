@@ -66,10 +66,9 @@ export const DoseLogsService = {
     return result
   },
 
-  async getToday(): Promise<DoseLog[]> {
-    const today = todayLocal()
-    const start = new Date(`${today}T00:00:00`)
-    const end = new Date(`${today}T23:59:59.999`)
+  async getForDate(dateStr: string): Promise<DoseLog[]> {
+    const start = new Date(`${dateStr}T00:00:00`)
+    const end = new Date(`${dateStr}T23:59:59.999`)
 
     const { data, error } = await supabase
       .from('dose_logs')
@@ -80,6 +79,10 @@ export const DoseLogsService = {
 
     if (error) throw error
     return data
+  },
+
+  async getToday(): Promise<DoseLog[]> {
+    return DoseLogsService.getForDate(todayLocal())
   },
 
   async logDose(log: DoseLogCreateInput): Promise<DoseLog> {

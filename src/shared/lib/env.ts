@@ -5,4 +5,5 @@ export const env = {
   vapidPublicKey: import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined,
   openaiModel: (import.meta.env.VITE_OPENAI_MODEL as string) || 'gpt-5-nano',
   sentryDsn: import.meta.env.VITE_SENTRY_DSN as string | undefined,
+  adminUserId: import.meta.env.VITE_ADMIN_USER_ID as string | undefined,
 } as const

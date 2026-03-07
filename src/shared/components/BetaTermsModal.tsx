@@ -50,6 +50,7 @@ export function BetaTermsModal({ onAccept }: { onAccept: () => void }) {
               <li>This service is <strong>not a medical device</strong> and is not intended to diagnose, treat, cure, or prevent any disease or health condition.</li>
               <li>Always follow your healthcare provider&apos;s instructions. <strong>Do not rely solely on this app for medication management.</strong></li>
               <li>Your data is stored on Supabase infrastructure and is <strong>not covered by a HIPAA Business Associate Agreement</strong> during this beta. Do not enter sensitive protected health information.</li>
+              <li>AI features (insights, label scanning, voice commands) use <strong>OpenAI&apos;s API</strong>. Medication names, notes, and images may be processed by OpenAI. OpenAI is not a HIPAA-covered entity. <strong>Do not enter personally identifiable health information.</strong></li>
               <li>Beta data may be reset or deleted before general availability.</li>
               <li>By continuing you agree to provide honest feedback to help improve the product.</li>
             </ul>

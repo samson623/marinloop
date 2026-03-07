@@ -4,13 +4,13 @@ import type { DoseLogCreateInput } from '@/shared/types/contracts'
 import { useAppStore } from '@/shared/stores/app-store'
 import { handleMutationError } from '@/shared/lib/errors'
 
-export function useDoseLogs() {
+export function useDoseLogs(date?: string) {
   const queryClient = useQueryClient()
   const { toast } = useAppStore()
 
   const { data, isLoading } = useQuery({
-    queryKey: ['dose_logs', 'today'],
-    queryFn: DoseLogsService.getToday,
+    queryKey: date ? ['dose_logs', 'date', date] : ['dose_logs', 'today'],
+    queryFn: date ? () => DoseLogsService.getForDate(date) : DoseLogsService.getToday,
     staleTime: 1000 * 60,
   })
 

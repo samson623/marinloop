@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAppStore, fT } from '@/shared/stores/app-store'
+import { useAuthStore } from '@/shared/stores/auth-store'
 import { useMedications } from '@/shared/hooks/useMedications'
 import { useSchedules } from '@/shared/hooks/useSchedules'
 import { useRefills } from '@/shared/hooks/useRefillsList'
@@ -54,6 +55,8 @@ export function MedsView() {
     closeAddMedModal,
   } = useAppStore()
   const [selectedMed, setSelectedMed] = useState<DisplayMed | null>(null)
+  const { profile } = useAuthStore()
+  const userAllergies = profile?.allergies ?? []
   const { meds: realMeds, isLoading: medsLoading, addMedBundleAsync, updateMed, deleteMed, isAdding, isDeleting } = useMedications()
   const { scheds, addSchedAsync, updateSched, deleteSched } = useSchedules()
   const { refills, updateRefill } = useRefills()
@@ -207,7 +210,7 @@ export function MedsView() {
           updateSched={updateSched}
           deleteSched={deleteSched}
           allMeds={realMeds.map((m) => ({ id: m.id, name: m.name, rxcui: m.rxcui }))}
-          userAllergies={[]}
+          userAllergies={userAllergies}
         />
       )}
 

@@ -20,7 +20,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'ui-vendor': ['framer-motion', 'lucide-react', '@radix-ui/react-dialog'],
+          'ui-vendor': ['@radix-ui/react-dialog'],
           'supabase-vendor': ['@supabase/supabase-js'],
           'scanner-vendor': ['html5-qrcode'],
           'query-vendor': ['@tanstack/react-query'],

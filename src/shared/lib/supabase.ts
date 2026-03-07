@@ -13,8 +13,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient<Database>(
-  supabaseUrl ?? 'https://demo.local.invalid',
-  supabaseAnonKey ?? 'demo-anon-key',
+  supabaseUrl,
+  supabaseAnonKey,
   {
     auth: {
       flowType: 'pkce',

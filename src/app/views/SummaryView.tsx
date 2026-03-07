@@ -562,9 +562,12 @@ export function SummaryView() {
               <p className="text-sm text-[var(--color-text-secondary)] mt-1">Track blood pressure, heart rate, glucose, and more.</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
-              {vitals.slice(0, 20).map((v) => <VitalCard key={v.id} vital={v} />)}
-            </div>
+            <>
+              {vitals.length >= 2 && <VitalsTrendChart vitals={vitals} />}
+              <div className="flex flex-col gap-3">
+                {vitals.slice(0, 20).map((v) => <VitalCard key={v.id} vital={v} />)}
+              </div>
+            </>
           )}
         </div>
       )}
@@ -581,17 +584,24 @@ export function SummaryView() {
           {/* Mood filter */}
           <div className="flex gap-2 mb-4 overflow-x-auto pb-1" role="group" aria-label="Filter by mood">
             <button
+              type="button"
               onClick={() => setMoodFilter(null)}
+              aria-label="Show all mood entries"
+              aria-pressed={moodFilter === null}
               className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-semibold border transition-colors ${moodFilter === null ? 'bg-[var(--color-accent)] text-white border-[var(--color-accent)]' : 'bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border-primary)]'}`}
             >
               All
             </button>
             {([1, 2, 3, 4, 5] as const).map((m) => {
               const emoji = ['😔', '😐', '🙂', '😊', '🤩'][m - 1]
+              const moodLabel = ['Very sad', 'Sad', 'Neutral', 'Happy', 'Very happy'][m - 1]
               return (
                 <button
                   key={m}
+                  type="button"
                   onClick={() => setMoodFilter(moodFilter === m ? null : m)}
+                  aria-label={`Filter by mood: ${moodLabel}`}
+                  aria-pressed={moodFilter === m}
                   className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-semibold border transition-colors ${moodFilter === m ? 'bg-[var(--color-accent)] text-white border-[var(--color-accent)]' : 'bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border-primary)]'}`}
                 >
                   {emoji}
@@ -683,6 +693,41 @@ function StatCard({ n, label, color }: { n: number; label: string; color: string
     <Card className="text-center p-5">
       <div className="font-extrabold tracking-[-0.03em] [font-size:var(--text-subtitle)]" style={{ color }}>{n}</div>
       <div className="font-semibold text-[var(--color-text-secondary)] mt-1.5 [font-size:var(--text-caption)]">{label}</div>
+    </Card>
+  )
+}
+
+function VitalsTrendChart({ vitals }: { vitals: Vital[] }) {
+  const data = vitals.slice(0, 10).reverse().map((v, i) => ({
+    idx: i + 1,
+    bp: v.bp_systolic ?? null,
+    hr: v.heart_rate ?? null,
+  }))
+  if (!data.some((d) => d.bp != null || d.hr != null)) return null
+  return (
+    <Card className="mb-5">
+      <h3 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-label)] mb-4">Vitals Trend — Last 10 Readings</h3>
+      <ResponsiveContainer width="100%" height={140}>
+        <LineChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: -20 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-secondary)" vertical={false} />
+          <XAxis dataKey="idx" tick={{ fontSize: 11, fill: 'var(--color-text-tertiary)' }} tickLine={false} axisLine={false} />
+          <YAxis tick={{ fontSize: 11, fill: 'var(--color-text-tertiary)' }} tickLine={false} axisLine={false} />
+          <Tooltip
+            contentStyle={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-primary)', borderRadius: 12, fontSize: 13 }}
+            labelStyle={{ color: 'var(--color-text-tertiary)' }}
+          />
+          <Line type="monotone" dataKey="bp" name="Systolic BP (mmHg)" stroke="var(--color-accent)" strokeWidth={2} dot={false} connectNulls={false} />
+          <Line type="monotone" dataKey="hr" name="Heart Rate (BPM)" stroke="var(--color-amber)" strokeWidth={2} dot={false} connectNulls={false} />
+        </LineChart>
+      </ResponsiveContainer>
+      <div className="flex gap-4 mt-3">
+        <span className="flex items-center gap-1.5 [font-size:var(--text-caption)] text-[var(--color-text-secondary)]">
+          <span className="w-3 h-0.5 rounded-full bg-[var(--color-accent)] inline-block" />Systolic BP
+        </span>
+        <span className="flex items-center gap-1.5 [font-size:var(--text-caption)] text-[var(--color-text-secondary)]">
+          <span className="w-3 h-0.5 rounded-full bg-[var(--color-amber)] inline-block" />Heart Rate
+        </span>
+      </div>
     </Card>
   )
 }

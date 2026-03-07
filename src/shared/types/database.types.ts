@@ -586,6 +586,10 @@ export interface Database {
         }
         Returns: Database['public']['Tables']['care_connections']['Row'][]
       }
+      delete_account_and_data: {
+        Args: Record<string, never>
+        Returns: void
+      }
     }
     CompositeTypes: Record<string, never>
   }

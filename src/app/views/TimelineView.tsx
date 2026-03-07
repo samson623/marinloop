@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { toLocalDateString } from '@/shared/lib/dates'
 
 import { useAppStore, fT, type SchedItem } from '@/shared/stores/app-store'
 import { useTimeline } from '@/shared/hooks/useTimeline'
@@ -146,7 +147,26 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 // ─── Main View ───────────────────────────────────────────────────────────────
 
 export function TimelineView() {
-  const { timeline: sched, isLoading, error, refetch } = useTimeline()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const dateParam = searchParams.get('date')
+  const validDateParam = dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : undefined
+  const todayStr = toLocalDateString(new Date())
+  const targetDate = validDateParam ?? todayStr
+  const isToday = targetDate === todayStr
+  const displayDate = new Date(targetDate + 'T12:00:00')
+
+  const goToDate = (offset: number) => {
+    const d = new Date(targetDate + 'T12:00:00')
+    d.setDate(d.getDate() + offset)
+    const newDate = toLocalDateString(d)
+    if (newDate === todayStr) {
+      setSearchParams({}, { replace: true })
+    } else {
+      setSearchParams({ date: newDate }, { replace: true })
+    }
+  }
+
+  const { timeline: sched, isLoading, error, refetch } = useTimeline(validDateParam)
   const [, setTick] = useState(0)
 
   // Ref attached to the card for the "next" item
@@ -206,18 +226,55 @@ export function TimelineView() {
 
   return (
     <div className="animate-view-in w-full max-w-[480px] mx-auto">
+      {/* ── Date navigation row ── */}
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <button
+          type="button"
+          onClick={() => goToDate(-1)}
+          aria-label="Previous day"
+          className="flex items-center justify-center w-9 h-9 rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="15 18 9 12 15 6" /></svg>
+        </button>
+        <div className="flex-1 text-center">
+          <span className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-label)]">
+            {isToday ? 'Today' : displayDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+          </span>
+        </div>
+        {!isToday && (
+          <button
+            type="button"
+            onClick={() => setSearchParams({}, { replace: true })}
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--color-accent)] text-[var(--color-text-inverse)] border-none cursor-pointer"
+          >
+            Today
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => goToDate(1)}
+          aria-label="Next day"
+          disabled={isToday}
+          className="flex items-center justify-center w-9 h-9 rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="9 18 15 12 9 6" /></svg>
+        </button>
+      </div>
+
       {/* ── Header row: date + pills + adherence ring ── */}
       <div className="flex items-stretch justify-between gap-3 mb-6">
         <div className="shrink-0">
           <div className="font-extrabold tracking-[-0.03em] text-[var(--color-text-primary)] text-lg sm:[font-size:var(--text-title)]">
-            {now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            {displayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </div>
           <div className="text-[var(--color-text-secondary)] font-medium text-base sm:[font-size:var(--text-label)]">
-            {now.toLocaleDateString('en-US', { weekday: 'long' })}
+            {displayDate.toLocaleDateString('en-US', { weekday: 'long' })}
           </div>
-          <div className="text-[var(--color-text-tertiary)] [font-family:var(--font-mono)] [font-size:var(--text-caption)] mt-0.5">
-            {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-          </div>
+          {isToday && (
+            <div className="text-[var(--color-text-tertiary)] [font-family:var(--font-mono)] [font-size:var(--text-caption)] mt-0.5">
+              {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+            </div>
+          )}
         </div>
 
         <div className="flex-1 flex flex-col items-center justify-center min-w-0 px-2">
@@ -287,7 +344,7 @@ export function TimelineView() {
         <div
           className="relative pl-6"
           role="feed"
-          aria-label="Today's medication schedule"
+          aria-label={isToday ? "Today's medication schedule" : `Schedule for ${displayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
           aria-busy={isLoading}
         >
           <div
@@ -308,7 +365,7 @@ export function TimelineView() {
       )}
 
       {/* ── Jump-to-Now floating button ── */}
-      {showJumpButton && !isLoading && !error && sched.length > 0 && (
+      {isToday && showJumpButton && !isLoading && !error && sched.length > 0 && (
         <button
           onClick={() =>
             nextItemRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })

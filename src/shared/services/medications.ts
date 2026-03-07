@@ -20,7 +20,47 @@ export const MedsService = {
     const { data, error } = await supabase
       .from('medications')
       .select('*')
+      .is('discontinued_at', null)
       .order('name')
+
+    if (error) throw error
+    return data
+  },
+
+  async getArchived(): Promise<Medication[]> {
+    const { data, error } = await supabase
+      .from('medications')
+      .select('*')
+      .not('discontinued_at', 'is', null)
+      .order('discontinued_at', { ascending: false })
+
+    if (error) throw error
+    return data
+  },
+
+  async discontinue(id: string, reason?: string): Promise<Medication> {
+    const { data, error } = await supabase
+      .from('medications')
+      .update({
+        discontinued_at: new Date().toISOString(),
+        discontinuation_reason: reason ?? null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select('*')
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  async restore(id: string): Promise<Medication> {
+    const { data, error } = await supabase
+      .from('medications')
+      .update({ discontinued_at: null, discontinuation_reason: null, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select('*')
+      .single()
 
     if (error) throw error
     return data

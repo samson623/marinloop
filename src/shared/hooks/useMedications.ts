@@ -4,6 +4,7 @@ import type { Database } from '@/shared/types/database.types'
 import type { MedicationBundleCreateInput } from '@/shared/types/contracts'
 import { useAppStore } from '@/shared/stores/app-store'
 import { handleMutationError } from '@/shared/lib/errors'
+import { AuditService } from '@/shared/services/audit'
 
 type Medication = Database['public']['Tables']['medications']['Row']
 
@@ -48,11 +49,33 @@ export function useMedications() {
 
   const deleteMutation = useMutation({
     mutationFn: MedsService.delete,
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       void queryClient.invalidateQueries({ queryKey: ['medications'] })
+      AuditService.logAsync({ action: 'medication.deleted', entity_type: 'medication', entity_id: id })
       toast('Medication deleted', 'ts')
     },
     onError: (err: unknown) => handleMutationError(err, 'useMedications', 'Failed to delete medication', toast),
+  })
+
+  const discontinueMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) => MedsService.discontinue(id, reason),
+    onSuccess: (_data, { id }) => {
+      void queryClient.invalidateQueries({ queryKey: ['medications'] })
+      void queryClient.invalidateQueries({ queryKey: ['medications', 'archived'] })
+      AuditService.logAsync({ action: 'medication.discontinued', entity_type: 'medication', entity_id: id })
+      toast('Medication discontinued', 'ts')
+    },
+    onError: (err: unknown) => handleMutationError(err, 'useMedications', 'Failed to discontinue medication', toast),
+  })
+
+  const restoreMutation = useMutation({
+    mutationFn: (id: string) => MedsService.restore(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['medications'] })
+      void queryClient.invalidateQueries({ queryKey: ['medications', 'archived'] })
+      toast('Medication restored to active', 'ts')
+    },
+    onError: (err: unknown) => handleMutationError(err, 'useMedications', 'Failed to restore medication', toast),
   })
 
   return {
@@ -64,8 +87,12 @@ export function useMedications() {
     addMedBundleAsync: createBundleMutation.mutateAsync,
     updateMed: updateMutation.mutate,
     deleteMed: deleteMutation.mutate,
+    discontinueMed: discontinueMutation.mutate,
+    discontinueMedAsync: discontinueMutation.mutateAsync,
+    restoreMed: restoreMutation.mutate,
     isAdding: createMutation.isPending || createBundleMutation.isPending,
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
+    isDiscontinuing: discontinueMutation.isPending,
   }
 }

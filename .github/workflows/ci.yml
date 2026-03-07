@@ -41,6 +41,69 @@ jobs:
           VITE_SENTRY_DSN: ''
           VITE_ADMIN_USER_ID: ''
 
+      - name: Check bundle size
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            const assetsDir = 'dist/assets';
+            const files = fs.readdirSync(assetsDir).filter(f => f.endsWith('.js'));
+            if (!files.length) { console.error('No JS chunks found'); process.exit(1); }
+            let oversized = [];
+            files.forEach(f => {
+              const kb = fs.statSync(path.join(assetsDir, f)).size / 1024;
+              console.log(f + ': ' + kb.toFixed(1) + ' KB');
+              if (kb > 750) oversized.push(f + ' (' + kb.toFixed(1) + ' KB)');
+            });
+            if (oversized.length) { console.error('Chunks exceed 750 KB: ' + oversized.join(', ')); process.exit(1); }
+            console.log('Bundle size OK');
+          "
+
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: ci
+    if: github.event_name == 'pull_request' && secrets.E2E_TEST_EMAIL != ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
+          VITE_OAUTH_REDIRECT_URL: https://marinloop.com/auth/callback
+          VITE_OPENAI_MODEL: gpt-5-nano
+          VITE_SENTRY_DSN: ''
+          VITE_ADMIN_USER_ID: ''
+
+      - name: Preview server & run E2E tests
+        run: npx vite preview --port 5173 & sleep 3 && PLAYWRIGHT_BASE_URL=http://localhost:5173 npm run test:e2e
+        env:
+          E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL }}
+          E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
+          E2E_INVITE_CODE: ${{ secrets.E2E_INVITE_CODE }}
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
   deploy-functions:
     runs-on: ubuntu-latest
     needs: ci

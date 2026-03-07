@@ -7,6 +7,8 @@ import { useMedications } from '@/shared/hooks/useMedications'
 import { useSchedules } from '@/shared/hooks/useSchedules'
 import { useAppointments } from '@/shared/hooks/useAppointments'
 import { useNotes } from '@/shared/hooks/useNotes'
+import { useAdherenceHistory } from '@/shared/hooks/useAdherenceHistory'
+import { useRefillPredictions } from '@/shared/hooks/useRefillPredictions'
 import { VoiceIntentService } from '@/shared/services/voice-intent'
 import { AIService } from '@/shared/services/ai'
 import { todayLocal, isoToLocalDate, toLocalTimeString } from '@/shared/lib/dates'
@@ -61,6 +63,8 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
   const { scheds } = useSchedules()
   const { appts: realAppts } = useAppointments()
   const { notes: realNotes } = useNotes()
+  const { adherence: adherenceHistory } = useAdherenceHistory(7)
+  const { predictions: refillPredictions } = useRefillPredictions()
 
   const medsForContext = (realMeds ?? []).map((m) => {
     const medScheds = (scheds ?? []).filter((s) => s.medication_id === m.id)
@@ -331,10 +335,18 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
         const notesStr = notesForContext
           .map((n) => `- ${n.text}${n.medicationId ? ` (med link)` : ''}`)
           .join('\n')
-        // TODO: Phase 2 AI context upgrade — inject 7-day adherence percentages per day and
-        // refill alerts (meds running low) into the context below. These require access to
-        // useAdherenceHistory(7) and useRefillPredictions() which can be added to this hook
-        // or passed in via UseVoiceIntentOptions without breaking the existing test surface.
+        const adherenceStr = Object.entries(adherenceHistory)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([date, val]) => {
+            const rec = val as { t?: number; d?: number }
+            const pct = rec.t ? Math.round(((rec.d ?? 0) / rec.t) * 100) : 0
+            return `- ${date}: ${pct}%`
+          })
+          .join('\n')
+        const refillStr = refillPredictions
+          .filter((p) => p.severity !== 'ok')
+          .map((p) => `- ${p.medName}: ${p.daysLeft} day${p.daysLeft !== 1 ? 's' : ''} left (${p.severity})`)
+          .join('\n')
         const context = `Today is ${todayLocal()}.
 
 ## Today's schedule (timeline)
@@ -347,7 +359,13 @@ ${medsStr || 'No medications.'}
 ${apptsStr || 'No appointments.'}
 
 ## Notes
-${notesStr || 'No notes.'}`
+${notesStr || 'No notes.'}
+
+## 7-day adherence (date: %)
+${adherenceStr || 'No adherence data.'}
+
+## Refill alerts
+${refillStr || 'No urgent refills.'}`
 
         if (!AIService.isConfigured()) {
           const fallback =

@@ -105,6 +105,65 @@ export async function getDrugInteractions(rxcuis: string[]): Promise<DrugInterac
   }
 }
 
+/**
+ * Look up the active ingredient names for a drug by RxCUI.
+ * Used for ingredient-level allergy checking.
+ */
+export async function getIngredients(rxcui: string): Promise<string[]> {
+  if (!rxcui) return []
+  try {
+    const url = `https://rxnav.nlm.nih.gov/REST/rxcui/${encodeURIComponent(rxcui)}/related.json?rela=has_ingredient`
+    const res = await fetch(url)
+    if (!res.ok) return []
+    const data = await res.json() as {
+      relatedGroup?: {
+        relatedByRelationship?: Array<{
+          conceptGroup?: Array<{
+            conceptProperties?: Array<{ name?: string }>
+          }>
+        }>
+      }
+    }
+    const names: string[] = []
+    for (const rel of data.relatedGroup?.relatedByRelationship ?? []) {
+      for (const grp of rel.conceptGroup ?? []) {
+        for (const prop of grp.conceptProperties ?? []) {
+          if (prop.name) names.push(prop.name)
+        }
+      }
+    }
+    return names
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Fetch the missed-dose instructions for a drug from the OpenFDA label.
+ * Returns a human-readable string or null if unavailable.
+ */
+export async function getCatchUpGuidance(rxcui: string): Promise<string | null> {
+  if (!rxcui) return null
+  try {
+    const url = `https://api.fda.gov/drug/label.json?search=openfda.rxcui:"${encodeURIComponent(rxcui)}"&limit=1`
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const data = await res.json() as {
+      results?: Array<{
+        missed_dose?: string[]
+        do_not_use?: string[]
+      }>
+    }
+    const label = data.results?.[0]
+    if (!label) return null
+    const raw = label.missed_dose?.[0]
+    if (!raw) return null
+    return cleanText(raw)
+  } catch {
+    return null
+  }
+}
+
 /** Fetch food interactions and contraindications for a drug from OpenFDA label endpoint. */
 export async function getOpenFDALabel(rxcui: string): Promise<OpenFDALabelData> {
   if (!rxcui) return {}

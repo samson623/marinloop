@@ -13,6 +13,8 @@ import { useStreak } from '@/shared/hooks/useStreak'
 import { useAdherenceInsights } from '@/shared/hooks/useAdherenceInsights'
 import { useVitals } from '@/shared/hooks/useVitals'
 import { useJournal } from '@/shared/hooks/useJournal'
+import { useVitalThresholds } from '@/shared/hooks/useVitalThresholds'
+import { useEfficacyInsights } from '@/shared/hooks/useEfficacyInsights'
 import { getMissPatterns } from '@/shared/services/schedule-analysis'
 import type { Vital } from '@/shared/services/vitals'
 import type { JournalEntry } from '@/shared/services/journal'
@@ -83,6 +85,13 @@ export function SummaryView() {
 
   // --- Vitals ---
   const { vitals, isLoading: vitalsLoading, addVital, isAdding: vitalsAdding } = useVitals()
+  const { checkVitalAlerts } = useVitalThresholds()
+  const { data: efficacyInsights = [] } = useEfficacyInsights(vitals)
+
+  // Threshold alerts for the most recent vital reading
+  const latestVital = vitals[0]
+  const vitalAlerts = latestVital ? checkVitalAlerts(latestVital) : []
+  const criticalAlerts = vitalAlerts.filter((a) => a.severity === 'critical')
 
   // --- Journal ---
   const { entries, isLoading: journalLoading, addEntry, isAdding: journalAdding } = useJournal()
@@ -545,6 +554,59 @@ export function SummaryView() {
       {/* ------------------------------------------------------------------ */}
       {activeHealthTab === 'vitals' && (
         <div>
+          {/* Critical vital threshold alerts */}
+          {!vitalsLoading && criticalAlerts.length > 0 && (
+            <div
+              role="alert"
+              aria-live="assertive"
+              className="mb-4 flex flex-col gap-2"
+            >
+              {criticalAlerts.map((alert) => (
+                <div
+                  key={alert.key}
+                  className="flex items-start gap-3 px-4 py-3 rounded-xl border-l-4 font-semibold text-sm"
+                  style={{
+                    borderLeftColor: 'var(--color-red)',
+                    background: 'color-mix(in srgb, var(--color-red) 8%, var(--color-bg-secondary))',
+                    color: 'var(--color-red)',
+                  }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5" aria-hidden>
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                  <div>
+                    <div>{alert.label} is {alert.limit === 'min' ? 'too low' : 'too high'}: {alert.value} (limit: {alert.threshold})</div>
+                    <div className="font-normal text-xs mt-0.5 opacity-80">Contact your healthcare provider if this persists.</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Warning-level (non-critical) alerts */}
+          {!vitalsLoading && vitalAlerts.filter((a) => a.severity === 'warning').length > 0 && (
+            <div className="mb-4 flex flex-col gap-2">
+              {vitalAlerts.filter((a) => a.severity === 'warning').map((alert) => (
+                <div
+                  key={alert.key}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl border-l-4 text-sm font-semibold"
+                  style={{
+                    borderLeftColor: 'var(--color-amber)',
+                    background: 'color-mix(in srgb, var(--color-amber) 6%, var(--color-bg-secondary))',
+                    color: 'var(--color-amber)',
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden>
+                    <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  {alert.label} is {alert.limit === 'min' ? 'low' : 'high'}: {alert.value} (limit: {alert.threshold})
+                </div>
+              ))}
+            </div>
+          )}
+
           <Button
             variant="primary"
             size="md"
@@ -569,6 +631,40 @@ export function SummaryView() {
           ) : (
             <>
               {vitals.length >= 2 && <VitalsTrendChart vitals={vitals} />}
+
+              {/* Medication efficacy insights */}
+              {efficacyInsights.length > 0 && (
+                <div className="mb-5 flex flex-col gap-3">
+                  <h3 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-label)]">Medication Efficacy</h3>
+                  {efficacyInsights.map((ins) => (
+                    <Card key={ins.medicationId}>
+                      <div className="flex items-start gap-3">
+                        <span className="text-xl leading-none mt-0.5 shrink-0" aria-hidden>
+                          {ins.delta < 0 ? '📉' : '📈'}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-body)]">
+                            {ins.medicationName}
+                          </div>
+                          <div className="text-[var(--color-text-secondary)] [font-size:var(--text-caption)] mt-1 leading-snug">
+                            {ins.summary}
+                          </div>
+                          <div className="mt-2">
+                            <span className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)]">{ins.vitalLabel} change: </span>
+                            <span
+                              className="font-semibold [font-size:var(--text-caption)] [font-family:var(--font-mono)]"
+                              style={{ color: ins.delta < 0 ? 'var(--color-green)' : 'var(--color-red)' }}
+                            >
+                              {ins.delta > 0 ? '+' : ''}{Math.round(ins.delta)} {ins.unit}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
               <div className="flex flex-col gap-3">
                 {vitals.slice(0, 20).map((v) => <VitalCard key={v.id} vital={v} />)}
               </div>

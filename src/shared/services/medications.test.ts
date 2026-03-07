@@ -7,6 +7,7 @@ const mockSupabase = vi.hoisted(() => ({
   update: vi.fn().mockReturnThis(),
   delete: vi.fn().mockReturnThis(),
   eq: vi.fn().mockReturnThis(),
+  is: vi.fn().mockReturnThis(),
   order: vi.fn().mockReturnThis(),
   single: vi.fn(),
   rpc: vi.fn(),
@@ -65,6 +66,7 @@ beforeEach(() => {
   mockSupabase.update.mockReturnThis()
   mockSupabase.delete.mockReturnThis()
   mockSupabase.eq.mockReturnThis()
+  mockSupabase.is.mockReturnThis()
   mockSupabase.order.mockReturnThis()
 })
 

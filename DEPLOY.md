@@ -51,6 +51,14 @@ Follow the prompts (link to existing project or create new one). To deploy to pr
 npx vercel --prod
 ```
 
+
+## Secrets handling
+
+- **Do** configure credentials in Vercel/Supabase/GitHub secret managers.
+- **Do** keep local `.env` files and ad-hoc exports out of git.
+- **Don't** commit operational dumps such as `supabase_secrets*.txt`, `*secrets*.txt`, or copied CLI output.
+- **Don't** include service-role keys or API tokens in commits, PR text, or screenshots.
+
 ---
 
 After deployment, your app will be at `https://your-project.vercel.app` (or your custom domain).

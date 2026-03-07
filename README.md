@@ -120,6 +120,15 @@ Before running or deploying, ensure these variables are set. Use `.env` locally 
 
 ---
 
+
+## Secrets handling
+
+- **Do** keep runtime secrets in provider secret stores (Supabase, Vercel, GitHub Actions secrets), not in tracked files.
+- **Do** use `.env` only for local development and keep it uncommitted.
+- **Do** use sanitized placeholders when documenting setup (see `docs/templates/supabase-secrets-export.template.txt`).
+- **Don't** commit secret exports, CLI dumps, or hashed/digested secret listings (for example `*secrets*.txt`).
+- **Don't** paste service-role keys, API keys, tokens, or vault exports into PRs/issues.
+
 ## Edge Functions Deployment
 
 Deploy the Edge Functions after setting their prerequisites:

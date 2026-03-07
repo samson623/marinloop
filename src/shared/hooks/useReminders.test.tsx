@@ -17,6 +17,9 @@ vi.mock('@/shared/services/reminders', () => ({
 vi.mock('@/shared/stores/app-store', () => ({
   useAppStore: () => ({ toast: vi.fn() }),
 }))
+vi.mock('@/shared/stores/auth-store', () => ({
+  useAuthStore: () => ({ session: { user: { id: 'user-1' } } }),
+}))
 vi.mock('@/shared/lib/errors', () => ({
   handleMutationError: vi.fn(),
 }))

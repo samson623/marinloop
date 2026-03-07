@@ -60,3 +60,8 @@ secrets_full*.txt
 
 # Keep sanitized docs templates tracked
 !docs/templates/*.template.txt
+
+# Operational scratch files (not part of source)
+medflow-production.md
+ss-*.png
+ss-*.jpg

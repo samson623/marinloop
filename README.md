@@ -1,4 +1,4 @@
-# MedFlow Care
+# Marin Loop
 
 Medication management app built with React, TypeScript, Vite, and Supabase.
 
@@ -6,13 +6,13 @@ Medication management app built with React, TypeScript, Vite, and Supabase.
 
 ## Quick Start / Full Setup
 
-Follow these steps in order to get MedFlow Care running end-to-end.
+Follow these steps in order to get Marin Loop running end-to-end.
 
 ### 1. Clone, install, and env copy
 
 ```bash
 git clone <repo-url>
-cd medflow-care
+cd marinloop
 npm install
 cp .env.example .env
 ```
@@ -175,7 +175,7 @@ If you set or changed **ALLOWED_ORIGINS** in the Supabase dashboard, the Edge Fu
    npm run deploy:openai-chat
    ```
 
-**Option B — From the dashboard:**  
+**Option B — From the dashboard:**
 Go to [Edge Functions](https://supabase.com/dashboard/project/lcbdafnxwvqbziootvmi/functions) → click **openai-chat** → **Redeploy**.
 
 ---
@@ -220,12 +220,12 @@ Go to [Edge Functions](https://supabase.com/dashboard/project/lcbdafnxwvqbziootv
    ```
 
 4. **Add Supabase URL and Service Role Key to Postgres Vault** (for the Cron job to trigger `cron-dispatch-push`):
-   
-   The database cron job runs strictly within PostgreSQL and needs explicit access to your Supabase URL and Service Role Key. 
+
+   The database cron job runs strictly within PostgreSQL and needs explicit access to your Supabase URL and Service Role Key.
    Go to **Supabase Dashboard → SQL Editor** and run:
    ```sql
    create extension if not exists supabase_vault;
-   
+
    select vault.create_secret('https://<your-project>.supabase.co', 'supabase_url', 'Supabase URL for Cron');
    select vault.create_secret('<your-service-role-key>', 'service_role_key', 'Service Role Key for Cron');
    ```
@@ -253,11 +253,11 @@ Details: see [supabase/DATABASE_SETUP.md](supabase/DATABASE_SETUP.md)
 ### Google OAuth (Sign in with Google)
 
 1. In Supabase Dashboard → **Authentication** → **URL Configuration**:
-   - **Site URL**: Your app URL (e.g. `https://your-app.vercel.app` or `http://localhost:5173` for dev)
+   - **Site URL**: Your app URL (e.g. `https://marinloop.com` or `http://localhost:5173` for dev)
    - **Redirect URLs**: Add the **exact** OAuth callback URL for each environment. The app redirects to `/auth/callback`, so you must include:
-     - Production: `https://your-app.vercel.app/auth/callback`
+     - Production: `https://marinloop.com/auth/callback`
      - Local dev: `http://localhost:5173/auth/callback`
-     - Any Vercel preview: `https://medflow-care-xxxx.vercel.app/auth/callback`
+     - Any Vercel preview: `https://marinloop-xxxx.vercel.app/auth/callback`
      If the callback URL is missing, Google sign-in will redirect to the wrong place or show a Supabase error.
 
 2. Optional: set `VITE_OAUTH_REDIRECT_URL` in `.env` to override the callback URL (e.g. `http://localhost:5173/auth/callback` for local dev).
@@ -270,19 +270,19 @@ Details: see [supabase/DATABASE_SETUP.md](supabase/DATABASE_SETUP.md)
 
 If the app works in production (Vercel) but fails when running locally (`npm run dev`):
 
-1. **Create a local `.env`**  
+1. **Create a local `.env`**
    Vercel uses env vars from the project dashboard; locally you must have a `.env` file in the project root. Copy from `.env.example` and fill in:
    - `VITE_APP_MODE=prod`
    - `VITE_SUPABASE_URL=` your Supabase project URL (same as in Vercel)
    - `VITE_SUPABASE_ANON_KEY=` your Supabase anon key (same as in Vercel)
    - Optional for Google sign-in: `VITE_OAUTH_REDIRECT_URL=http://localhost:5173`
 
-2. **Allow localhost callback in Supabase**  
+2. **Allow localhost callback in Supabase**
    In Supabase Dashboard → **Authentication** → **URL Configuration** → **Redirect URLs**, add:
-   - `http://localhost:5173/auth/callback`  
+   - `http://localhost:5173/auth/callback`
    If this is missing, OAuth sign-in will work on Vercel but redirect back to localhost will be rejected.
 
-3. **Restart the dev server**  
+3. **Restart the dev server**
    After changing `.env`, stop the dev server (Ctrl+C) and run `npm run dev` again so Vite picks up the new variables.
 
 ---
@@ -293,9 +293,9 @@ If taking or uploading a photo of a prescription label shows "Could not reach th
 
 1. **Add your app URL to `ALLOWED_ORIGINS`** — Include every origin users can access the app from:
    ```bash
-   supabase secrets set ALLOWED_ORIGINS=https://your-app.vercel.app,https://medflow-care-xxxx.vercel.app,http://localhost:5173
+   supabase secrets set ALLOWED_ORIGINS=https://marinloop.com,https://marinloop-xxxx.vercel.app,http://localhost:5173
    ```
-   Replace `your-app.vercel.app` with your actual Vercel domain. Include any preview URLs if users test from those.
+   Replace `marinloop-xxxx.vercel.app` with your actual Vercel preview domain if needed.
 
 2. **Redeploy the extract-label function** (required after changing secrets):
    ```bash
@@ -314,79 +314,3 @@ Without the correct origins, the browser blocks the request before it reaches th
 | push_subscriptions | Web Push notifications |
 | ai_conversations | GPT chat history |
 | ai_daily_usage | Per-user rate limit (AI chat and label extraction) |
-
----
-
-# React + TypeScript + Vite
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```

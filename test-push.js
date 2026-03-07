@@ -1,11 +1,11 @@
 async function test() {
     const url = 'https://lcbdafnxwvqbziootvmi.supabase.co/functions/v1/send-push';
 
-    // We need a user JWT. Or we can just do a GET request using the ANON KEY.
-    const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjYmRhZm54d3ZxYnppb290dm1pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMDI2OTMsImV4cCI6MjA4NjY3ODY5M30.CPBap3oAg7SERcINZtj6YwqiBq9AZrjmaZlRpwexbTQ';
+    // Anonymous JWT should no longer be able to hit GET diagnostics.
+    const anonKey = 'REPLACE_WITH_ANON_OR_USER_JWT';
 
-    // Test health check
-    const response = await fetch(url, {
+    // Verify non-POST methods are rejected.
+    const getResponse = await fetch(url, {
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${anonKey}`,
@@ -13,9 +13,27 @@ async function test() {
         }
     });
 
-    const text = await response.text();
-    console.log('Status:', response.status);
-    console.log('Body:', text);
+    const getText = await getResponse.text();
+    console.log('GET status (expected 405):', getResponse.status);
+    console.log('GET body:', getText);
+
+    // Example POST shape (will require a valid JWT/service role and payload values).
+    const postResponse = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${anonKey}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            user_id: '00000000-0000-0000-0000-000000000000',
+            title: 'Test title',
+            body: 'Test body'
+        })
+    });
+
+    const postText = await postResponse.text();
+    console.log('POST status:', postResponse.status);
+    console.log('POST body:', postText);
 }
 
 test().catch(console.error);

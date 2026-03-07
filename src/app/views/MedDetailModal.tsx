@@ -8,6 +8,7 @@ import { generateEvenlySpacedTimes } from '@/shared/lib/scheduling'
 import { getSupplyInfo } from '@/shared/lib/medication-utils'
 import { useInteractions } from '@/shared/hooks/useInteractions'
 import { getTimingPatterns } from '@/shared/services/schedule-analysis'
+import { getOpenFDALabel, getIngredients } from '@/shared/services/rxnorm'
 import { SymptomsService } from '@/shared/services/symptoms'
 import type { Symptom } from '@/shared/services/symptoms'
 import { SymptomModal } from '@/app/components/SymptomModal'
@@ -23,6 +24,7 @@ type DisplayMed = {
   supply: number
   total: number
   dosesPerDay: number
+  rxcui?: string | null
 }
 
 type MedRef = { id: string; name: string; rxcui?: string | null }
@@ -38,12 +40,13 @@ function FormField({ label, id, children }: { label: string; id: string; childre
   )
 }
 
-export default function MedDetailModal({ med, isDeleting, onClose, onUpdate, onDelete, onUpdateSupply, refills, scheds, addSchedAsync, updateSched, deleteSched, allMeds, userAllergies }: {
+export default function MedDetailModal({ med, isDeleting, onClose, onUpdate, onDelete, onDiscontinue, onUpdateSupply, refills, scheds, addSchedAsync, updateSched, deleteSched, allMeds, userAllergies }: {
   med: DisplayMed
   isDeleting: boolean
   onClose: () => void
   onUpdate: (id: string, updates: Record<string, unknown>) => void
   onDelete: (id: string) => void
+  onDiscontinue?: (id: string, reason?: string) => Promise<void>
   onUpdateSupply: (refillId: string, qty: number) => void
   refills: Array<{ id: string; medication_id: string; current_quantity: number; total_quantity: number }>
   scheds: Array<{ id: string; medication_id: string; time: string; days: number[]; food_context_minutes: number; active: boolean }>
@@ -56,6 +59,8 @@ export default function MedDetailModal({ med, isDeleting, onClose, onUpdate, onD
   const { toast } = useAppStore()
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showDiscontinueReason, setShowDiscontinueReason] = useState(false)
+  const [discontinueReason, setDiscontinueReason] = useState('')
   const [showSymptomModal, setShowSymptomModal] = useState(false)
   const queryClient = useQueryClient()
   const [editingSupply, setEditingSupply] = useState(false)
@@ -95,12 +100,38 @@ export default function MedDetailModal({ med, isDeleting, onClose, onUpdate, onD
     staleTime: 1000 * 60 * 5,
   })
 
-  // Allergy check — find allergens that appear in the med's warnings
-  const matchedAllergen = (userAllergies && userAllergies.length > 0 && med.warnings)
-    ? userAllergies.find((allergy) =>
-        med.warnings.toLowerCase().includes(allergy.toLowerCase())
-      )
-    : undefined
+  // OpenFDA food interactions (fetched lazily when rxcui is available)
+  const { data: fdaLabel } = useQuery({
+    queryKey: ['fda-label', med.rxcui],
+    queryFn: () => getOpenFDALabel(med.rxcui!),
+    enabled: !!med.rxcui,
+    staleTime: 60 * 60 * 1000, // 1h
+    retry: false,
+  })
+
+  // Ingredient-level allergy check via RxNav
+  const { data: ingredients = [] } = useQuery({
+    queryKey: ['ingredients', med.rxcui],
+    queryFn: () => getIngredients(med.rxcui!),
+    enabled: !!med.rxcui && (userAllergies?.length ?? 0) > 0,
+    staleTime: 60 * 60 * 1000,
+    retry: false,
+  })
+
+  // Allergy check — 1) warning text match, 2) ingredient-level match
+  const matchedAllergen = (() => {
+    if (!userAllergies || userAllergies.length === 0) return undefined
+    // Ingredient-level match (higher fidelity)
+    const ingredientMatch = ingredients.find((ing) =>
+      userAllergies.some((allergy) => ing.toLowerCase().includes(allergy.toLowerCase()) || allergy.toLowerCase().includes(ing.toLowerCase()))
+    )
+    if (ingredientMatch) return ingredientMatch
+    // Fallback: warning text match
+    if (med.warnings) {
+      return userAllergies.find((allergy) => med.warnings.toLowerCase().includes(allergy.toLowerCase()))
+    }
+    return undefined
+  })()
 
   const handleEditFreqChange = (newFreq: string) => {
     const n = Number.parseInt(newFreq, 10) || 1
@@ -333,6 +364,14 @@ export default function MedDetailModal({ med, isDeleting, onClose, onUpdate, onD
               </div>
             )}
 
+            {/* Food & Drug Interactions from OpenFDA label */}
+            {fdaLabel?.foodInteractions && (
+              <div className="flex items-start gap-3">
+                <span className="text-[var(--color-text-tertiary)] shrink-0 w-28">Food Note</span>
+                <p className="text-[var(--color-text-secondary)] leading-relaxed [font-size:var(--text-label)]">{fdaLabel.foodInteractions}</p>
+              </div>
+            )}
+
             {/* Allergy Alert — shown after warnings */}
             {matchedAllergen && (
               <div role="alert" className="mb-4 px-4 py-3 rounded-xl border-l-4 bg-[color-mix(in_srgb,var(--color-red)_8%,var(--color-bg-secondary))] border-[var(--color-red)] flex items-start gap-3">
@@ -445,30 +484,35 @@ export default function MedDetailModal({ med, isDeleting, onClose, onUpdate, onD
           </div>
 
           {/* Action buttons */}
-          <div className="mt-5 pt-4 border-t border-[var(--color-border-primary)] flex gap-3">
+          <div className="mt-5 pt-4 border-t border-[var(--color-border-primary)] flex flex-col gap-2">
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold text-[var(--color-accent)] bg-[var(--color-accent-bg)] border border-[var(--color-green-border)] cursor-pointer transition-all hover:brightness-105 active:scale-[0.97] [font-size:var(--text-body)]"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                Edit
+              </button>
+              {onDiscontinue && (
+                <button
+                  type="button"
+                  onClick={() => setShowDiscontinueReason(true)}
+                  disabled={isDeleting}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold text-[var(--color-amber,#d97706)] bg-[color-mix(in_srgb,#d97706_8%,transparent)] border border-[color-mix(in_srgb,#d97706_20%,transparent)] cursor-pointer transition-all hover:brightness-105 active:scale-[0.97] [font-size:var(--text-body)] disabled:opacity-50"
+                >
+                  Discontinue
+                </button>
+              )}
+            </div>
             <button
               type="button"
-              onClick={() => {
-                setIsEditing(true)
-              }}
-              className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold text-[var(--color-accent)] bg-[var(--color-accent-bg)] border border-[var(--color-green-border)] cursor-pointer transition-all hover:brightness-105 active:scale-[0.97] [font-size:var(--text-body)]"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-semibold text-[var(--color-text-tertiary)] border border-[var(--color-border-secondary)] cursor-pointer transition-all hover:text-[var(--color-red)] hover:border-[color-mix(in_srgb,var(--color-red)_30%,transparent)] active:scale-[0.97] [font-size:var(--text-label)]"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
-              Edit
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setShowDeleteConfirm(true)
-              }}
-              className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold text-[var(--color-red)] bg-[color-mix(in_srgb,var(--color-red)_8%,transparent)] border border-[color-mix(in_srgb,var(--color-red)_20%,transparent)] cursor-pointer transition-all hover:brightness-105 active:scale-[0.97] [font-size:var(--text-body)]"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              </svg>
-              Delete
+              Delete permanently
             </button>
           </div>
         </div>
@@ -492,10 +536,46 @@ export default function MedDetailModal({ med, isDeleting, onClose, onUpdate, onD
         open={showDeleteConfirm}
         onOpenChange={setShowDeleteConfirm}
         itemName={med.name}
-        description="This will also remove its schedule and refill data."
+        description="This will permanently delete all dose history, schedule, and refill data. This cannot be undone. Consider 'Discontinue' to preserve history."
         onConfirm={() => onDelete(med.id)}
         isPending={isDeleting}
       />
+
+      {showDiscontinueReason && onDiscontinue && (
+        <Modal open onOpenChange={(o) => !o && setShowDiscontinueReason(false)} title="Discontinue Medication" variant="center">
+          <p className="text-[var(--color-text-secondary)] [font-size:var(--text-body)] mb-4">
+            <strong>{med.name}</strong> will be archived. All dose history is preserved and can be restored later.
+          </p>
+          <label htmlFor="discontinue-reason" className="block font-bold text-[var(--color-text-secondary)] mb-1.5 [font-size:var(--text-label)]">
+            Reason (optional)
+          </label>
+          <Input
+            id="discontinue-reason"
+            value={discontinueReason}
+            onChange={(e) => setDiscontinueReason(e.target.value)}
+            placeholder="e.g. Course completed, side effects, switched medication"
+            className="mb-4"
+          />
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="primary"
+              size="md"
+              className="flex-1"
+              disabled={isDeleting}
+              onClick={async () => {
+                await onDiscontinue(med.id, discontinueReason || undefined)
+                setShowDiscontinueReason(false)
+              }}
+            >
+              Discontinue
+            </Button>
+            <Button type="button" variant="ghost" size="md" className="flex-1" onClick={() => setShowDiscontinueReason(false)}>
+              Cancel
+            </Button>
+          </div>
+        </Modal>
+      )}
     </>
   )
 }

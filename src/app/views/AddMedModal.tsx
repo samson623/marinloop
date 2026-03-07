@@ -4,7 +4,7 @@ import { BarcodeScanner } from '@/shared/components/BarcodeScanner'
 import { Modal } from '@/shared/components/Modal'
 import { lookupByBarcode } from '@/shared/services/openfda'
 import { extractFromImages } from '@/shared/services/label-extract'
-import { lookupRxCUI, getOpenFDALabel } from '@/shared/services/rxnorm'
+import { lookupRxCUI, getOpenFDALabel, getIngredients } from '@/shared/services/rxnorm'
 import { useInteractions } from '@/shared/hooks/useInteractions'
 import type { DrugInteraction } from '@/shared/services/rxnorm'
 import { handleMutationError } from '@/shared/lib/errors'
@@ -27,6 +27,7 @@ type AddMedModalProps = {
   openPhoto?: boolean
   allMeds?: Array<{ id: string; name: string; rxcui?: string | null }>
   upcomingAppts?: Array<{ title: string; start_time: string; commute_minutes: number | null | undefined }>
+  userAllergies?: string[]
   createBundleAsync: (input: {
     medication: { name: string; dosage: string; freq: number; instructions: string; warnings: string; color: string; icon: string; rxcui?: string }
     schedules: Array<{ time: string; days: number[]; food_context_minutes: number; active: boolean }>
@@ -34,7 +35,7 @@ type AddMedModalProps = {
   }) => Promise<string>
 }
 
-export default function AddMedModal({ onClose, createBundleAsync, isSaving, initialDraft, openScanner: openScannerProp, openPhoto: openPhotoProp, allMeds = [], upcomingAppts = [] }: AddMedModalProps) {
+export default function AddMedModal({ onClose, createBundleAsync, isSaving, initialDraft, openScanner: openScannerProp, openPhoto: openPhotoProp, allMeds = [], upcomingAppts = [], userAllergies = [] }: AddMedModalProps) {
   const { toast } = useAppStore()
   const [name, setName] = useState('')
   const [dose, setDose] = useState('')
@@ -67,6 +68,7 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
   const [rxcui, setRxcui] = useState<string | null>(null)
   const [isLookingUpRxcui, setIsLookingUpRxcui] = useState(false)
   const [foodNote, setFoodNote] = useState<string | null>(null)
+  const [allergyWarning, setAllergyWarning] = useState<string | null>(null)
   const scannerInputRef = useRef<HTMLInputElement>(null)
   const labelPhotoInputRef = useRef<HTMLInputElement>(null)
   const barcodeInputRef = useRef<HTMLInputElement>(null)
@@ -183,18 +185,31 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
     }
   }, [openPhotoProp])
 
-  // Background rxcui lookup on name blur + food interaction fetch
+  // Background rxcui lookup on name blur + food interaction + allergy check
   const handleNameBlur = async () => {
     const trimmed = name.trim()
     if (trimmed.length <= 2) return
     setIsLookingUpRxcui(true)
+    setAllergyWarning(null)
     try {
       const code = await lookupRxCUI(trimmed)
       setRxcui(code)
       if (code) {
-        const labelData = await getOpenFDALabel(code)
+        const [labelData, ingredients] = await Promise.all([
+          getOpenFDALabel(code),
+          getIngredients(code),
+        ])
         if (labelData.foodInteractions && labelData.foodInteractions.trim()) {
           setFoodNote(labelData.foodInteractions.trim())
+        }
+        if (userAllergies.length > 0 && ingredients.length > 0) {
+          const lower = ingredients.map((i) => i.toLowerCase())
+          const matched = userAllergies.find((a) =>
+            lower.some((i) => i.includes(a.toLowerCase()) || a.toLowerCase().includes(i))
+          )
+          if (matched) {
+            setAllergyWarning(`You have a listed allergy to "${matched}" — this medication contains it as an ingredient.`)
+          }
         }
       }
     } finally {
@@ -717,6 +732,22 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
               >
                 Add to warnings
               </button>
+            </div>
+          )}
+
+          {/* Allergy warning banner */}
+          {allergyWarning && (
+            <div
+              className="rounded-xl border border-[var(--color-red)] bg-[color-mix(in_srgb,var(--color-red)_10%,transparent)] px-4 py-3 flex items-start gap-3"
+              role="alert"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-red)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5" aria-hidden>
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              <p className="text-[var(--color-red)] font-semibold [font-size:var(--text-label)] leading-snug">
+                {allergyWarning}
+              </p>
             </div>
           )}
 

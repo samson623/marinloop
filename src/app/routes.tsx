@@ -21,6 +21,7 @@ const CareView = React.lazy(() => import('@/app/views/CareView').then((m) => ({ 
 const InstallGuideScreen = React.lazy(() => import('@/app/InstallGuideScreen').then((m) => ({ default: m.InstallGuideScreen })))
 const PrivacyPolicyView = React.lazy(() => import('@/app/views/PrivacyPolicyView').then((m) => ({ default: m.PrivacyPolicyView })))
 const TermsView = React.lazy(() => import('@/app/views/TermsView').then((m) => ({ default: m.TermsView })))
+const IceCardScreen = React.lazy(() => import('@/app/views/IceCardScreen').then((m) => ({ default: m.IceCardScreen })))
 
 export function PageLoader() {
   return (
@@ -59,6 +60,7 @@ export function AppInner() {
       <Route path="/install" element={<React.Suspense fallback={<PageLoader />}><InstallGuideScreen /></React.Suspense>} />
       <Route path="/privacy" element={<React.Suspense fallback={<PageLoader />}><PrivacyPolicyView /></React.Suspense>} />
       <Route path="/terms" element={<React.Suspense fallback={<PageLoader />}><TermsView /></React.Suspense>} />
+      <Route path="/ice" element={<React.Suspense fallback={<PageLoader />}><IceCardScreen /></React.Suspense>} />
       <Route element={<PrivateRoute />}>
         <Route element={<AppShell />}>
           <Route path="/timeline" element={<TimelineView />} />

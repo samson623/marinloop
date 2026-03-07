@@ -11,6 +11,11 @@ type Profile = {
   timezone: string
   plan: 'free' | 'pro' | 'family'
   allergies: string[] | null
+  blood_type: string | null
+  conditions: string[] | null
+  ice_share_token: string | null
+  vital_thresholds: Record<string, unknown> | null
+  emergency_contacts?: unknown
 }
 
 type AuthResult = { error: Error | null }
@@ -46,12 +51,12 @@ let authSubscription: AuthSubscription | null = null
 async function fetchProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, name, avatar_url, timezone, plan, allergies')
+    .select('id, email, name, avatar_url, timezone, plan, allergies, blood_type, conditions, ice_share_token, vital_thresholds')
     .eq('id', userId)
     .single()
 
   if (error) return null
-  return data
+  return data as unknown as Profile
 }
 
 function cleanupOAuthUrl() {

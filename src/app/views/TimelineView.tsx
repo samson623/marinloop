@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { toLocalDateString } from '@/shared/lib/dates'
 
 import { useAppStore, fT, type SchedItem } from '@/shared/stores/app-store'
 import { useTimeline } from '@/shared/hooks/useTimeline'
 import { useDoseLogs } from '@/shared/hooks/useDoseLogs'
+import { getCatchUpGuidance } from '@/shared/services/rxnorm'
+import { supabase } from '@/shared/lib/supabase'
 
 import { Modal } from '@/shared/components/Modal'
 import { Pill, Button } from '@/shared/components/ui'
@@ -646,10 +649,42 @@ function DoseModal({
   triggerRef?: React.RefObject<HTMLElement | null>
 }) {
   const { logDose } = useDoseLogs()
+  const minutesLate = nowMin - it.timeMinutes
+  const hoursLate = minutesLate / 60
+
+  // Fetch rxcui for this medication (needed for OpenFDA catch-up guidance)
+  const { data: rxcui } = useQuery({
+    queryKey: ['med-rxcui', it.medicationId],
+    queryFn: async () => {
+      if (!it.medicationId) return null
+      const { data } = await supabase.from('medications').select('rxcui').eq('id', it.medicationId).single()
+      return data?.rxcui ?? null
+    },
+    enabled: !!it.medicationId && minutesLate > 30,
+    staleTime: 60 * 60 * 1000,
+  })
+
+  // Fetch OpenFDA catch-up guidance when late
+  const { data: fdaGuidance } = useQuery({
+    queryKey: ['catchup', rxcui],
+    queryFn: () => getCatchUpGuidance(rxcui!),
+    enabled: !!rxcui && minutesLate > 30,
+    staleTime: 60 * 60 * 1000,
+    retry: false,
+  })
+
+  // Standard catch-up guidance based on elapsed time
+  const catchUpGuidance = (() => {
+    if (minutesLate < 30) return null
+    if (fdaGuidance) return fdaGuidance
+    // Standard rule of thumb (not medical advice):
+    if (hoursLate < 4) return `You're ${Math.round(hoursLate * 10) / 10}h late. Generally safe to take now, but check with your pharmacist if unsure.`
+    if (hoursLate < 8) return `You're ${Math.round(hoursLate)}h late. For many medications you can still take it — skip only if your next dose is soon.`
+    return `You're ${Math.round(hoursLate)}h late. Consider skipping this dose and resuming your normal schedule. Ask your pharmacist to be sure.`
+  })()
 
   const markDone = () => {
     if (!it.medicationId) return
-
     const late = nowMin > it.timeMinutes + 15
     logDose({
       medication_id: it.medicationId,
@@ -662,7 +697,6 @@ function DoseModal({
 
   const markMissed = () => {
     if (!it.medicationId) return
-
     logDose({
       medication_id: it.medicationId,
       schedule_id: it.id,
@@ -689,6 +723,19 @@ function DoseModal({
       <div className="text-[var(--color-text-secondary)] mb-4 [font-size:var(--text-body)]">
         {it.instructions || ''}
       </div>
+
+      {/* Catch-up guidance for late/missed doses */}
+      {catchUpGuidance && (
+        <div className="mb-4 px-4 py-3 rounded-xl bg-[color-mix(in_srgb,var(--color-amber,#d97706)_8%,transparent)] border border-[color-mix(in_srgb,var(--color-amber,#d97706)_25%,transparent)]" role="note">
+          <p className="font-bold text-[#d97706] [font-size:var(--text-label)] mb-0.5">Catch-up Guidance</p>
+          <p className="text-[var(--color-text-secondary)] [font-size:var(--text-caption)] leading-relaxed">
+            {catchUpGuidance}
+          </p>
+          <p className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] mt-1">
+            Always follow your healthcare provider's instructions.
+          </p>
+        </div>
+      )}
 
       <div className="flex flex-col gap-2">
         <Button

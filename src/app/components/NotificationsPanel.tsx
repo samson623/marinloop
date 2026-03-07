@@ -2,7 +2,7 @@
  * NotificationsPanel — modal panel displaying grouped, collapsible notification history.
  * Owns the NotificationItem type, notifDayLabel helper, and NotifIcon helper.
  */
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useNotifications } from '@/shared/hooks/useNotifications'
 import { Modal } from '@/shared/components/Modal'
 import {
@@ -63,17 +63,34 @@ export function NotificationsPanel({ onClose, triggerRef }: { onClose: () => voi
     read: n.read,
   }))
 
-  const groups: { label: string; items: NotificationItem[] }[] = []
-  const seen = new Map<string, number>()
-  for (const n of notifs) {
-    const label = notifDayLabel(n.rawDate)
-    if (!seen.has(label)) { seen.set(label, groups.length); groups.push({ label, items: [] }) }
-    groups[seen.get(label)!].items.push(n)
-  }
+  const groups = useMemo(() => {
+    const grps: { label: string; items: NotificationItem[] }[] = []
+    const seen = new Map<string, number>()
+    for (const n of notifs) {
+      const label = notifDayLabel(n.rawDate)
+      if (!seen.has(label)) { seen.set(label, grps.length); grps.push({ label, items: [] }) }
+      grps[seen.get(label)!].items.push(n)
+    }
+    return grps
+  }, [notifs])
 
   // Track which day labels are explicitly expanded. Default: only Today.
   // Initialized unconditionally so it doesn't depend on data being loaded yet.
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set(['Today']))
+
+  // After loading: if Today has no items, auto-expand the first group that has unread items.
+  const hasAutoExpanded = useRef(false)
+  useEffect(() => {
+    if (isLoading || hasAutoExpanded.current || !groups.length) return
+    hasAutoExpanded.current = true
+    const todayGroup = groups.find((g) => g.label === 'Today')
+    if (!todayGroup || todayGroup.items.length === 0) {
+      const firstUnread = groups.find((g) => g.items.some((i) => !i.read))
+      if (firstUnread) {
+        setExpanded((prev) => { const s = new Set(prev); s.add(firstUnread.label); return s })
+      }
+    }
+  }, [isLoading, groups])
 
   const toggle = (label: string) =>
     setExpanded((prev) => { const next = new Set(prev); next.has(label) ? next.delete(label) : next.add(label); return next })

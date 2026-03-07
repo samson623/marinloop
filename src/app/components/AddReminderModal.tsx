@@ -21,7 +21,7 @@ type Props = {
 
 export function AddReminderModal({ open, onClose }: Props) {
   const { session } = useAuthStore()
-  const { addReminderAsync, isAdding } = useReminders()
+  const { addReminderAsync } = useReminders()
   const { openRemindersPanel } = useAppStore()
 
   const [title, setTitle] = useState('')
@@ -29,6 +29,7 @@ export function AddReminderModal({ open, onClose }: Props) {
   const [mode, setMode] = useState<'quick' | 'custom'>('quick')
   const [selectedPreset, setSelectedPreset] = useState<number | null>(60)
   const [customDatetime, setCustomDatetime] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   const handleSubmit = async () => {
     if (!title.trim() || !session?.user?.id) return
@@ -49,6 +50,7 @@ export function AddReminderModal({ open, onClose }: Props) {
 
     const timeStr = fireAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })
 
+    setSubmitting(true)
     try {
       const reminder = await addReminderAsync({
         user_id: session.user.id,
@@ -69,6 +71,7 @@ export function AddReminderModal({ open, onClose }: Props) {
         })
       } catch { /* push may not be subscribed */ }
     } catch { /* creation error handled by mutation hook */ }
+    finally { setSubmitting(false) }
   }
 
   const canSubmit = title.trim().length > 0 && (
@@ -166,11 +169,11 @@ export function AddReminderModal({ open, onClose }: Props) {
           type="button"
           variant="primary"
           size="md"
-          disabled={!canSubmit || isAdding}
+          disabled={!canSubmit || submitting}
           onClick={handleSubmit}
           className="w-full py-3"
         >
-          {isAdding ? 'Creating...' : 'Create Reminder'}
+          {submitting ? 'Creating...' : 'Create Reminder'}
         </Button>
       </div>
     </Modal>

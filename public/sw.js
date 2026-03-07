@@ -293,6 +293,28 @@ self.addEventListener('notificationclick', (event) => {
     )
 })
 
+// ─── Background Sync ─────────────────────────────────────────────────────────
+// When the browser regains connectivity and a sync is registered, relay
+// SYNC_QUEUE to all open tabs so useOfflineQueue can replay the mutation queue.
+self.addEventListener('sync', (event) => {
+    if (event.tag === 'marinloop-queue') {
+        if (DEBUG) console.log('[marinloop SW] Background sync triggered — relaying SYNC_QUEUE')
+        event.waitUntil(
+            self.clients
+                .matchAll({ type: 'window', includeUncontrolled: true })
+                .then((clientList) => {
+                    const origin = self.location.origin
+                    clientList
+                        .filter((c) => c.url && c.url.startsWith(origin))
+                        .forEach((c) => c.postMessage({ type: 'SYNC_QUEUE' }))
+                })
+                .catch((err) => {
+                    if (DEBUG) console.warn('[marinloop SW] SYNC_QUEUE relay failed:', err)
+                })
+        )
+    }
+})
+
 // ─── Message handler ──────────────────────────────────────────────────────────
 // Allows the React app to trigger SW updates without waiting for tab close.
 self.addEventListener('message', (event) => {

@@ -24,6 +24,10 @@ export interface Database {
           plan: Database['public']['Enums']['plan_type']
           allergies: string[]
           emergency_contacts: Json
+          blood_type: string | null
+          conditions: string[]
+          ice_share_token: string | null
+          vital_thresholds: Json
           created_at: string
           updated_at: string
         }
@@ -36,6 +40,10 @@ export interface Database {
           plan?: Database['public']['Enums']['plan_type']
           allergies?: string[]
           emergency_contacts?: Json
+          blood_type?: string | null
+          conditions?: string[]
+          ice_share_token?: string | null
+          vital_thresholds?: Json
           created_at?: string
           updated_at?: string
         }
@@ -47,6 +55,10 @@ export interface Database {
           plan?: Database['public']['Enums']['plan_type']
           allergies?: string[]
           emergency_contacts?: Json
+          blood_type?: string | null
+          conditions?: string[]
+          ice_share_token?: string | null
+          vital_thresholds?: Json
           updated_at?: string
         }
         Relationships: []
@@ -134,6 +146,8 @@ export interface Database {
           icon: string | null
           barcode: string | null
           rxcui: string | null
+          discontinued_at: string | null
+          discontinuation_reason: string | null
           created_at: string
           updated_at: string
         }
@@ -149,6 +163,8 @@ export interface Database {
           icon?: string | null
           barcode?: string | null
           rxcui?: string | null
+          discontinued_at?: string | null
+          discontinuation_reason?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -162,6 +178,8 @@ export interface Database {
           icon?: string | null
           barcode?: string | null
           rxcui?: string | null
+          discontinued_at?: string | null
+          discontinuation_reason?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -513,6 +531,33 @@ export interface Database {
           linked_appointment_id?: string | null
           entry_date?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      audit_logs: {
+        Row: {
+          id: string
+          user_id: string | null
+          action: string
+          entity_type: string
+          entity_id: string | null
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          action: string
+          entity_type: string
+          entity_id?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          action?: string
+          entity_type?: string
+          entity_id?: string | null
+          metadata?: Json
         }
         Relationships: []
       }

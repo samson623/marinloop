@@ -19,10 +19,11 @@ export interface ReminderCreateInput {
 }
 
 export const RemindersService = {
-  async getAll(): Promise<Reminder[]> {
+  async getAll(userId: string): Promise<Reminder[]> {
     const { data, error } = await supabase
       .from('reminders')
       .select('*')
+      .eq('user_id', userId)
       .order('fire_at', { ascending: true })
 
     if (error) throw error

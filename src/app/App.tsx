@@ -39,6 +39,7 @@ import { useServiceWorkerUpdate } from '@/shared/hooks/useServiceWorkerUpdate'
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
 import { useReminders } from '@/shared/hooks/useReminders'
 import { RemindersPanel } from '@/app/components/RemindersPanel'
+import { NotificationsService } from '@/shared/services/notifications'
 
 type NotificationItem = {
   id: string
@@ -165,14 +166,25 @@ function AppShell() {
   const [notifOpen, setNotifOpen] = useState(false)
   const notifTriggerRef = useRef<HTMLButtonElement>(null)
 
-  // Build a stable createReminder function to inject into useVoiceIntent
-  // Returns the new reminder ID (or null on failure) and opens the edit panel
+  // Build a stable createReminder function to inject into useVoiceIntent.
+  // This is the canonical place for the confirmation push on voice-created reminders.
+  // Returns the new reminder ID (or null on failure) and opens the edit panel.
   const createReminder = useCallback(
     async ({ userId, title, body, fireAt }: { userId: string; title: string; body: string; fireAt: Date }): Promise<string | null> => {
       try {
         const reminder = await addReminderAsync({ user_id: userId, title, body, fire_at: fireAt.toISOString() })
         // Open the reminders panel with auto-edit for the newly created reminder
         openRemindersPanel(reminder.id)
+        // Send an immediate push notification to confirm the reminder was set
+        const timeStr = fireAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })
+        try {
+          await NotificationsService.sendPush(userId, {
+            title: `Reminder set: ${title}`,
+            body: `Will fire at ${timeStr}`,
+            url: '/timeline?reminders=open',
+            tag: `reminder-confirm-${reminder.id}`,
+          })
+        } catch { /* push may not be subscribed — that's OK */ }
         return reminder.id
       } catch {
         return null

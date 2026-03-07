@@ -1,15 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { RemindersService, type ReminderCreateInput } from '@/shared/services/reminders'
 import { useAppStore } from '@/shared/stores/app-store'
+import { useAuthStore } from '@/shared/stores/auth-store'
 import { handleMutationError } from '@/shared/lib/errors'
 
 export function useReminders() {
   const queryClient = useQueryClient()
   const { toast } = useAppStore()
+  const { session } = useAuthStore()
+  const userId = session?.user?.id ?? null
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['reminders'],
-    queryFn: RemindersService.getAll,
+    queryKey: ['reminders', userId],
+    queryFn: () => RemindersService.getAll(userId!),
+    enabled: !!userId,
     staleTime: 1000 * 30, // 30s — reminders are time-sensitive
   })
 

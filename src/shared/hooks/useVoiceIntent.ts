@@ -9,7 +9,6 @@ import { useAppointments } from '@/shared/hooks/useAppointments'
 import { useNotes } from '@/shared/hooks/useNotes'
 import { VoiceIntentService } from '@/shared/services/voice-intent'
 import { AIService } from '@/shared/services/ai'
-import { NotificationsService } from '@/shared/services/notifications'
 import { todayLocal, isoToLocalDate, toLocalTimeString } from '@/shared/lib/dates'
 import type { VoiceIntentResult } from '@/shared/types/contracts'
 import type { DoseLogCreateInput } from '@/shared/types/contracts'
@@ -38,7 +37,6 @@ export type UseVoiceIntentOptions = {
 }
 
 const defaultVoiceIntentService: VoiceIntentServiceLike = VoiceIntentService
-const defaultNotificationsService: NotificationsServiceLike = NotificationsService as NotificationsServiceLike
 
 export function useVoiceIntent(options: UseVoiceIntentOptions) {
   const {
@@ -47,7 +45,6 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
     createReminder,
     onAdherenceSummary,
     voiceIntentService = defaultVoiceIntentService,
-    notificationsService = defaultNotificationsService,
   } = options
 
   const navigate = useNavigate()
@@ -160,18 +157,7 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
     const body = draft?.message || `Reminder: ${title} at ${timeStr}`
 
     if (createReminder && session?.user?.id) {
-      const reminderId = await createReminder({ userId: session.user.id, title, body, fireAt })
-      // Send an immediate push notification to confirm the reminder was set
-      if (session.user.id && reminderId) {
-        try {
-          await notificationsService.sendPush(session.user.id, {
-            title: `Reminder set: ${title}`,
-            body: `Will fire at ${timeStr}`,
-            url: '/timeline?reminders=open',
-            tag: `reminder-confirm-${reminderId}`,
-          })
-        } catch { /* push may not be subscribed — that's OK */ }
-      }
+      await createReminder({ userId: session.user.id, title, body, fireAt })
     }
 
     useAppStore.getState().toast(`Reminder set for ${timeStr}`, 'ts')

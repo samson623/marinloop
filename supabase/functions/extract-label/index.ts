@@ -9,6 +9,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { buildRateLimitHeaders, runQuotaTrackedRequest } from '../_shared/quota-tracker.ts'
 
 const ALLOWED_MODEL = 'gpt-5-nano'
 const MAX_TOTAL_BASE64_BYTES = 18 * 1024 * 1024 // 18MB total across all images
@@ -216,74 +217,87 @@ serve(async (req) => {
     }
     const supabaseService = createClient(supabaseUrl, serviceRoleKey)
     const today = new Date().toISOString().slice(0, 10)
-    const { data: newCount, error: rpcError } = await supabaseService.rpc('increment_ai_daily_usage', {
-      p_user_id: user.id,
-      p_usage_date: today,
-    })
-    if (rpcError) {
+    const { data: usageRow, error: usageError } = await supabaseService
+      .from('ai_daily_usage')
+      .select('request_count')
+      .eq('user_id', user.id)
+      .eq('usage_date', today)
+      .maybeSingle()
+    if (usageError) {
       return new Response(
-        JSON.stringify({ error: scrubError(rpcError) }),
+        JSON.stringify({ error: scrubError(usageError) }),
         { status: 500, headers: corsHeaders },
       )
     }
-    const requestCount = typeof newCount === 'number' ? newCount : (newCount as number[])?.[0] ?? 0
+
     const limit = getAiDailyLimit()
-    if (requestCount > limit) {
-      const retryAfter = getSecondsUntilMidnightUtc()
-      const headers = {
-        ...corsHeaders,
-        'X-RateLimit-Limit': String(limit),
-        'X-RateLimit-Remaining': '0',
-        'X-RateLimit-Reset': String(getMidnightUtcNext()),
-        'Retry-After': String(retryAfter),
-      }
-      return new Response(
-        JSON.stringify({ error: 'Daily limit reached. Try again tomorrow.' }),
-        { status: 429, headers },
-      )
-    }
-
-    let body: LabelExtractPayload
-    try {
-      body = (await req.json()) as LabelExtractPayload
-    } catch {
-      return new Response(
-        JSON.stringify({ error: 'Invalid JSON body' }),
-        { status: 400, headers: corsHeaders },
-      )
-    }
-
-    // Support both `images` array (new) and `imageBase64` string (legacy)
+    const currentUsage = usageRow?.request_count ?? 0
     let imageList: string[] = []
-    if (Array.isArray(body.images)) {
-      imageList = (body.images as unknown[]).filter((i): i is string => typeof i === 'string' && i.length > 0)
-    } else if (typeof body.imageBase64 === 'string' && body.imageBase64.length > 0) {
-      imageList = [body.imageBase64]
-    }
+    let isPillMode = false
 
-    if (imageList.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'At least one image is required (images[] or imageBase64)' }),
-        { status: 400, headers: corsHeaders },
-      )
-    }
-    if (imageList.length > MAX_IMAGES) {
-      return new Response(
-        JSON.stringify({ error: `Maximum ${MAX_IMAGES} images allowed` }),
-        { status: 400, headers: corsHeaders },
-      )
-    }
+    const quotaResult = await runQuotaTrackedRequest({
+      limit,
+      currentUsage,
+      resetAt: getMidnightUtcNext(),
+      retryAfterSeconds: getSecondsUntilMidnightUtc(),
+      baseHeaders: corsHeaders,
+      limitReachedMessage: 'Daily limit reached. Try again tomorrow.',
+      validate: async () => {
+        let body: LabelExtractPayload
+        try {
+          body = (await req.json()) as LabelExtractPayload
+        } catch {
+          return {
+            ok: false,
+            response: new Response(
+              JSON.stringify({ error: 'Invalid JSON body' }),
+              { status: 400, headers: corsHeaders },
+            ),
+          }
+        }
 
-    const totalSize = imageList.reduce((sum, img) => sum + new TextEncoder().encode(img).length, 0)
-    if (totalSize > MAX_TOTAL_BASE64_BYTES) {
-      return new Response(
-        JSON.stringify({ error: 'Photos too large. Try smaller images.' }),
-        { status: 400, headers: corsHeaders },
-      )
-    }
+        // Support both `images` array (new) and `imageBase64` string (legacy)
+        if (Array.isArray(body.images)) {
+          imageList = (body.images as unknown[]).filter((i): i is string => typeof i === 'string' && i.length > 0)
+        } else if (typeof body.imageBase64 === 'string' && body.imageBase64.length > 0) {
+          imageList = [body.imageBase64]
+        }
 
-    const mode = typeof body.mode === 'string' && body.mode === 'pill' ? 'pill' : 'label'
-    const isPillMode = mode === 'pill'
+        if (imageList.length === 0) {
+          return {
+            ok: false,
+            response: new Response(
+              JSON.stringify({ error: 'At least one image is required (images[] or imageBase64)' }),
+              { status: 400, headers: corsHeaders },
+            ),
+          }
+        }
+        if (imageList.length > MAX_IMAGES) {
+          return {
+            ok: false,
+            response: new Response(
+              JSON.stringify({ error: `Maximum ${MAX_IMAGES} images allowed` }),
+              { status: 400, headers: corsHeaders },
+            ),
+          }
+        }
+
+        const totalSize = imageList.reduce((sum, img) => sum + new TextEncoder().encode(img).length, 0)
+        if (totalSize > MAX_TOTAL_BASE64_BYTES) {
+          return {
+            ok: false,
+            response: new Response(
+              JSON.stringify({ error: 'Photos too large. Try smaller images.' }),
+              { status: 400, headers: corsHeaders },
+            ),
+          }
+        }
+
+        const mode = typeof body.mode === 'string' && body.mode === 'pill' ? 'pill' : 'label'
+        isPillMode = mode === 'pill'
+        return { ok: true, data: undefined }
+      },
+      callProvider: async () => {
 
     const imageCount = imageList.length
     let textInstruction: string
@@ -325,19 +339,25 @@ serve(async (req) => {
       const safeMessage = response.status === 429
         ? 'Too many requests; try again later'
         : 'Request failed'
-      return new Response(
-        JSON.stringify({ error: safeMessage }),
-        { status: response.status, headers: corsHeaders },
-      )
+      return {
+        ok: false,
+        response: new Response(
+          JSON.stringify({ error: safeMessage }),
+          { status: response.status, headers: corsHeaders },
+        ),
+      }
     }
 
     const data = await response.json()
     const rawContent = data.choices?.[0]?.message?.content
     if (typeof rawContent !== 'string') {
-      return new Response(
-        JSON.stringify({ error: 'Invalid extraction response' }),
-        { status: 500, headers: corsHeaders },
-      )
+      return {
+        ok: false,
+        response: new Response(
+          JSON.stringify({ error: 'Invalid extraction response' }),
+          { status: 500, headers: corsHeaders },
+        ),
+      }
     }
 
     let parsed: unknown
@@ -345,27 +365,47 @@ serve(async (req) => {
       const cleaned = rawContent.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim()
       parsed = JSON.parse(cleaned)
     } catch {
-      return new Response(
-        JSON.stringify({ error: 'Could not parse extraction' }),
-        { status: 500, headers: corsHeaders },
-      )
+      return {
+        ok: false,
+        response: new Response(
+          JSON.stringify({ error: 'Could not parse extraction' }),
+          { status: 500, headers: corsHeaders },
+        ),
+      }
     }
 
     const result = isPillMode ? parseAndValidatePill(parsed) : parseAndValidate(parsed)
     if (!result) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid extraction structure' }),
-        { status: 500, headers: corsHeaders },
-      )
+      return {
+        ok: false,
+        response: new Response(
+          JSON.stringify({ error: 'Invalid extraction structure' }),
+          { status: 500, headers: corsHeaders },
+        ),
+      }
+    }
+
+    return { ok: true, data: result }
+      },
+      incrementUsage: async () => {
+        const { data: newCount, error: rpcError } = await supabaseService.rpc('increment_ai_daily_usage', {
+          p_user_id: user.id,
+          p_usage_date: today,
+        })
+        if (rpcError) throw rpcError
+        return typeof newCount === 'number' ? newCount : (newCount as number[])?.[0] ?? currentUsage + 1
+      },
+    })
+
+    if (!quotaResult.ok) {
+      return quotaResult.response!
     }
 
     const successHeaders = {
       ...corsHeaders,
-      'X-RateLimit-Limit': String(limit),
-      'X-RateLimit-Remaining': String(Math.max(0, limit - requestCount)),
-      'X-RateLimit-Reset': String(getMidnightUtcNext()),
+      ...buildRateLimitHeaders(limit, quotaResult.newUsage ?? currentUsage + 1, getMidnightUtcNext()),
     }
-    return new Response(JSON.stringify(result), {
+    return new Response(JSON.stringify(quotaResult.data), {
       headers: successHeaders,
     })
   } catch (err) {

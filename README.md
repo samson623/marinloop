@@ -149,6 +149,7 @@ supabase secrets set AI_DAILY_LIMIT=50
 In production, `ALLOWED_ORIGINS` must be set (comma-separated). If unset, the function returns 403 for all requests (CORS fail-closed). `AI_DAILY_LIMIT` is optional (default 50); when exceeded, returns 429 with `Retry-After` and `X-RateLimit-*` headers; resets at midnight UTC.
 
 **Prerequisite for `send-push`:** Configure VAPID keys in Supabase secrets (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`). See [Push Notifications Setup](#push-notifications-setup) below.
+`send-push` only allows `POST` (and `OPTIONS` for CORS preflight); `GET` diagnostics are intentionally disabled and now return `405 Method Not Allowed`.
 
 **Deploy all:**
 ```bash

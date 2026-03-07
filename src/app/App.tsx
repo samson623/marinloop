@@ -23,10 +23,13 @@ const SummaryView = React.lazy(() => import('@/app/views/SummaryView').then((m) 
 const ProfileView = React.lazy(() => import('@/app/views/ProfileView').then((m) => ({ default: m.ProfileView })))
 const CareView = React.lazy(() => import('@/app/views/CareView').then((m) => ({ default: m.CareView })))
 const InstallGuideScreen = React.lazy(() => import('@/app/InstallGuideScreen').then((m) => ({ default: m.InstallGuideScreen })))
+const PrivacyPolicyView = React.lazy(() => import('@/app/views/PrivacyPolicyView').then((m) => ({ default: m.PrivacyPolicyView })))
+const TermsView = React.lazy(() => import('@/app/views/TermsView').then((m) => ({ default: m.TermsView })))
 import { isMobile, isStandalone } from '@/shared/lib/device'
 import { AddToHomeScreenPrompt } from '@/shared/components/AddToHomeScreenPrompt'
 import { getAddToHomeScreenSeen, setAddToHomeScreenSeen } from '@/shared/lib/add-to-home-screen-storage'
 import { BetaTermsModal, useBetaTermsAccepted } from '@/shared/components/BetaTermsModal'
+import { AIConsentModal, useAIConsent } from '@/shared/components/AIConsentModal'
 import { FeedbackWidget } from '@/shared/components/FeedbackWidget'
 import { Modal } from '@/shared/components/Modal'
 import { IconButton } from '@/shared/components/IconButton'
@@ -132,9 +135,10 @@ function AppInner() {
       <Route path="/login" element={<LoginScreen />} />
       <Route path="/auth/callback" element={<AuthCallbackScreen />} />
       <Route path="/install" element={<React.Suspense fallback={<PageLoader />}><InstallGuideScreen /></React.Suspense>} />
+      <Route path="/privacy" element={<React.Suspense fallback={<PageLoader />}><PrivacyPolicyView /></React.Suspense>} />
+      <Route path="/terms" element={<React.Suspense fallback={<PageLoader />}><TermsView /></React.Suspense>} />
       <Route element={<PrivateRoute />}>
         <Route element={<AppShell />}>
-          {/* TODO: TimelineView supports ?date=YYYY-MM-DD deep-links — implement with useSearchParams() */}
           <Route path="/timeline" element={<TimelineView />} />
           <Route path="/meds" element={<React.Suspense fallback={<PageLoader />}><MedsView /></React.Suspense>} />
           <Route path="/appts" element={<React.Suspense fallback={<PageLoader />}><ApptsView /></React.Suspense>} />
@@ -186,6 +190,7 @@ function AppShell() {
     },
   })
   const { accepted: betaTermsAccepted, accept: acceptBetaTerms } = useBetaTermsAccepted()
+  const { consented: aiConsented, declined: aiDeclined, setDeclined: setAiDeclined, consent: grantAiConsent } = useAIConsent()
   const [showVoiceTest] = useState(() => {
     try {
       return new URLSearchParams(window.location.search).get('voiceTest') === '1'
@@ -263,6 +268,7 @@ function AppShell() {
     <Sentry.ErrorBoundary fallback={<div className="fixed inset-0 flex items-center justify-center bg-[var(--color-bg-primary)] p-6 text-center text-[var(--color-text-secondary)]">Something went wrong. Please refresh.</div>}>
     <ErrorBoundary>
     {!betaTermsAccepted && <BetaTermsModal onAccept={acceptBetaTerms} />}
+    {betaTermsAccepted && !aiConsented && !aiDeclined && <AIConsentModal onAccept={grantAiConsent} onDecline={() => setAiDeclined(true)} />}
     <div className="flex flex-col min-h-screen bg-[var(--color-bg-primary)] w-full">
       {showAddToHomeScreenOnboarding && (
         <AddToHomeScreenPrompt

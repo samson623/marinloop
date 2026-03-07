@@ -7,6 +7,17 @@ import { getErrorMessage } from '@/shared/lib/errors'
 import { IconButton } from '@/shared/components/IconButton'
 import { Button, Input } from '@/shared/components/ui'
 
+function passwordStrength(pass: string): { label: string; bars: 1 | 2 | 3; color: string } {
+  const hasUpper = /[A-Z]/.test(pass)
+  const hasLower = /[a-z]/.test(pass)
+  const hasDigit = /[0-9]/.test(pass)
+  const hasSpecial = /[^A-Za-z0-9]/.test(pass)
+  const types = (hasUpper ? 1 : 0) + (hasLower ? 1 : 0) + (hasDigit ? 1 : 0) + (hasSpecial ? 1 : 0)
+  if (pass.length >= 12 || types >= 3) return { label: 'Strong', bars: 3, color: 'var(--color-green)' }
+  if (pass.length >= 8 && types >= 2) return { label: 'Fair', bars: 2, color: 'var(--color-amber)' }
+  return { label: 'Weak', bars: 1, color: 'var(--color-red)' }
+}
+
 export function LoginScreen() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [name, setName] = useState('')
@@ -23,6 +34,7 @@ export function LoginScreen() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [googleLoading, setGoogleLoading] = useState(false)
+  const strength = isSignUp && pass ? passwordStrength(pass) : null
 
   // Show message when returning from failed callback (invalid/missing code or timeout)
   useEffect(() => {
@@ -200,9 +212,25 @@ export function LoginScreen() {
               onChange={(e) => setPass(e.target.value)}
               placeholder="Enter password"
               required
-              minLength={6}
+              minLength={isSignUp ? 8 : 6}
               className="min-h-[44px]"
             />
+            {strength && (
+              <div className="mt-1.5 flex items-center gap-2">
+                <div className="flex gap-1">
+                  {[1, 2, 3].map((b) => (
+                    <div
+                      key={b}
+                      className="h-1 w-8 rounded-full transition-all duration-200"
+                      style={{ background: b <= strength.bars ? strength.color : 'var(--color-bg-tertiary)' }}
+                    />
+                  ))}
+                </div>
+                <span className="[font-size:var(--text-caption)] font-semibold" style={{ color: strength.color }}>
+                  {strength.label}
+                </span>
+              </div>
+            )}
           </div>
 
           <Button

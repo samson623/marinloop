@@ -12,8 +12,8 @@ import { setAddToHomeScreenSeen } from '@/shared/lib/add-to-home-screen-storage'
 import { IconButton } from '@/shared/components/IconButton'
 import { Button, Input, Card } from '@/shared/components/ui'
 import { getPlatformLabel, isStandalone } from '@/shared/lib/device'
-
-const ADMIN_USER_ID = 'b4f5d3fb-634c-4fe7-a2cb-36166e00ab3c'
+import { env } from '@/shared/lib/env'
+import { AccountDeletionModal } from '@/shared/components/AccountDeletionModal'
 
 export function ProfileView() {
   const { toast } = useAppStore()
@@ -28,6 +28,7 @@ export function ProfileView() {
   const [mfaLoading, setMfaLoading] = useState(false)
   const [planLoading, setPlanLoading] = useState(false)
   const [planExpanded, setPlanExpanded] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   const handlePlanChange = async (plan: 'free' | 'pro' | 'family') => {
     if (plan === profile?.plan || planLoading) return
@@ -334,7 +335,11 @@ export function ProfileView() {
             marinloop is pre-release beta software. It is <strong className="text-[var(--color-text-secondary)]">not a medical device</strong> and is not covered by a HIPAA Business Associate Agreement during this beta period.
           </p>
           <p>
-            Your data is stored securely in your personal account and is not shared with third parties. Beta data may be reset before general availability.
+            Your health data is stored in <strong className="text-[var(--color-text-secondary)]">Supabase</strong> (encrypted at rest). If you enable AI features, medication names, notes, and images are processed by <strong className="text-[var(--color-text-secondary)]">OpenAI&apos;s API</strong> (not HIPAA-covered). Error reports are sent to <strong className="text-[var(--color-text-secondary)]">Sentry</strong>. Beta data may be reset before general availability.
+          </p>
+          <p className="flex flex-wrap gap-3">
+            <a href="/privacy" className="underline text-[var(--color-accent)]">Privacy Policy</a>
+            <a href="/terms" className="underline text-[var(--color-accent)]">Terms of Service</a>
           </p>
           <p>
             To request data deletion or report a privacy concern, email{' '}
@@ -343,7 +348,7 @@ export function ProfileView() {
         </div>
       </Card>
 
-      {user?.id === ADMIN_USER_ID && (
+      {user?.id === env.adminUserId && (
         <Card className="p-4 mb-5 rounded-xl border-2 border-[var(--color-amber)]">
           <div className="font-bold uppercase tracking-[0.08em] text-[var(--color-amber)] mb-3 [font-size:var(--text-label)] text-center">
             Admin &mdash; Beta Stats
@@ -352,11 +357,31 @@ export function ProfileView() {
         </Card>
       )}
 
+      <Card className="p-4 mb-5 rounded-xl">
+        <div className="font-bold uppercase tracking-[0.08em] text-[var(--color-text-secondary)] mb-3 [font-size:var(--text-label)]">
+          Account Actions
+        </div>
+        <Button
+          type="button"
+          variant="secondary"
+          size="md"
+          className="w-full mb-2"
+          onClick={() => setShowDeleteModal(true)}
+        >
+          Delete My Account &amp; Data
+        </Button>
+        <p className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)]">
+          Permanently removes all your health data. This cannot be undone.
+        </p>
+      </Card>
+
       <div className="flex flex-col gap-2">
         <Button type="button" variant="danger" size="md" onClick={() => { void signOut() }}>
           Sign Out
         </Button>
       </div>
+
+      <AccountDeletionModal open={showDeleteModal} onOpenChange={setShowDeleteModal} />
 
       <p className="mt-6 text-[var(--color-text-tertiary)] leading-relaxed text-center [font-size:var(--text-caption)]">
         Not medical advice. Always follow your healthcare provider&apos;s instructions.

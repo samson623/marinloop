@@ -370,7 +370,7 @@ export function TimelineView() {
           onClick={() =>
             nextItemRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
           }
-          className="fixed bottom-28 right-4 z-50 flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium shadow-lg transition-all duration-200 animate-fade-in"
+          className="fixed bottom-[calc(160px+env(safe-area-inset-bottom))] right-[max(4.5rem,calc(env(safe-area-inset-right)+4.5rem))] z-50 flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium shadow-lg transition-all duration-200 animate-fade-in"
           style={{ background: 'var(--color-accent)', color: 'var(--color-text-inverse)' }}
           aria-label="Jump to current dose"
         >

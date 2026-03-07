@@ -59,6 +59,10 @@ export function BetaTermsModal({ onAccept }: { onAccept: () => void }) {
             </p>
           </div>
 
+          <p className="text-[var(--color-text-secondary)] font-semibold mt-4 mb-2 [font-size:var(--text-body)]">
+            You must accept these terms to continue using marinloop.
+          </p>
+
           <Button
             type="button"
             variant="primary"

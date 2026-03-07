@@ -335,10 +335,17 @@ export default function MedDetailModal({ med, isDeleting, onClose, onUpdate, onD
 
             {/* Allergy Alert — shown after warnings */}
             {matchedAllergen && (
-              <div className="flex items-start gap-3 rounded-xl border border-[color-mix(in_srgb,var(--color-red)_30%,transparent)] bg-[color-mix(in_srgb,var(--color-red)_8%,transparent)] px-4 py-3">
-                <span className="text-[var(--color-red)] font-semibold leading-relaxed [font-size:var(--text-body)]">
-                  ⚠️ Allergy Alert: This medication may contain {matchedAllergen}
-                </span>
+              <div role="alert" className="mb-4 px-4 py-3 rounded-xl border-l-4 bg-[color-mix(in_srgb,var(--color-red)_8%,var(--color-bg-secondary))] border-[var(--color-red)] flex items-start gap-3">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-red)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0 mt-0.5">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <div>
+                  <div className="font-bold text-[var(--color-red)] [font-size:var(--text-body)]">Allergy Alert</div>
+                  <div className="text-[var(--color-text-secondary)] [font-size:var(--text-caption)] mt-0.5">
+                    This medication may contain <strong>{matchedAllergen}</strong>, which matches your known allergies. Consult your healthcare provider before taking this medication.
+                  </div>
+                </div>
               </div>
             )}
 

@@ -8,11 +8,11 @@ import { type SchedItem } from '@/shared/stores/app-store'
 import { todayLocal, isoToLocalDate, toLocalTimeString } from '@/shared/lib/dates'
 import { timeToMinutes, nowMinutes, sortAndMarkNext } from '@/shared/lib/timeline-utils'
 
-export function useTimeline() {
+export function useTimeline(date?: string) {
   const queryClient = useQueryClient()
   const { meds, isLoading: medsLoading, error: medsError } = useMedications()
   const { scheds, isLoading: schedsLoading } = useSchedules()
-  const { todayLogs, isLoading: logsLoading } = useDoseLogs()
+  const { todayLogs, isLoading: logsLoading } = useDoseLogs(date)
   const { appts, isLoading: apptsLoading, error: apptsError } = useAppointments()
 
   const isLoading = medsLoading || schedsLoading || logsLoading || apptsLoading
@@ -28,7 +28,8 @@ export function useTimeline() {
   const timelineItems = useMemo(() => {
     const byMedication = new Map(meds.map((m) => [m.id, m]))
     const items: SchedItem[] = []
-    const todayStr = todayLocal()
+    const targetDate = date ?? todayLocal()
+    const isToday = targetDate === todayLocal()
 
     for (const schedule of scheds) {
       if (!schedule.active) continue
@@ -57,8 +58,8 @@ export function useTimeline() {
     }
 
     for (const appt of appts) {
-      const date = isoToLocalDate(appt.start_time)
-      if (date !== todayStr) continue
+      const apptDate = isoToLocalDate(appt.start_time)
+      if (apptDate !== targetDate) continue
 
       const time = toLocalTimeString(appt.start_time)
       items.push({
@@ -73,8 +74,9 @@ export function useTimeline() {
       })
     }
 
-    return sortAndMarkNext(items, nowMinutes())
-  }, [meds, scheds, todayLogs, appts])
+    // Pass Infinity as nowMin for non-today dates so nothing gets marked "next"
+    return sortAndMarkNext(items, isToday ? nowMinutes() : Infinity)
+  }, [meds, scheds, todayLogs, appts, date])
 
   return {
     timeline: timelineItems,

@@ -10,6 +10,7 @@ type Profile = {
   avatar_url: string | null
   timezone: string
   plan: 'free' | 'pro' | 'family'
+  allergies: string[] | null
 }
 
 type AuthResult = { error: Error | null }
@@ -45,7 +46,7 @@ let authSubscription: AuthSubscription | null = null
 async function fetchProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, name, avatar_url, timezone, plan')
+    .select('id, email, name, avatar_url, timezone, plan, allergies')
     .eq('id', userId)
     .single()
 

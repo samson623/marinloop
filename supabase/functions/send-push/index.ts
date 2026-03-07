@@ -43,18 +43,10 @@ serve(async (req) => {
     const corsHeaders = { ...getCorsHeaders(origin), 'Content-Type': 'application/json' }
     const log = (msg: string) => console.log(`[send-push] ${msg}`)
 
-    // GET = health check
-    if (req.method === 'GET') {
-        const envCheck = {
-            SUPABASE_URL: !!Deno.env.get('SUPABASE_URL'),
-            SUPABASE_SERVICE_ROLE_KEY: !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
-            VAPID_PUBLIC_KEY: !!Deno.env.get('VAPID_PUBLIC_KEY'),
-            VAPID_PRIVATE_KEY: !!Deno.env.get('VAPID_PRIVATE_KEY'),
-            VAPID_SUBJECT: !!Deno.env.get('VAPID_SUBJECT'),
-        }
+    if (req.method !== 'POST') {
         return new Response(
-            JSON.stringify({ status: 'ok', env: envCheck, timestamp: new Date().toISOString() }),
-            { headers: corsHeaders }
+            JSON.stringify({ error: 'Method not allowed' }),
+            { status: 405, headers: { ...corsHeaders, Allow: 'POST, OPTIONS' } }
         )
     }
 

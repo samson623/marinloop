@@ -63,5 +63,6 @@ secrets_full*.txt
 
 # Operational scratch files (not part of source)
 medflow-production.md
+marinloop-production.md
 ss-*.png
 ss-*.jpg

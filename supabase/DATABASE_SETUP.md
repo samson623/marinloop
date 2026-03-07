@@ -1,4 +1,4 @@
-# MedFlow Care — Database Setup
+# MarinLoop — Database Setup
 
 Run these steps **once** per Supabase project to set up the database correctly.
 

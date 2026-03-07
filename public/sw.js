@@ -1,4 +1,4 @@
-// marinloop — Push Notification Service Worker
+// MarinLoop — Push Notification Service Worker
 // Handles: push notifications, notification clicks, action buttons,
 //          offline caching (app shell), and SW lifecycle.
 
@@ -29,14 +29,14 @@ function toSameOriginPath(value, origin) {
 // ─── Install ──────────────────────────────────────────────────────────────────
 // Pre-cache the app shell so the app loads offline immediately.
 self.addEventListener('install', (event) => {
-    if (DEBUG) console.log('[marinloop SW] Installing — caching app shell')
+    if (DEBUG) console.log('[MarinLoop SW] Installing — caching app shell')
     self.skipWaiting()
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then((cache) => cache.addAll(APP_SHELL_URLS))
             .catch((err) => {
                 // Non-fatal: app still works, just won't load offline on first install.
-                if (DEBUG) console.warn('[marinloop SW] App shell pre-cache failed:', err)
+                if (DEBUG) console.warn('[MarinLoop SW] App shell pre-cache failed:', err)
             })
     )
 })
@@ -44,7 +44,7 @@ self.addEventListener('install', (event) => {
 // ─── Activate ─────────────────────────────────────────────────────────────────
 // Take control of all open tabs immediately and evict stale caches.
 self.addEventListener('activate', (event) => {
-    if (DEBUG) console.log('[marinloop SW] Activated')
+    if (DEBUG) console.log('[MarinLoop SW] Activated')
     event.waitUntil(
         caches.keys()
             .then((keys) =>
@@ -52,14 +52,14 @@ self.addEventListener('activate', (event) => {
                     keys
                         .filter((k) => k !== CACHE_NAME)
                         .map((k) => {
-                            if (DEBUG) console.log('[marinloop SW] Deleting old cache:', k)
+                            if (DEBUG) console.log('[MarinLoop SW] Deleting old cache:', k)
                             return caches.delete(k)
                         })
                 )
             )
             .then(() => self.clients.claim())
             .catch((err) => {
-                if (DEBUG) console.warn('[marinloop SW] Activate cleanup error:', err)
+                if (DEBUG) console.warn('[MarinLoop SW] Activate cleanup error:', err)
                 return self.clients.claim()
             })
     )
@@ -98,7 +98,7 @@ self.addEventListener('fetch', (event) => {
                     return response
                 })
                 .catch(() => {
-                    if (DEBUG) console.log('[marinloop SW] Navigation offline — serving cached /')
+                    if (DEBUG) console.log('[MarinLoop SW] Navigation offline — serving cached /')
                     // Serve the cached root shell so React Router can take over
                     return caches.match('/').then((cached) => cached || Response.error())
                 })
@@ -120,7 +120,7 @@ self.addEventListener('fetch', (event) => {
                     return response
                 })
                 .catch(() => {
-                    if (DEBUG) console.log('[marinloop SW] Static asset offline and not cached:', url)
+                    if (DEBUG) console.log('[MarinLoop SW] Static asset offline and not cached:', url)
                     return Response.error()
                 })
 
@@ -132,24 +132,24 @@ self.addEventListener('fetch', (event) => {
 
 // ─── Push notifications ───────────────────────────────────────────────────────
 self.addEventListener('push', (event) => {
-    if (DEBUG) console.log('[marinloop SW] Push event received!', event)
+    if (DEBUG) console.log('[MarinLoop SW] Push event received!', event)
 
     if (!event.data) {
-        if (DEBUG) console.warn('[marinloop SW] Push event has no data')
+        if (DEBUG) console.warn('[MarinLoop SW] Push event has no data')
         return
     }
 
     let payload
     try {
         payload = event.data.json()
-        if (DEBUG) console.log('[marinloop SW] Push payload:', JSON.stringify(payload))
+        if (DEBUG) console.log('[MarinLoop SW] Push payload:', JSON.stringify(payload))
     } catch {
-        payload = { title: 'marinloop', body: event.data.text() }
-        if (DEBUG) console.log('[marinloop SW] Push payload (text fallback):', payload.body)
+        payload = { title: 'MarinLoop', body: event.data.text() }
+        if (DEBUG) console.log('[MarinLoop SW] Push payload (text fallback):', payload.body)
     }
 
     const {
-        title = 'marinloop',
+        title = 'MarinLoop',
         body = '',
         icon,
         badge,
@@ -173,7 +173,7 @@ self.addEventListener('push', (event) => {
         actions.push({ action: 'snooze', title: '⏰ Snooze 10 min' })
     }
 
-    if (DEBUG) console.log('[marinloop SW] Showing notification:', { title, body, tag, url: safeUrl, notificationType, actions })
+    if (DEBUG) console.log('[MarinLoop SW] Showing notification:', { title, body, tag, url: safeUrl, notificationType, actions })
 
     event.waitUntil(
         self.registration.showNotification(title, {
@@ -198,7 +198,7 @@ self.addEventListener('push', (event) => {
 // Chrome/Android: postMessage works fine as well (React app listens for SW_NAVIGATE).
 // We no longer call client.navigate() at all; postMessage + focus is universal.
 self.addEventListener('notificationclick', (event) => {
-    if (DEBUG) console.log('[marinloop SW] Notification clicked — action:', event.action, 'tag:', event.notification.tag)
+    if (DEBUG) console.log('[MarinLoop SW] Notification clicked — action:', event.action, 'tag:', event.notification.tag)
 
     event.notification.close()
 
@@ -221,10 +221,10 @@ self.addEventListener('notificationclick', (event) => {
                                 scheduleId: notificationData.scheduleId,
                             })
                         })
-                    if (DEBUG) console.log('[marinloop SW] Sent DOSE_TAKEN to', clientList.length, 'client(s)')
+                    if (DEBUG) console.log('[MarinLoop SW] Sent DOSE_TAKEN to', clientList.length, 'client(s)')
                 })
                 .catch((err) => {
-                    if (DEBUG) console.warn('[marinloop SW] DOSE_TAKEN postMessage failed:', err)
+                    if (DEBUG) console.warn('[MarinLoop SW] DOSE_TAKEN postMessage failed:', err)
                 })
         )
         return
@@ -247,10 +247,10 @@ self.addEventListener('notificationclick', (event) => {
                                 minutes: 10,
                             })
                         })
-                    if (DEBUG) console.log('[marinloop SW] Sent SNOOZE_REMINDER to', clientList.length, 'client(s)')
+                    if (DEBUG) console.log('[MarinLoop SW] Sent SNOOZE_REMINDER to', clientList.length, 'client(s)')
                 })
                 .catch((err) => {
-                    if (DEBUG) console.warn('[marinloop SW] SNOOZE_REMINDER postMessage failed:', err)
+                    if (DEBUG) console.warn('[MarinLoop SW] SNOOZE_REMINDER postMessage failed:', err)
                 })
         )
         return
@@ -277,16 +277,16 @@ self.addEventListener('notificationclick', (event) => {
                         // Chrome/Android: postMessage works identically.
                         // The React app listens for SW_NAVIGATE and calls useNavigate().
                         existing.postMessage({ type: 'SW_NAVIGATE', url: safeUrl })
-                        if (DEBUG) console.log('[marinloop SW] Sent SW_NAVIGATE to existing client:', safeUrl)
+                        if (DEBUG) console.log('[MarinLoop SW] Sent SW_NAVIGATE to existing client:', safeUrl)
                     })
                 }
 
                 // No existing window — open a new one at the target URL
-                if (DEBUG) console.log('[marinloop SW] Opening new window:', safeUrl)
+                if (DEBUG) console.log('[MarinLoop SW] Opening new window:', safeUrl)
                 return self.clients.openWindow(safeUrl)
             })
             .catch((err) => {
-                if (DEBUG) console.warn('[marinloop SW] notificationclick navigation failed:', err)
+                if (DEBUG) console.warn('[MarinLoop SW] notificationclick navigation failed:', err)
                 // Last-resort fallback: open a new window
                 return self.clients.openWindow(safeUrl).catch(() => {})
             })
@@ -298,7 +298,7 @@ self.addEventListener('notificationclick', (event) => {
 // SYNC_QUEUE to all open tabs so useOfflineQueue can replay the mutation queue.
 self.addEventListener('sync', (event) => {
     if (event.tag === 'marinloop-queue') {
-        if (DEBUG) console.log('[marinloop SW] Background sync triggered — relaying SYNC_QUEUE')
+        if (DEBUG) console.log('[MarinLoop SW] Background sync triggered — relaying SYNC_QUEUE')
         event.waitUntil(
             self.clients
                 .matchAll({ type: 'window', includeUncontrolled: true })
@@ -309,7 +309,7 @@ self.addEventListener('sync', (event) => {
                         .forEach((c) => c.postMessage({ type: 'SYNC_QUEUE' }))
                 })
                 .catch((err) => {
-                    if (DEBUG) console.warn('[marinloop SW] SYNC_QUEUE relay failed:', err)
+                    if (DEBUG) console.warn('[MarinLoop SW] SYNC_QUEUE relay failed:', err)
                 })
         )
     }
@@ -318,7 +318,7 @@ self.addEventListener('sync', (event) => {
 // ─── Message handler ──────────────────────────────────────────────────────────
 // Allows the React app to trigger SW updates without waiting for tab close.
 self.addEventListener('message', (event) => {
-    if (DEBUG) console.log('[marinloop SW] Message received:', event.data)
+    if (DEBUG) console.log('[MarinLoop SW] Message received:', event.data)
     if (event.data === 'SKIP_WAITING') {
         self.skipWaiting()
     }

@@ -38,15 +38,15 @@ export function BetaTermsModal({ onAccept }: { onAccept: () => void }) {
             Beta Program Terms
           </Dialog.Title>
           <Dialog.Description id="beta-terms-desc" className="sr-only">
-            Please read and accept the marinloop beta program terms to continue.
+            Please read and accept the MarinLoop beta program terms to continue.
           </Dialog.Description>
 
           <div className="space-y-3 text-[var(--color-text-secondary)] leading-relaxed mb-6" style={{ fontSize: 'var(--text-body)' }}>
             <p className="font-semibold text-[var(--color-text-primary)]">
-              Welcome to the marinloop beta. Please read before continuing.
+              Welcome to the MarinLoop beta. Please read before continuing.
             </p>
             <ul className="list-disc list-inside space-y-2">
-              <li>marinloop is <strong>pre-release software</strong> and may contain bugs or unexpected behavior.</li>
+              <li>MarinLoop is <strong>pre-release software</strong> and may contain bugs or unexpected behavior.</li>
               <li>This service is <strong>not a medical device</strong> and is not intended to diagnose, treat, cure, or prevent any disease or health condition.</li>
               <li>Always follow your healthcare provider&apos;s instructions. <strong>Do not rely solely on this app for medication management.</strong></li>
               <li>Your data is stored on Supabase infrastructure and is <strong>not covered by a HIPAA Business Associate Agreement</strong> during this beta. Do not enter sensitive protected health information.</li>
@@ -60,7 +60,7 @@ export function BetaTermsModal({ onAccept }: { onAccept: () => void }) {
           </div>
 
           <p className="text-[var(--color-text-secondary)] font-semibold mt-4 mb-2 [font-size:var(--text-body)]">
-            You must accept these terms to continue using marinloop.
+            You must accept these terms to continue using MarinLoop.
           </p>
 
           <Button
@@ -70,7 +70,7 @@ export function BetaTermsModal({ onAccept }: { onAccept: () => void }) {
             className="w-full"
             onClick={onAccept}
           >
-            I understand &mdash; Continue to marinloop
+            I understand &mdash; Continue to MarinLoop
           </Button>
         </Dialog.Content>
       </Dialog.Portal>

@@ -15,7 +15,7 @@ const TYPES: { id: FeedbackType; label: string }[] = [
 const PLACEHOLDERS: Record<FeedbackType, string> = {
   bug: 'Describe what happened and what you expected...',
   feature: 'Describe the feature you\u2019d like to see...',
-  general: 'Share your thoughts about marinloop...',
+  general: 'Share your thoughts about MarinLoop...',
 }
 
 export function FeedbackModal({ open, onClose }: { open: boolean; onClose: () => void }) {

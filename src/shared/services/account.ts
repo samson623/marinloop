@@ -37,7 +37,7 @@ export const AccountService = {
 
     const exportData = {
       exported_at: new Date().toISOString(),
-      app: 'marinloop',
+      app: 'MarinLoop',
       version: '1.0.0-beta',
       profile: profileRes.data,
       medications: medsRes.data ?? [],

@@ -124,7 +124,7 @@ export function LoginScreen() {
         </button>
         <div className="flex items-center gap-2 mb-3 sm:mb-4">
           <h1 className="font-extrabold tracking-[-0.03em] text-[var(--color-text-primary)] [font-size:var(--text-title)]">
-            marinloop
+            MarinLoop
           </h1>
           <span
             className="animate-dot-pulse w-2 h-2 rounded-[2px] bg-[var(--color-accent)] shrink-0"
@@ -181,7 +181,7 @@ export function LoginScreen() {
                 className="min-h-[44px] font-mono tracking-widest"
               />
               <p className="mt-1.5 text-[var(--color-text-tertiary)] [font-size:var(--text-caption)]">
-                marinloop is invite-only during beta.
+                MarinLoop is invite-only during beta.
               </p>
             </div>
           )}
@@ -272,7 +272,7 @@ export function LoginScreen() {
         </form>
 
         <p className="mt-8 sm:mt-10 pt-5 sm:pt-6 border-t border-[var(--color-border-primary)] text-[var(--color-text-tertiary)] leading-relaxed [font-size:var(--text-caption)]">
-          marinloop provides reminders and tracking tools. Not medical advice. Always follow your healthcare provider&apos;s instructions.
+          MarinLoop provides reminders and tracking tools. Not medical advice. Always follow your healthcare provider&apos;s instructions.
         </p>
       </div>
     </div>

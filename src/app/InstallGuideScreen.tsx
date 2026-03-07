@@ -30,10 +30,10 @@ export function InstallGuideScreen() {
           You&apos;re all set!
         </h1>
         <p className="text-[var(--color-text-secondary)] [font-size:var(--text-body)] mb-6 max-w-[280px]">
-          marinloop is installed and running from your home screen.
+          MarinLoop is installed and running from your home screen.
         </p>
         <Button variant="primary" size="lg" onClick={() => navigate('/landing')}>
-          Continue to marinloop
+          Continue to MarinLoop
         </Button>
       </div>
     )
@@ -52,12 +52,12 @@ export function InstallGuideScreen() {
             </svg>
           </div>
           <h1 className="font-extrabold tracking-[-0.02em] text-[var(--color-text-primary)]" style={{ fontSize: 'var(--text-title)' }}>
-            Install marinloop
+            Install MarinLoop
           </h1>
         </div>
 
         <p className="text-[var(--color-text-secondary)] [font-size:var(--text-body)] mb-6 leading-relaxed">
-          Add marinloop to your home screen for the best experience, including push notification reminders.
+          Add MarinLoop to your home screen for the best experience, including push notification reminders.
         </p>
 
         {platform === 'iOS' && (
@@ -75,7 +75,7 @@ export function InstallGuideScreen() {
               <Step n={2} text="Tap the Share button (the square with an arrow) in Safari's bottom toolbar." />
               <Step n={3} text="Scroll down in the share sheet and tap Add to Home Screen." />
               <Step n={4} text="Tap Add in the top-right corner of the dialog." />
-              <Step n={5} text="Open marinloop from your home screen (not Safari)." />
+              <Step n={5} text="Open MarinLoop from your home screen (not Safari)." />
               <Step n={6} text="Go to Profile and enable Push Notifications. iOS requires the app to be open from the home screen icon." />
             </div>
             <div className="mt-5 p-3 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)]">
@@ -92,7 +92,7 @@ export function InstallGuideScreen() {
             <Step n={2} text="Tap the three-dot menu (\u22ee) in the top-right corner of Chrome." />
             <Step n={3} text="Tap Add to Home Screen or Install app." />
             <Step n={4} text="Tap Install in the prompt that appears." />
-            <Step n={5} text="Open marinloop from your home screen or app drawer and enable notifications when prompted." />
+            <Step n={5} text="Open MarinLoop from your home screen or app drawer and enable notifications when prompted." />
           </div>
         )}
 
@@ -100,16 +100,16 @@ export function InstallGuideScreen() {
           <div className="space-y-4">
             <Step n={1} text="In Chrome or Edge, look for the install icon (\u2295) in the address bar." />
             <Step n={2} text="Click it, then click Install in the dialog." />
-            <Step n={3} text="marinloop will open as a standalone app window." />
+            <Step n={3} text="MarinLoop will open as a standalone app window." />
             <p className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] leading-relaxed pt-2">
-              Alternatively: open the browser menu and choose Install marinloop or Add to Desktop.
+              Alternatively: open the browser menu and choose Install MarinLoop or Add to Desktop.
             </p>
           </div>
         )}
 
         <div className="mt-8 pt-6 border-t border-[var(--color-border-primary)]">
           <Button variant="primary" size="lg" className="w-full" onClick={() => navigate('/landing')}>
-            Go to marinloop
+            Go to MarinLoop
           </Button>
         </div>
       </div>

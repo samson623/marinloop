@@ -173,7 +173,7 @@ export const PushService = {
             const { data, error } = await supabase.functions.invoke('send-push', {
                 body: {
                     user_id: user.id,
-                    title: 'marinloop Test',
+                    title: 'MarinLoop Test',
                     body: `Test notification at ${new Date().toLocaleTimeString()}`,
                     url: '/meds',
                     tag: 'test-push',

@@ -11,7 +11,7 @@ if (env.sentryDsn) {
   Sentry.init({
     dsn: env.sentryDsn,
     environment: import.meta.env.MODE,
-    release: 'marinloop@1.0.0-beta',
+    release: 'MarinLoop@1.0.0-beta',
     integrations: [Sentry.browserTracingIntegration()],
     tracesSampleRate: 0.1,
     // Strip user PII before sending — important for a healthcare-adjacent app

@@ -27,7 +27,7 @@ After deploy, confirm in production: `GET /sw.js` returns 200 and JavaScript.
 
 Completed: one VAPID key pair was generated and set everywhere so client and server match.
 
-- **Supabase** (project `lcbdafnxwvqbziootvmi`): `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT=mailto:admin@medflowcare.app` are set via `supabase secrets set`.
+- **Supabase** (project `lcbdafnxwvqbziootvmi`): `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT=mailto:admin@marinloop.com` are set via `supabase secrets set`.
 - **Local:** `.env.local` has `VITE_VAPID_PUBLIC_KEY` set to the same public key (do not commit `.env.local`).
 - **Vercel:** `VITE_VAPID_PUBLIC_KEY` was set for production (and is available to all environments).
 
@@ -50,7 +50,7 @@ Production builds do not emit these logs.
 
 **File:** [src/shared/services/push.ts](src/shared/services/push.ts)
 
-The test push title was changed from `'🧪 MedFlow Test'` to `'MedFlow Test'` (no emoji) to match the clinical UI rule.
+The test push title was changed from `'🧪 MarinLoop Test'` to `'MarinLoop Test'` (no emoji) to match the clinical UI rule.
 
 ---
 

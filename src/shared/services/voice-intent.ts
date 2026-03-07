@@ -15,7 +15,7 @@ const DEFAULT_RESULT: VoiceIntentResult = {
   requires_confirmation: false,
 }
 
-const VOICE_INTENT_SYSTEM_PROMPT = `You are a clinical voice assistant for marinloop. Convert the user's voice command into strict JSON.
+const VOICE_INTENT_SYSTEM_PROMPT = `You are a clinical voice assistant for MarinLoop. Convert the user's voice command into strict JSON.
 
 Return only JSON with keys: intent, entities, confidence, missing, requires_confirmation, assistant_message.
 Do not include markdown fences.

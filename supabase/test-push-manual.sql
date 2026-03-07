@@ -1,5 +1,5 @@
 -- ============================================================
--- MedFlow: Manual Test Push Notification
+-- MarinLoop: Manual Test Push Notification
 -- ============================================================
 -- Run this in Supabase Dashboard → SQL Editor to manually
 -- trigger a push notification for testing.

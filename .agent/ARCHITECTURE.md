@@ -1,15 +1,15 @@
 # Antigravity Kit Architecture
 
-> **Version 5.0** - Development workflow toolkit (prompts and skills for authoring). **Not part of the MedFlow Care shipped product.** No agents or orchestrators run inside the app.
+> **Version 5.0** - Development workflow toolkit (prompts and skills for authoring). **Not part of the MarinLoop shipped product.** No agents or orchestrators run inside the app.
 
 ---
 
 ## 📋 Overview
 
-This directory describes **optional development prompts and skills** used during authoring. The MedFlow Care application does not ship with any agent system.
+This directory describes **optional development prompts and skills** used during authoring. The MarinLoop application does not ship with any agent system.
 
 Antigravity Kit (dev-only) consists of:
-- **Specialist prompts** - Role-based authoring personas (general + MedFlow risk/compliance prompts)
+- **Specialist prompts** - Role-based authoring personas (general + MarinLoop risk/compliance prompts)
 - **Skills** - Domain-specific knowledge modules
 - **Workflows** - Slash command procedures
 
@@ -31,7 +31,7 @@ Antigravity Kit (dev-only) consists of:
 
 ## 🤖 Specialist prompts (dev-only)
 
-Optional authoring personas for different domains. The last four are MedFlow-specific (testing, API guardrails, PWA/push UX, legal copy). These are not wired into the application.
+Optional authoring personas for different domains. The last four are MarinLoop-specific (testing, API guardrails, PWA/push UX, legal copy). These are not wired into the application.
 
 | Prompt | Focus | Skills Used |
 |-------|-------|-------------|
@@ -51,10 +51,10 @@ Optional authoring personas for different domains. The last four are MedFlow-spe
 | `seo-specialist` | Ranking, visibility | seo-fundamentals, geo-fundamentals |
 | `documentation-writer` | Manuals, docs | documentation-templates |
 | `explorer-agent` | Codebase analysis | - |
-| `medflow-testing-ci-specialist` | MedFlow tests & CI | webapp-testing, testing-patterns, tdd-workflow |
-| `medflow-api-cost-guardrails-specialist` | OpenAI edge cost/abuse | api-patterns, security-testing |
-| `medflow-pwa-push-ux-specialist` | PWA/push UX, reliability copy | frontend-design |
-| `medflow-legal-compliance-specialist` | Disclaimers, product positioning | code-review-checklist |
+| `marinloop-testing-ci-specialist` | MarinLoop tests & CI | webapp-testing, testing-patterns, tdd-workflow |
+| `marinloop-api-cost-guardrails-specialist` | OpenAI edge cost/abuse | api-patterns, security-testing |
+| `marinloop-pwa-push-ux-specialist` | PWA/push UX, reliability copy | frontend-design |
+| `marinloop-legal-compliance-specialist` | Disclaimers, product positioning | code-review-checklist |
 
 ---
 

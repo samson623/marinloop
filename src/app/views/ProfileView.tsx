@@ -212,7 +212,7 @@ export function ProfileView() {
             Add to your phone
           </div>
           <p className="text-[var(--color-text-tertiary)] mb-3 [font-size:var(--text-body)]">
-            Get marinloop on your home screen for reminders.
+            Get MarinLoop on your home screen for reminders.
           </p>
           <Button
             type="button"
@@ -221,10 +221,10 @@ export function ProfileView() {
             className="py-3"
             onClick={async () => {
               const accepted = await installPrompt.promptInstall()
-              if (accepted) toast('marinloop added to your phone', 'ts')
+              if (accepted) toast('MarinLoop added to your phone', 'ts')
             }}
           >
-            Add marinloop to your phone
+            Add MarinLoop to your phone
           </Button>
         </Card>
       )}
@@ -287,12 +287,12 @@ export function ProfileView() {
             <div className="font-semibold text-[var(--color-text-secondary)] mb-1.5">How it works</div>
             {getPlatformLabel() === 'iOS' && !isStandalone() && (
               <p className="mb-2">
-                On iOS, push notifications require adding marinloop to your Home Screen first. Open this site in Safari, tap Share, then Add to Home Screen. After that, open the app from the home screen and enable notifications here.
+                On iOS, push notifications require adding MarinLoop to your Home Screen first. Open this site in Safari, tap Share, then Add to Home Screen. After that, open the app from the home screen and enable notifications here.
               </p>
             )}
             {push.permission === 'denied' && (
               <p className="mb-2">
-                To re-enable: open your browser or device Settings, find marinloop (or this site), and turn on Notifications.
+                To re-enable: open your browser or device Settings, find MarinLoop (or this site), and turn on Notifications.
               </p>
             )}
             {(push.isSubscribed || (push.isSupported && push.permission === 'granted')) && (
@@ -332,7 +332,7 @@ export function ProfileView() {
         </div>
         <div className="space-y-2 text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] leading-relaxed">
           <p>
-            marinloop is pre-release beta software. It is <strong className="text-[var(--color-text-secondary)]">not a medical device</strong> and is not covered by a HIPAA Business Associate Agreement during this beta period.
+            MarinLoop is pre-release beta software. It is <strong className="text-[var(--color-text-secondary)]">not a medical device</strong> and is not covered by a HIPAA Business Associate Agreement during this beta period.
           </p>
           <p>
             Your health data is stored in <strong className="text-[var(--color-text-secondary)]">Supabase</strong> (encrypted at rest). If you enable AI features, medication names, notes, and images are processed by <strong className="text-[var(--color-text-secondary)]">OpenAI&apos;s API</strong> (not HIPAA-covered). Error reports are sent to <strong className="text-[var(--color-text-secondary)]">Sentry</strong>. Beta data may be reset before general availability.
@@ -387,7 +387,7 @@ export function ProfileView() {
         Not medical advice. Always follow your healthcare provider&apos;s instructions.
       </p>
       <p className="mt-1 text-[var(--color-text-tertiary)] text-center [font-size:var(--text-caption)] opacity-60">
-        marinloop v1.0.0-beta
+        MarinLoop v1.0.0-beta
       </p>
     </div>
   )

@@ -17,7 +17,7 @@ Use this to find the exact failure point before applying Phase 2 fixes.
 
 - Open the app (e.g. http://localhost:5173).
 - DevTools → Network → reload. Find `sw.js` (or open `https://your-app-url/sw.js` in a new tab).
-- **Pass:** Status 200, Type `application/javascript` or `text/javascript`, body starts with `// MedFlow Care` (JS), not `<!doctype html>`.
+- **Pass:** Status 200, Type `application/javascript` or `text/javascript`, body starts with `// MarinLoop` (JS), not `<!doctype html>`.
 
 **Note:** On Vite dev (5173) and Vite preview (4173), `/sw.js` is served from `public/sw.js` and passes. On **Vercel**, the rewrite `"/(.*)" -> "/index.html"` in `vercel.json` can cause `/sw.js` to return `index.html`; if so, 1.1 fails in production and Phase 2.1 (rewrite exception for `/sw.js`) is required.
 

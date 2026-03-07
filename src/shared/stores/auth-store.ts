@@ -225,7 +225,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   enrollMfa: async () => {
     const { data, error } = await supabase.auth.mfa.enroll({
       factorType: 'totp',
-      friendlyName: 'marinloop Authenticator',
+      friendlyName: 'MarinLoop Authenticator',
     })
 
     if (error || !data) {

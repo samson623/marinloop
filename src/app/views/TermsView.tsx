@@ -15,41 +15,41 @@ export function TermsView() {
       </button>
 
       <h1 className="font-extrabold tracking-[-0.03em] text-[var(--color-text-primary)] [font-size:var(--text-title)] mb-2">Terms of Service</h1>
-      <p className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] mb-8">Effective: March 2026 &mdash; marinloop beta</p>
+      <p className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] mb-8">Effective: March 2026 &mdash; MarinLoop beta</p>
 
       <div className="space-y-6 text-[var(--color-text-secondary)] [font-size:var(--text-body)] leading-relaxed">
 
         <section>
           <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">1. Acceptance of Terms</h2>
           <p>
-            By accessing or using marinloop (&ldquo;the App&rdquo;), you agree to be bound by these Terms of Service. If you do not agree, do not use the App.
+            By accessing or using MarinLoop (&ldquo;the App&rdquo;), you agree to be bound by these Terms of Service. If you do not agree, do not use the App.
           </p>
         </section>
 
         <section>
           <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">2. Beta Software Disclaimer</h2>
           <p>
-            marinloop is currently in <strong className="text-[var(--color-text-primary)]">pre-release beta</strong>. The App is provided &ldquo;as is&rdquo; and &ldquo;as available.&rdquo; Features may change, data may be reset, and the service may experience downtime without notice. Beta access may be revoked at any time.
+            MarinLoop is currently in <strong className="text-[var(--color-text-primary)]">pre-release beta</strong>. The App is provided &ldquo;as is&rdquo; and &ldquo;as available.&rdquo; Features may change, data may be reset, and the service may experience downtime without notice. Beta access may be revoked at any time.
           </p>
         </section>
 
         <section>
           <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">3. Not Medical Advice</h2>
           <p>
-            <strong className="text-[var(--color-text-primary)]">marinloop is not a medical device, clinical decision support tool, or substitute for professional medical advice.</strong> The App provides reminders, tracking, and informational tools only. Nothing in marinloop constitutes medical advice, diagnosis, or treatment recommendations.
+            <strong className="text-[var(--color-text-primary)]">MarinLoop is not a medical device, clinical decision support tool, or substitute for professional medical advice.</strong> The App provides reminders, tracking, and informational tools only. Nothing in MarinLoop constitutes medical advice, diagnosis, or treatment recommendations.
           </p>
           <p className="mt-2">
             Always follow the instructions of your licensed healthcare provider regarding medications, dosages, and health decisions. In a medical emergency, call 911 or your local emergency number immediately.
           </p>
           <p className="mt-2">
-            Push notification delivery is not guaranteed. Do not rely solely on marinloop reminders for critical medication adherence. marinloop is not responsible for missed doses resulting from notification failure.
+            Push notification delivery is not guaranteed. Do not rely solely on MarinLoop reminders for critical medication adherence. MarinLoop is not responsible for missed doses resulting from notification failure.
           </p>
         </section>
 
         <section>
           <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">4. Eligibility</h2>
           <p>
-            You must be 13 years of age or older to use marinloop. By using the App, you represent that you meet this requirement. Beta access requires a valid invite code.
+            You must be 13 years of age or older to use MarinLoop. By using the App, you represent that you meet this requirement. Beta access requires a valid invite code.
           </p>
         </section>
 
@@ -89,14 +89,14 @@ export function TermsView() {
         <section>
           <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">8. Intellectual Property</h2>
           <p>
-            marinloop and its underlying technology, design, and content are owned by the marinloop team. You retain ownership of all personal health data you enter. By using the App, you grant us a limited license to process your data solely to provide the service as described in our Privacy Policy.
+            MarinLoop and its underlying technology, design, and content are owned by the MarinLoop team. You retain ownership of all personal health data you enter. By using the App, you grant us a limited license to process your data solely to provide the service as described in our Privacy Policy.
           </p>
         </section>
 
         <section>
           <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">9. Limitation of Liability</h2>
           <p>
-            <strong className="text-[var(--color-text-primary)]">To the maximum extent permitted by law, marinloop and its operators are not liable for any indirect, incidental, special, consequential, or punitive damages</strong>, including but not limited to health outcomes resulting from reliance on App features, missed medication reminders, data loss, or service interruptions.
+            <strong className="text-[var(--color-text-primary)]">To the maximum extent permitted by law, MarinLoop and its operators are not liable for any indirect, incidental, special, consequential, or punitive damages</strong>, including but not limited to health outcomes resulting from reliance on App features, missed medication reminders, data loss, or service interruptions.
           </p>
           <p className="mt-2">
             Our total aggregate liability to you for any claims arising from use of the App shall not exceed the amount you paid for the App in the preceding 12 months (which, during beta, is zero).
@@ -133,7 +133,7 @@ export function TermsView() {
       </div>
 
       <p className="mt-10 text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] text-center">
-        marinloop provides reminders and tracking tools. Not medical advice. Always follow your healthcare provider&apos;s instructions.
+        MarinLoop provides reminders and tracking tools. Not medical advice. Always follow your healthcare provider&apos;s instructions.
       </p>
     </div>
   )

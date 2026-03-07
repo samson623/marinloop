@@ -104,10 +104,10 @@ Before I coordinate the agents, I need to understand your requirements better:
 | `project-planner` | Planning | Task breakdown, milestones, roadmap |
 | `seo-specialist` | SEO & Marketing | SEO optimization, meta tags, analytics |
 | `game-developer` | Game Development | Unity, Godot, Unreal, Phaser, multiplayer |
-| `medflow-testing-ci-specialist` | MedFlow Testing & CI | Schedule math, timeline, dose-log, auth tests; CI workflow |
-| `medflow-api-cost-guardrails-specialist` | MedFlow API cost/abuse | openai-chat model lock, rate limit, CORS |
-| `medflow-pwa-push-ux-specialist` | MedFlow PWA/push UX | Push reliability copy, Add to Home Screen, user expectations |
-| `medflow-legal-compliance-specialist` | MedFlow legal/compliance | Disclaimers, product positioning, medical scope |
+| `marinloop-testing-ci-specialist` | MarinLoop Testing & CI | Schedule math, timeline, dose-log, auth tests; CI workflow |
+| `marinloop-api-cost-guardrails-specialist` | MarinLoop API cost/abuse | openai-chat model lock, rate limit, CORS |
+| `marinloop-pwa-push-ux-specialist` | MarinLoop PWA/push UX | Push reliability copy, Add to Home Screen, user expectations |
+| `marinloop-legal-compliance-specialist` | MarinLoop legal/compliance | Disclaimers, product positioning, medical scope |
 
 ---
 
@@ -135,10 +135,10 @@ Before I coordinate the agents, I need to understand your requirements better:
 | `explorer-agent` | Codebase discovery | ❌ Write operations |
 | `penetration-tester` | Security testing | ❌ Feature code |
 | `game-developer` | Game logic, scenes, assets | ❌ Web/mobile components |
-| `medflow-testing-ci-specialist` | Test strategy, CI, schedule/timeline/dose-log tests | ❌ Production feature code, API/infra |
-| `medflow-api-cost-guardrails-specialist` | openai-chat guardrails, rate limit, CORS | ❌ App UI, test files |
-| `medflow-pwa-push-ux-specialist` | Push/PWA copy, install prompts, reliability messaging | ❌ Backend, legal wording |
-| `medflow-legal-compliance-specialist` | Disclaimer and product copy, compliance scope | ❌ Code logic, API, push delivery |
+| `marinloop-testing-ci-specialist` | Test strategy, CI, schedule/timeline/dose-log tests | ❌ Production feature code, API/infra |
+| `marinloop-api-cost-guardrails-specialist` | openai-chat guardrails, rate limit, CORS | ❌ App UI, test files |
+| `marinloop-pwa-push-ux-specialist` | Push/PWA copy, install prompts, reliability messaging | ❌ Backend, legal wording |
+| `marinloop-legal-compliance-specialist` | Disclaimer and product copy, compliance scope | ❌ Code logic, API, push delivery |
 
 ### File Type Ownership
 

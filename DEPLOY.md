@@ -5,7 +5,7 @@
 Close any other Git tools (VS Code Git UI, GitHub Desktop, etc.), then in PowerShell:
 
 ```powershell
-cd "c:\Users\1sams\OneDrive\Desktop\_MEDFLOW CARE TEST"
+cd "c:\Users\1sams\OneDrive\Desktop\Marinloop"
 Remove-Item .git\index.lock -Force -ErrorAction SilentlyContinue
 ```
 
@@ -14,7 +14,7 @@ Remove-Item .git\index.lock -Force -ErrorAction SilentlyContinue
 Run these in your project folder (your GitHub login will be used):
 
 ```powershell
-cd "c:\Users\1sams\OneDrive\Desktop\_MEDFLOW CARE TEST"
+cd "c:\Users\1sams\OneDrive\Desktop\Marinloop"
 
 git add src/app/App.tsx src/shared/services/voice-intent.ts src/shared/types/contracts.ts vite.config.mjs
 git commit -m "Voice: fix isFinal handling, add add_note intent, voice test bar, vite.config.mjs"
@@ -29,7 +29,7 @@ If prompted for credentials, sign in with your GitHub account (or use a Personal
 
 1. Go to [vercel.com](https://vercel.com) and sign in (use “Continue with GitHub” if you use GitHub).
 2. Click **Add New…** → **Project**.
-3. **Import** the `samson623/medflow-care` repository (or your fork).
+3. **Import** the `samson623/marinloop` repository (or your fork).
 4. Vercel will detect Vite and use:
    - **Build Command:** `npm run build`
    - **Output Directory:** `dist`
@@ -41,7 +41,7 @@ If prompted for credentials, sign in with your GitHub account (or use a Personal
 ### Option B: Deploy with Vercel CLI
 
 ```powershell
-cd "c:\Users\1sams\OneDrive\Desktop\_MEDFLOW CARE TEST"
+cd "c:\Users\1sams\OneDrive\Desktop\Marinloop"
 npx vercel
 ```
 

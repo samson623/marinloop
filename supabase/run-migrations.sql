@@ -1,5 +1,5 @@
 -- ============================================================
--- MedFlow Care: Run in Supabase SQL Editor (Dashboard → SQL Editor → New query)
+-- MarinLoop: Run in Supabase SQL Editor (Dashboard → SQL Editor → New query)
 -- ============================================================
 
 -- 001: Barcode column for medications
@@ -158,7 +158,7 @@ create index if not exists idx_dispatch_log_created_at
 
 comment on table public.notification_dispatch_log is 'Ensures each schedule fires at most once per minute. The cron job inserts with ON CONFLICT DO NOTHING; if 0 rows inserted, the notification was already dispatched.';
 
--- 008: MedFlow Push Notification Cron Dispatcher
+-- 008: MarinLoop Push Notification Cron Dispatcher
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 create extension if not exists supabase_vault;
@@ -282,14 +282,14 @@ DO $$ BEGIN PERFORM cron.unschedule('medflow-dispatch-log-cleanup'); EXCEPTION W
 
 -- Schedule the job: every minute
 select cron.schedule(
-  'medflow-push-dispatcher',
+  'marinloop-push-dispatcher',
   '* * * * *',
   $$ select public.dispatch_due_notifications(); $$
 );
 
 -- Cleanup old dispatch logs weekly as an extra safety net
 select cron.schedule(
-  'medflow-dispatch-log-cleanup',
+  'marinloop-dispatch-log-cleanup',
   '0 3 * * 0',
   $$ delete from public.notification_dispatch_log where created_at < now() - interval '7 days'; $$
 );

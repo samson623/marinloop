@@ -59,7 +59,7 @@ export function AIConsentModal({ onAccept, onDecline }: { onAccept: () => void; 
 
           <div className="space-y-3 text-[var(--color-text-secondary)] leading-relaxed mb-6" style={{ fontSize: 'var(--text-body)' }}>
             <p className="font-semibold text-[var(--color-text-primary)]">
-              marinloop uses AI to power insights, label scanning, and voice commands.
+              MarinLoop uses AI to power insights, label scanning, and voice commands.
             </p>
             <ul className="list-disc list-inside space-y-2">
               <li><strong>What is sent:</strong> Medication names, dosages, schedules, notes, and images of prescription labels may be sent to OpenAI&apos;s API servers for processing.</li>

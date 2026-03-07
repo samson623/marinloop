@@ -15,17 +15,17 @@ export function PrivacyPolicyView() {
       </button>
 
       <h1 className="font-extrabold tracking-[-0.03em] text-[var(--color-text-primary)] [font-size:var(--text-title)] mb-2">Privacy Policy</h1>
-      <p className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] mb-8">Effective: March 2026 &mdash; marinloop beta</p>
+      <p className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] mb-8">Effective: March 2026 &mdash; MarinLoop beta</p>
 
       <div className="prose prose-sm max-w-none space-y-6 text-[var(--color-text-secondary)] [font-size:var(--text-body)] leading-relaxed">
 
         <section>
           <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">1. Overview</h2>
           <p>
-            marinloop (&ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;) is a medication management and health tracking application. We take your privacy seriously. This policy explains what information we collect, how we use it, and your rights regarding your data.
+            MarinLoop (&ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;) is a medication management and health tracking application. We take your privacy seriously. This policy explains what information we collect, how we use it, and your rights regarding your data.
           </p>
           <p className="mt-2">
-            <strong className="text-[var(--color-text-primary)]">marinloop is not a medical device and is not HIPAA-covered software.</strong> Do not use it to store personally identifiable health information (e.g., patient MRN numbers, Social Security numbers) beyond what is required for personal medication tracking.
+            <strong className="text-[var(--color-text-primary)]">MarinLoop is not a medical device and is not HIPAA-covered software.</strong> Do not use it to store personally identifiable health information (e.g., patient MRN numbers, Social Security numbers) beyond what is required for personal medication tracking.
           </p>
         </section>
 
@@ -66,7 +66,7 @@ export function PrivacyPolicyView() {
 
             <div>
               <h3 className="font-semibold text-[var(--color-text-primary)] mb-1">Vercel (Hosting)</h3>
-              <p>The marinloop web application is hosted on Vercel. Vercel may log request metadata (IP address, user-agent) for security and operational purposes. See <a href="https://vercel.com/legal/privacy-policy" className="underline text-[var(--color-accent)]" target="_blank" rel="noopener noreferrer">vercel.com/legal/privacy-policy</a>.</p>
+              <p>The MarinLoop web application is hosted on Vercel. Vercel may log request metadata (IP address, user-agent) for security and operational purposes. See <a href="https://vercel.com/legal/privacy-policy" className="underline text-[var(--color-accent)]" target="_blank" rel="noopener noreferrer">vercel.com/legal/privacy-policy</a>.</p>
             </div>
           </div>
         </section>
@@ -113,14 +113,14 @@ export function PrivacyPolicyView() {
         <section>
           <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">8. Children</h2>
           <p>
-            marinloop is not directed at children under 13 years of age. We do not knowingly collect data from children under 13.
+            MarinLoop is not directed at children under 13 years of age. We do not knowingly collect data from children under 13.
           </p>
         </section>
 
         <section>
           <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">9. Changes to This Policy</h2>
           <p>
-            We may update this Privacy Policy as marinloop evolves. Material changes will be communicated via in-app notice or email. Continued use after notice constitutes acceptance.
+            We may update this Privacy Policy as MarinLoop evolves. Material changes will be communicated via in-app notice or email. Continued use after notice constitutes acceptance.
           </p>
         </section>
 
@@ -133,7 +133,7 @@ export function PrivacyPolicyView() {
       </div>
 
       <p className="mt-10 text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] text-center">
-        marinloop provides reminders and tracking tools. Not medical advice. Always follow your healthcare provider&apos;s instructions.
+        MarinLoop provides reminders and tracking tools. Not medical advice. Always follow your healthcare provider&apos;s instructions.
       </p>
     </div>
   )

@@ -1,4 +1,4 @@
-# Marin Loop
+# MarinLoop
 
 Medication management app built with React, TypeScript, Vite, and Supabase.
 
@@ -6,7 +6,7 @@ Medication management app built with React, TypeScript, Vite, and Supabase.
 
 ## Quick Start / Full Setup
 
-Follow these steps in order to get Marin Loop running end-to-end.
+Follow these steps in order to get MarinLoop running end-to-end.
 
 ### 1. Clone, install, and env copy
 

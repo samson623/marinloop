@@ -387,7 +387,7 @@ ${refillStr || 'No urgent refills.'}`
           const response = await AIService.chat([
             {
               role: 'system',
-              content: `You are marinloop's clinical voice assistant. Answer the user's question using ONLY the data below. Be concise (1-3 sentences). Cite specifics. Do not make up data. If the data doesn't contain the answer, say so clearly. Do not give medical advice.`,
+              content: `You are MarinLoop's clinical voice assistant. Answer the user's question using ONLY the data below. Be concise (1-3 sentences). Cite specifics. Do not make up data. If the data doesn't contain the answer, say so clearly. Do not give medical advice.`,
             },
             { role: 'user', content: `Data:\n${context}\n\nUser question: ${question}\n\nAnswer briefly:` },
           ])

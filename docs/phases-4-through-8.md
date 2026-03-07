@@ -1,6 +1,6 @@
-# MedFlow Care — Execution Phases 4 Through 8
+# MarinLoop — Execution Phases 4 Through 8
 
-Complete plans from **medflow-production.md**, starting at Phase 4.
+Complete plans from **marinloop-production.md**, starting at Phase 4.
 
 ---
 
@@ -70,4 +70,4 @@ Complete plans from **medflow-production.md**, starting at Phase 4.
 
 ---
 
-*Source: medflow-production.md — Execution Phases*
+*Source: marinloop-production.md — Execution Phases*

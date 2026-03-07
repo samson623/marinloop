@@ -1,6 +1,6 @@
 {
-  "name": "marinloop",
-  "short_name": "marinloop",
+  "name": "MarinLoop",
+  "short_name": "MarinLoop",
   "description": "Medication Adherence & Daily Care System",
   "start_url": "/",
   "display": "standalone",

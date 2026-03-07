@@ -26,7 +26,7 @@ function buildIceText(params: {
   meds: Array<{ name: string; dosage: string | null; freq: number }>
   contacts: EmergencyContact[]
 }): string {
-  const lines: string[] = ['=== MARINLOOP ICE CARD ===']
+  const lines: string[] = ['=== MarinLoop ICE CARD ===']
   if (params.name)      lines.push(`Name: ${params.name}`)
   if (params.bloodType) lines.push(`Blood Type: ${params.bloodType}`)
   if (params.allergies.length > 0)  lines.push(`Allergies: ${params.allergies.join(', ')}`)

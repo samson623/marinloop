@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Generate PNG icons from medflow-icon.svg for PWA manifest and iOS.
+ * Generate PNG icons from marinloop-icon.svg for PWA manifest and iOS.
  * Run: node scripts/generate-icons.mjs
  */
 import sharp from 'sharp'
@@ -10,7 +10,7 @@ import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = join(__dirname, '..')
-const svgPath = join(root, 'public', 'medflow-icon.svg')
+const svgPath = join(root, 'public', 'marinloop-icon.svg')
 const iconsDir = join(root, 'public', 'icons')
 
 mkdirSync(iconsDir, { recursive: true })

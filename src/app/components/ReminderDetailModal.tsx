@@ -78,12 +78,12 @@ export function ReminderDetailModal({ reminder, onClose, startEditing = false }:
     onClose()
   }
 
-  const handleSnooze = async () => {
+  const handleSnooze = async (minutes: number) => {
     try {
-      await snoozeReminderAsync({ id: reminder.id, minutes: 10 })
+      await snoozeReminderAsync({ id: reminder.id, minutes })
       if (session?.user?.id) {
         try {
-          const snoozeAt = new Date(Date.now() + 10 * 60_000)
+          const snoozeAt = new Date(Date.now() + minutes * 60_000)
           const timeStr = snoozeAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })
           await NotificationsService.sendPush(session.user.id, {
             title: `Snoozed: ${reminder.title}`,
@@ -206,9 +206,13 @@ export function ReminderDetailModal({ reminder, onClose, startEditing = false }:
               <Button type="button" variant="secondary" size="md" className="flex-1 py-2.5" onClick={() => setEditing(true)}>
                 Edit
               </Button>
-              <Button type="button" variant="secondary" size="md" className="flex-1 py-2.5" onClick={handleSnooze}>
-                Snooze 10 min
-              </Button>
+            </div>
+            <div className="flex gap-2">
+              {([5, 10, 15, 30] as const).map((mins) => (
+                <Button key={mins} type="button" variant="secondary" size="md" className="flex-1 py-2" onClick={() => handleSnooze(mins)}>
+                  {mins} min
+                </Button>
+              ))}
             </div>
             <Button
               type="button"

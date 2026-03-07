@@ -34,5 +34,8 @@ dist-ssr
 # Build info
 tsconfig.tsbuildinfo
 
+# Supabase local temp
+supabase/.temp/
+
 .vercel
 .env*.local

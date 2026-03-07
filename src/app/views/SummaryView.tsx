@@ -199,7 +199,10 @@ export function SummaryView() {
       {activeHealthTab === 'adherence' && (
         <div>
           {/* Today's stat cards */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <div
+            className="grid grid-cols-3 gap-4 mb-6"
+            {...(notesLoading ? { role: 'status' as const, 'aria-live': 'polite' as const, 'aria-label': "Loading today's statistics" } : {})}
+          >
             {notesLoading ? (
               <>
                 <SkeletonStatCard />
@@ -247,7 +250,7 @@ export function SummaryView() {
 
           {/* B. Streak Card */}
           {streakLoading ? (
-            <div className="mb-5 h-[88px] rounded-2xl bg-[var(--color-bg-secondary)] animate-pulse" />
+            <div role="status" aria-live="polite" aria-label="Loading streak" className="mb-5 h-[88px] rounded-2xl bg-[var(--color-bg-secondary)] animate-pulse" />
           ) : (
             <Card className="mb-5">
               <div className="flex items-center justify-between gap-4">
@@ -289,7 +292,7 @@ export function SummaryView() {
 
           {/* C. AI Adherence Insights */}
           {insightsLoading ? (
-            <div className="mb-5 flex flex-col gap-3">
+            <div role="status" aria-live="polite" aria-label="Loading health insights" className="mb-5 flex flex-col gap-3">
               <div className="h-[64px] rounded-xl bg-[var(--color-bg-secondary)] animate-pulse" />
               <div className="h-[64px] rounded-xl bg-[var(--color-bg-secondary)] animate-pulse" />
             </div>
@@ -358,43 +361,45 @@ export function SummaryView() {
               <h3 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-label)]">30-Day Adherence</h3>
             </div>
             {notesLoading ? (
-              <div className="flex items-end gap-3 h-[110px] pb-7 relative">
+              <div role="status" aria-live="polite" aria-label="Loading adherence chart" className="flex items-end gap-3 h-[110px] pb-7 relative">
                 {Array.from({ length: 7 }).map((_, i) => <SkeletonChartBar key={i} />)}
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={160}>
-                <LineChart data={adherenceChartData} margin={{ top: 4, right: 8, bottom: 0, left: -20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-secondary)" vertical={false} />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fontSize: 11, fill: 'var(--color-text-tertiary)' }}
-                    tickLine={false}
-                    axisLine={false}
-                    interval={6}
-                  />
-                  <YAxis
-                    domain={[0, 100]}
-                    tick={{ fontSize: 11, fill: 'var(--color-text-tertiary)' }}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(v) => `${v}%`}
-                  />
-                  <Tooltip
-                    formatter={(value: number | undefined) => value != null ? [`${value}%`, 'Adherence'] : ['-', 'Adherence']}
-                    contentStyle={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-primary)', borderRadius: 12, fontSize: 13 }}
-                    labelStyle={{ color: 'var(--color-text-primary)', fontWeight: 600 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="pct"
-                    stroke="var(--color-accent)"
-                    strokeWidth={2.5}
-                    dot={false}
-                    activeDot={{ r: 4, fill: 'var(--color-accent)' }}
-                    connectNulls={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              <div role="img" aria-label="30-day medication adherence line chart. Shows percentage of doses taken each day over the past 30 days.">
+                <ResponsiveContainer width="100%" height={160}>
+                  <LineChart data={adherenceChartData} margin={{ top: 4, right: 8, bottom: 0, left: -20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-secondary)" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 11, fill: 'var(--color-text-tertiary)' }}
+                      tickLine={false}
+                      axisLine={false}
+                      interval={6}
+                    />
+                    <YAxis
+                      domain={[0, 100]}
+                      tick={{ fontSize: 11, fill: 'var(--color-text-tertiary)' }}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(v) => `${v}%`}
+                    />
+                    <Tooltip
+                      formatter={(value: number | undefined) => value != null ? [`${value}%`, 'Adherence'] : ['-', 'Adherence']}
+                      contentStyle={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-primary)', borderRadius: 12, fontSize: 13 }}
+                      labelStyle={{ color: 'var(--color-text-primary)', fontWeight: 600 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="pct"
+                      stroke="var(--color-accent)"
+                      strokeWidth={2.5}
+                      dot={false}
+                      activeDot={{ r: 4, fill: 'var(--color-accent)' }}
+                      connectNulls={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </Card>
 
@@ -404,11 +409,11 @@ export function SummaryView() {
               Notes for your doctor
             </h3>
             {notesLoading ? (
-              <>
+              <div role="status" aria-live="polite" aria-label="Loading doctor notes">
                 <SkeletonNoteRow />
                 <SkeletonNoteRow />
                 <SkeletonNoteRow />
-              </>
+              </div>
             ) : notes.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 gap-3 text-center">
                 <svg
@@ -482,7 +487,7 @@ export function SummaryView() {
                       <textarea
                         value={editingNoteText}
                         onChange={(e) => setEditingNoteText(e.target.value)}
-                        className="fi w-full resize-y min-h-[2.5rem] py-2 px-3 [font-size:var(--text-label)]"
+                        className="fi w-full resize-y min-h-[44px] py-2 px-3 [font-size:var(--text-label)]"
                         rows={2}
                         autoFocus
                         onKeyDown={(e) => {
@@ -493,7 +498,7 @@ export function SummaryView() {
                         <button
                           type="button"
                           onClick={() => setEditingNoteId(null)}
-                          className="py-1.5 px-3 rounded-lg text-[var(--color-text-secondary)] [font-size:var(--text-caption)] font-semibold cursor-pointer hover:bg-[var(--color-bg-tertiary)] transition-colors"
+                          className="py-1.5 px-3 rounded-lg min-h-[44px] text-[var(--color-text-secondary)] [font-size:var(--text-caption)] font-semibold cursor-pointer hover:bg-[var(--color-bg-tertiary)] transition-colors"
                         >
                           Cancel
                         </button>
@@ -505,7 +510,7 @@ export function SummaryView() {
                             }
                             setEditingNoteId(null)
                           }}
-                          className="py-1.5 px-3 rounded-lg bg-[var(--color-accent)] text-white [font-size:var(--text-caption)] font-semibold cursor-pointer hover:brightness-110 transition-all"
+                          className="py-1.5 px-3 rounded-lg min-h-[44px] bg-[var(--color-accent)] text-white [font-size:var(--text-caption)] font-semibold cursor-pointer hover:brightness-110 transition-all"
                         >
                           Save
                         </button>
@@ -550,7 +555,7 @@ export function SummaryView() {
           </Button>
 
           {vitalsLoading ? (
-            <div className="flex flex-col gap-3">
+            <div role="status" aria-live="polite" aria-label="Loading vitals" className="flex flex-col gap-3">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="h-24 rounded-2xl bg-[var(--color-bg-secondary)] animate-pulse" />
               ))}
@@ -611,7 +616,7 @@ export function SummaryView() {
           </div>
 
           {journalLoading ? (
-            <div className="flex flex-col gap-3">
+            <div role="status" aria-live="polite" aria-label="Loading journal entries" className="flex flex-col gap-3">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="h-28 rounded-2xl bg-[var(--color-bg-secondary)] animate-pulse" />
               ))}
@@ -707,19 +712,21 @@ function VitalsTrendChart({ vitals }: { vitals: Vital[] }) {
   return (
     <Card className="mb-5">
       <h3 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-label)] mb-4">Vitals Trend — Last 10 Readings</h3>
-      <ResponsiveContainer width="100%" height={140}>
-        <LineChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: -20 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-secondary)" vertical={false} />
-          <XAxis dataKey="idx" tick={{ fontSize: 11, fill: 'var(--color-text-tertiary)' }} tickLine={false} axisLine={false} />
-          <YAxis tick={{ fontSize: 11, fill: 'var(--color-text-tertiary)' }} tickLine={false} axisLine={false} />
-          <Tooltip
-            contentStyle={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-primary)', borderRadius: 12, fontSize: 13 }}
-            labelStyle={{ color: 'var(--color-text-tertiary)' }}
-          />
-          <Line type="monotone" dataKey="bp" name="Systolic BP (mmHg)" stroke="var(--color-accent)" strokeWidth={2} dot={false} connectNulls={false} />
-          <Line type="monotone" dataKey="hr" name="Heart Rate (BPM)" stroke="var(--color-amber)" strokeWidth={2} dot={false} connectNulls={false} />
-        </LineChart>
-      </ResponsiveContainer>
+      <div role="img" aria-label="Vitals trend chart showing blood pressure and heart rate over recent readings.">
+        <ResponsiveContainer width="100%" height={140}>
+          <LineChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: -20 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-secondary)" vertical={false} />
+            <XAxis dataKey="idx" tick={{ fontSize: 11, fill: 'var(--color-text-tertiary)' }} tickLine={false} axisLine={false} />
+            <YAxis tick={{ fontSize: 11, fill: 'var(--color-text-tertiary)' }} tickLine={false} axisLine={false} />
+            <Tooltip
+              contentStyle={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-primary)', borderRadius: 12, fontSize: 13 }}
+              labelStyle={{ color: 'var(--color-text-tertiary)' }}
+            />
+            <Line type="monotone" dataKey="bp" name="Systolic BP (mmHg)" stroke="var(--color-accent)" strokeWidth={2} dot={false} connectNulls={false} />
+            <Line type="monotone" dataKey="hr" name="Heart Rate (BPM)" stroke="var(--color-amber)" strokeWidth={2} dot={false} connectNulls={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
       <div className="flex gap-4 mt-3">
         <span className="flex items-center gap-1.5 [font-size:var(--text-caption)] text-[var(--color-text-secondary)]">
           <span className="w-3 h-0.5 rounded-full bg-[var(--color-accent)] inline-block" />Systolic BP

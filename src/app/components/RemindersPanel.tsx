@@ -146,6 +146,8 @@ export function RemindersPanel() {
               <button
                 type="button"
                 onClick={() => setShowRecent((v) => !v)}
+                aria-expanded={showRecent}
+                aria-controls="reminders-recent-panel"
                 className="w-full flex items-center justify-between py-2 bg-transparent border-none cursor-pointer text-left"
               >
                 <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
@@ -161,7 +163,7 @@ export function RemindersPanel() {
                 </svg>
               </button>
               {showRecent && (
-                <ul className="flex flex-col gap-2 mt-2">
+                <ul id="reminders-recent-panel" className="flex flex-col gap-2 mt-2">
                   {recent.map((r) => (
                     <ReminderCard
                       key={r.id}

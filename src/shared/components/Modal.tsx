@@ -1,5 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import { useId, useMemo, type ReactNode } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { cn } from '@/shared/lib/utils'
 import { IconButton } from '@/shared/components/IconButton'
 import { isMobile } from '@/shared/lib/device'
@@ -38,11 +38,63 @@ export function Modal({
     [variant]
   )
 
+  // Capture focus target before dialog opens (fallback when no triggerRef provided)
+  const preFocusRef = useRef<Element | null>(null)
+
   const handleCloseAutoFocus = (e: Event) => {
     if (triggerRef?.current) {
       e.preventDefault()
       triggerRef.current.focus()
+    } else if (preFocusRef.current && preFocusRef.current instanceof HTMLElement) {
+      e.preventDefault()
+      preFocusRef.current.focus()
     }
+  }
+
+  useEffect(() => {
+    if (open && document.activeElement instanceof HTMLElement) {
+      preFocusRef.current = document.activeElement
+    }
+  }, [open])
+
+  // ── Swipe-to-dismiss for bottom sheet variant ──
+  const dragY = useRef(0)
+  const dragStartY = useRef(0)
+  const dragStartTime = useRef(0)
+  const isDragging = useRef(false)
+  const [translateY, setTranslateY] = useState(0)
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (resolvedVariant !== 'bottom') return
+    isDragging.current = true
+    dragStartY.current = e.clientY
+    dragStartTime.current = Date.now()
+    dragY.current = 0
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+  }
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging.current || resolvedVariant !== 'bottom') return
+    const delta = e.clientY - dragStartY.current
+    if (delta > 0) {
+      dragY.current = delta
+      setTranslateY(delta)
+    }
+  }
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging.current || resolvedVariant !== 'bottom') return
+    isDragging.current = false
+    const delta = e.clientY - dragStartY.current
+    const elapsed = Date.now() - dragStartTime.current
+    const velocity = elapsed > 0 ? delta / elapsed : 0
+    if (delta > 100 || velocity > 0.5) {
+      setTranslateY(0)
+      onOpenChange(false)
+    } else {
+      setTranslateY(0)
+    }
+    dragY.current = 0
   }
 
   return (
@@ -62,6 +114,14 @@ export function Modal({
           aria-describedby={descId || undefined}
           onCloseAutoFocus={handleCloseAutoFocus}
           onEscapeKeyDown={() => onOpenChange(false)}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          style={
+            resolvedVariant === 'bottom' && translateY > 0
+              ? { transform: `translateY(${translateY}px)`, transition: 'none' }
+              : undefined
+          }
         >
           {resolvedVariant === 'bottom' && (
             <div

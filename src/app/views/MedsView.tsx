@@ -91,7 +91,7 @@ export function MedsView() {
       </h2>
 
       {medsLoading ? (
-        <div>
+        <div role="status" aria-live="polite" aria-label="Loading medications">
           <MedCardSkeleton />
           <MedCardSkeleton />
           <MedCardSkeleton />

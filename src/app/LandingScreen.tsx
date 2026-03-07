@@ -13,7 +13,7 @@ export function LandingScreen() {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[var(--color-bg-primary)] p-6 sm:p-8 md:p-10 min-h-screen safe-x"
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-y-auto bg-[var(--color-bg-primary)] p-6 sm:p-8 md:p-10 min-h-screen safe-x"
       style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))', paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
     >
       <IconButton

@@ -22,7 +22,7 @@ export function useRefill(medId: string) {
       void queryClient.invalidateQueries({ queryKey: ['refills'] })
       toast('Refill updated', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useRefill', 'Failed to update refill', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useRefill', 'Could not update refill', toast),
   })
 
   return {

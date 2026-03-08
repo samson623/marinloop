@@ -184,7 +184,7 @@ export default function MedDetailModal({ med, isDeleting, onClose, onUpdate, onD
       }
       toast('Medication updated', 'ts')
     } catch {
-      toast('Failed to update some schedules', 'te')
+      toast('Could not update some schedules', 'te')
     }
 
     // 3. Update supply/refill

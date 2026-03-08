@@ -18,7 +18,7 @@ export function useNotifications() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['notifications'] })
     },
-    onError: (error: unknown) => handleMutationError(error, 'useNotifications', 'Failed to update notification', toast),
+    onError: (error: unknown) => handleMutationError(error, 'useNotifications', 'Could not update notification', toast),
   })
 
   return {

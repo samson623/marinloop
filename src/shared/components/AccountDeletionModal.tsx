@@ -29,7 +29,7 @@ export function AccountDeletionModal({
         onOpenChange(false)
       },
       onError: (err: unknown) => {
-        setErrorMsg(getErrorMessage(err, 'Failed to delete account. Please try again or email admin@marinloop.com.'))
+        setErrorMsg(getErrorMessage(err, 'Could not delete account. Please try again or email admin@marinloop.com.'))
       },
     })
   }

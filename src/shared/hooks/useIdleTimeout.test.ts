@@ -29,8 +29,9 @@ describe('useIdleTimeout', () => {
     mockSignOut.mockReset()
     // Restore selector-based mock (mockReset: true clears the implementation).
     vi.mocked(useAuthStore).mockImplementation(
-      (selector: (s: { signOut: () => Promise<void> }) => unknown) =>
-        selector({ signOut: mockSignOut }) as ReturnType<typeof useAuthStore>,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ((selector: (s: any) => unknown) =>
+        selector({ signOut: mockSignOut })) as any,
     )
     // Seed Date.now() at a known starting point so refs initialise correctly.
     vi.setSystemTime(0)

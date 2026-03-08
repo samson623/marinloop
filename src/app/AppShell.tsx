@@ -197,7 +197,19 @@ export function AppShell() {
   const activeTab = pathname.slice(1) as Tab
 
   return (
-    <Sentry.ErrorBoundary fallback={<div className="fixed inset-0 flex items-center justify-center bg-[var(--color-bg-primary)] p-6 text-center text-[var(--color-text-secondary)]">Something went wrong. Please refresh.</div>}>
+    <Sentry.ErrorBoundary fallback={
+      <div className="fixed inset-0 flex flex-col items-center justify-center bg-[var(--color-bg-primary)] p-6 text-center gap-4">
+        <p className="text-[var(--color-text-primary)] font-semibold text-lg">Something went wrong</p>
+        <p className="text-[var(--color-text-secondary)] text-sm max-w-xs">An unexpected error occurred. You can try reloading the page.</p>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="px-5 py-2.5 rounded-xl font-semibold text-sm bg-[var(--color-accent)] text-[var(--color-text-inverse)] border-none cursor-pointer"
+        >
+          Reload
+        </button>
+      </div>
+    }>
     <ErrorBoundary>
     {!betaTermsAccepted && <BetaTermsModal onAccept={acceptBetaTerms} />}
     {betaTermsAccepted && !aiConsented && !aiDeclined && <AIConsentModal onAccept={grantAiConsent} onDecline={() => setAiDeclined(true)} />}
@@ -261,7 +273,7 @@ export function AppShell() {
               ? <SunIcon  size={20} strokeWidth={1.8} />
               : <MoonIcon size={20} strokeWidth={1.8} />}
           </IconButton>
-          <IconButton size="md" aria-label="Send feedback" onClick={() => setFeedbackOpen(true)}>
+          <IconButton size="md" aria-label="Send feedback" title="Send feedback" onClick={() => setFeedbackOpen(true)}>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>

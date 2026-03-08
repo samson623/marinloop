@@ -374,7 +374,7 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
         return false
       }
     } catch {
-      toast('Lookup failed. Please enter details manually.', 'te')
+      toast('Could not look up medication. Please enter details manually.', 'te')
       return false
     } finally {
       setIsLooking(false)

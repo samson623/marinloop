@@ -20,7 +20,7 @@ export function useCareNetwork() {
       void queryClient.invalidateQueries({ queryKey: ['care_connections'] })
       toast('Caregiver invited', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useCareNetwork', 'Failed to invite caregiver', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useCareNetwork', 'Could not invite caregiver', toast),
   })
 
   const revokeMutation = useMutation({
@@ -29,7 +29,7 @@ export function useCareNetwork() {
       void queryClient.invalidateQueries({ queryKey: ['care_connections'] })
       toast('Access revoked', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useCareNetwork', 'Failed to revoke access', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useCareNetwork', 'Could not revoke access', toast),
   })
 
   const deleteMutation = useMutation({
@@ -38,7 +38,7 @@ export function useCareNetwork() {
       void queryClient.invalidateQueries({ queryKey: ['care_connections'] })
       toast('Caregiver removed', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useCareNetwork', 'Failed to remove caregiver', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useCareNetwork', 'Could not remove caregiver', toast),
   })
 
   const updateMutation = useMutation({
@@ -48,7 +48,7 @@ export function useCareNetwork() {
       void queryClient.invalidateQueries({ queryKey: ['care_connections'] })
       toast('Updated', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useCareNetwork', 'Failed to update connection', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useCareNetwork', 'Could not update connection', toast),
   })
 
   return {

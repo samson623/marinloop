@@ -53,14 +53,14 @@ export function usePushNotifications() {
                     setShowAddToHomeScreenHelp(true)
                     toast('Add MarinLoop to your home screen first', 'tw')
                 } else {
-                    toast('Failed to enable push notifications', 'te')
+                    toast('Could not enable push notifications', 'te')
                 }
                 // Re-check subscription so UI matches reality (e.g. partial failure)
                 const sub = await PushService.getExistingSubscription().catch(() => null)
                 setIsSubscribed(!!sub)
             }
         } catch {
-            toast('Failed to enable push notifications', 'te')
+            toast('Could not enable push notifications', 'te')
             const sub = await PushService.getExistingSubscription().catch(() => null)
             setIsSubscribed(!!sub)
             setPermission(typeof Notification !== 'undefined' ? Notification.permission : 'default')
@@ -78,7 +78,7 @@ export function usePushNotifications() {
             setIsSubscribed(false)
             toast('Push notifications disabled', 'ts')
         } catch {
-            toast('Failed to disable push notifications', 'te')
+            toast('Could not disable push notifications', 'te')
         } finally {
             setIsLoading(false)
         }
@@ -94,10 +94,10 @@ export function usePushNotifications() {
             } else if (sent === 0) {
                 toast('No push subscription found — try toggling notifications off and on', 'tw')
             } else {
-                toast('Test notification failed — check push setup', 'te')
+                toast('Could not send test notification — check push setup', 'te')
             }
         } catch {
-            toast('Test notification failed', 'te')
+            toast('Could not send test notification', 'te')
         } finally {
             setIsLoading(false)
         }

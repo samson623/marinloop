@@ -22,7 +22,7 @@ export function useNotes() {
       void queryClient.invalidateQueries({ queryKey: ['notes'] })
       toast('Note added', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useNotes', 'Failed to add note', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useNotes', 'Could not add note', toast),
   })
 
   const updateMutation = useMutation({
@@ -31,7 +31,7 @@ export function useNotes() {
       void queryClient.invalidateQueries({ queryKey: ['notes'] })
       toast('Note updated', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useNotes', 'Failed to update note', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useNotes', 'Could not update note', toast),
   })
 
   const deleteMutation = useMutation({
@@ -43,7 +43,7 @@ export function useNotes() {
     },
     onError: (_err: unknown, _id: string, context: { prev?: Note[] } | undefined) => {
       if (context?.prev) queryClient.setQueryData(['notes'], context.prev)
-      handleMutationError(_err, 'useNotes', 'Failed to delete note', toast)
+      handleMutationError(_err, 'useNotes', 'Could not delete note', toast)
     },
     onSuccess: () => toast('Note deleted', 'ts'),
     onSettled: () => void queryClient.invalidateQueries({ queryKey: ['notes'] }),

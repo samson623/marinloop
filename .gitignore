@@ -14,6 +14,7 @@ dist-ssr
 
 # Editor / IDE local config (may contain secrets)
 .claude/
+.agent/
 
 # Editor directories and files
 .vscode/*

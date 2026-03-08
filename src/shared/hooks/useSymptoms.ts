@@ -20,7 +20,7 @@ export function useSymptoms() {
       void queryClient.invalidateQueries({ queryKey: ['symptoms'] })
       toast('Symptom logged', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useSymptoms', 'Failed to save symptom', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useSymptoms', 'Could not save symptom', toast),
   })
 
   const updateMutation = useMutation({
@@ -30,7 +30,7 @@ export function useSymptoms() {
       void queryClient.invalidateQueries({ queryKey: ['symptoms'] })
       toast('Symptom updated', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useSymptoms', 'Failed to save symptom', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useSymptoms', 'Could not save symptom', toast),
   })
 
   const resolveMutation = useMutation({
@@ -39,7 +39,7 @@ export function useSymptoms() {
       void queryClient.invalidateQueries({ queryKey: ['symptoms'] })
       toast('Marked as resolved', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useSymptoms', 'Failed to save symptom', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useSymptoms', 'Could not save symptom', toast),
   })
 
   const deleteMutation = useMutation({
@@ -48,7 +48,7 @@ export function useSymptoms() {
       void queryClient.invalidateQueries({ queryKey: ['symptoms'] })
       toast('Symptom deleted', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useSymptoms', 'Failed to save symptom', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useSymptoms', 'Could not save symptom', toast),
   })
 
   return {

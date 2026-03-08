@@ -23,7 +23,7 @@ export function useRefills() {
       void queryClient.invalidateQueries({ queryKey: ['refills'] })
       toast('Refill updated', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useRefillsList', 'Failed to update refill', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useRefillsList', 'Could not update refill', toast),
   })
 
   const updateMutation = useMutation({
@@ -32,7 +32,7 @@ export function useRefills() {
       void queryClient.invalidateQueries({ queryKey: ['refills'] })
       toast('Supply updated', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useRefillsList', 'Failed to update supply', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useRefillsList', 'Could not update supply', toast),
   })
 
   const deleteMutation = useMutation({
@@ -41,7 +41,7 @@ export function useRefills() {
       void queryClient.invalidateQueries({ queryKey: ['refills'] })
       toast('Refill deleted', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useRefillsList', 'Failed to delete refill', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useRefillsList', 'Could not delete refill', toast),
   })
 
   return {

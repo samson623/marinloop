@@ -7,6 +7,8 @@
 
 MarinLoop helps patients and caregivers stay on top of medications, appointments, and health trends — without the complexity of traditional EHR portals. It is a privacy-first Progressive Web App installable on iOS and Android, built for people who manage daily medication routines and the caregivers who support them.
 
+**Live app:** [https://marinloop.com](https://marinloop.com) · **Status:** Pre-release beta
+
 ![React](https://img.shields.io/badge/React_19-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?logo=supabase&logoColor=white)
@@ -34,6 +36,22 @@ MarinLoop solves this by putting medication tracking, adherence history, and car
 - **Drug safety lookups** — Real-time interaction and allergy checks via NIH RxNav and OpenFDA. No PHI transmitted.
 - **Offline-first PWA** — Works without a connection. Actions queue locally and sync when back online. Installable on any device from the browser.
 - **Privacy by design** — Sentry error reporting strips PII before transmission. AI consent is per-user and revocable. Row Level Security on every database table.
+
+---
+
+## Try It
+
+Open [marinloop.com](https://marinloop.com), create an account, and walk through the core flows:
+
+1. **Sign up and onboard** — accept beta terms, choose AI preferences, add to home screen
+2. **Add a medication** — enter details manually or scan a label with AI
+3. **Log a dose** — tap a scheduled dose on the Timeline to mark it taken
+4. **Get a reminder** — enable push notifications and set a medication reminder
+5. **Track your health** — log vitals, journal entries, and notes
+6. **Build your care network** — add providers, caregivers, and emergency contacts
+7. **Ask the AI assistant** — ask about interactions, side effects, or schedules
+
+For the full tester guide with detailed steps, scope, and how to report issues, see **[TESTERS.md](TESTERS.md)**.
 
 ---
 

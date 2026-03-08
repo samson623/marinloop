@@ -37,7 +37,7 @@ export function ProfileView() {
     const { error } = await updatePlan(plan)
     setPlanLoading(false)
     if (error) {
-      toast(getErrorMessage(error, 'Failed to update plan'), 'te')
+      toast(getErrorMessage(error, 'Could not update plan'), 'te')
       return
     }
     toast(`Plan updated to ${plan.charAt(0).toUpperCase() + plan.slice(1)}`, 'ts')
@@ -51,7 +51,7 @@ export function ProfileView() {
     setMfaLoading(false)
 
     if (error || !data) {
-      toast(getErrorMessage(error, 'Failed to enroll MFA'), 'te')
+      toast(getErrorMessage(error, 'Could not enroll MFA'), 'te')
       return
     }
 

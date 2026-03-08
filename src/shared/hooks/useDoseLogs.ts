@@ -21,7 +21,7 @@ export function useDoseLogs(date?: string) {
       void queryClient.invalidateQueries({ queryKey: ['adherence'] })
       toast('Dose logged', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useDoseLogs', 'Failed to log dose', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useDoseLogs', 'Could not log dose', toast),
   })
 
   return {

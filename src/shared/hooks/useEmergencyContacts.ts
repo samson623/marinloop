@@ -20,7 +20,7 @@ export function useEmergencyContacts() {
       void queryClient.invalidateQueries({ queryKey: ['emergency_contacts'] })
       toast('Emergency contact added', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useEmergencyContacts', 'Failed to add contact', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useEmergencyContacts', 'Could not add contact', toast),
   })
 
   const removeMutation = useMutation({
@@ -33,7 +33,7 @@ export function useEmergencyContacts() {
       void queryClient.invalidateQueries({ queryKey: ['emergency_contacts'] })
       toast('Contact removed', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useEmergencyContacts', 'Failed to remove contact', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useEmergencyContacts', 'Could not remove contact', toast),
   })
 
   return {

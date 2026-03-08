@@ -28,7 +28,7 @@ export function useAccount() {
       URL.revokeObjectURL(url)
     },
     onSuccess: () => toast('Data export downloaded', 'ts'),
-    onError: (err: unknown) => toast(getErrorMessage(err, 'Failed to export data'), 'te'),
+    onError: (err: unknown) => toast(getErrorMessage(err, 'Could not export data'), 'te'),
   })
 
   return { deleteAccount, exportData }

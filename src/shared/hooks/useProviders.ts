@@ -20,7 +20,7 @@ export function useProviders() {
       void queryClient.invalidateQueries({ queryKey: ['providers'] })
       toast('Provider added', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useProviders', 'Failed to add provider', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useProviders', 'Could not add provider', toast),
   })
 
   const updateMutation = useMutation({
@@ -30,7 +30,7 @@ export function useProviders() {
       void queryClient.invalidateQueries({ queryKey: ['providers'] })
       toast('Provider updated', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useProviders', 'Failed to update provider', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useProviders', 'Could not update provider', toast),
   })
 
   const deleteMutation = useMutation({
@@ -39,7 +39,7 @@ export function useProviders() {
       void queryClient.invalidateQueries({ queryKey: ['providers'] })
       toast('Provider removed', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useProviders', 'Failed to remove provider', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useProviders', 'Could not remove provider', toast),
   })
 
   return {

@@ -20,7 +20,7 @@ export function useJournal() {
       void queryClient.invalidateQueries({ queryKey: ['journal_entries'] })
       toast('Journal entry saved', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useJournal', 'Failed to save entry', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useJournal', 'Could not save entry', toast),
   })
 
   const updateMutation = useMutation({
@@ -30,7 +30,7 @@ export function useJournal() {
       void queryClient.invalidateQueries({ queryKey: ['journal_entries'] })
       toast('Entry updated', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useJournal', 'Failed to save entry', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useJournal', 'Could not save entry', toast),
   })
 
   const deleteMutation = useMutation({
@@ -39,7 +39,7 @@ export function useJournal() {
       void queryClient.invalidateQueries({ queryKey: ['journal_entries'] })
       toast('Entry deleted', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useJournal', 'Failed to save entry', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useJournal', 'Could not save entry', toast),
   })
 
   return {

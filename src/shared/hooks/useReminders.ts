@@ -23,7 +23,7 @@ export function useReminders() {
       void queryClient.invalidateQueries({ queryKey: ['reminders'] })
       toast('Reminder set', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useReminders', 'Failed to create reminder', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useReminders', 'Could not create reminder', toast),
   })
 
   const updateMutation = useMutation({
@@ -33,7 +33,7 @@ export function useReminders() {
       void queryClient.invalidateQueries({ queryKey: ['reminders'] })
       toast('Reminder updated', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useReminders', 'Failed to update reminder', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useReminders', 'Could not update reminder', toast),
   })
 
   const deleteMutation = useMutation({
@@ -42,7 +42,7 @@ export function useReminders() {
       void queryClient.invalidateQueries({ queryKey: ['reminders'] })
       toast('Reminder deleted', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useReminders', 'Failed to delete reminder', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useReminders', 'Could not delete reminder', toast),
   })
 
   const snoozeMutation = useMutation({
@@ -52,7 +52,7 @@ export function useReminders() {
       void queryClient.invalidateQueries({ queryKey: ['reminders'] })
       toast(`Snoozed ${variables.minutes ?? 10} min`, 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useReminders', 'Failed to snooze reminder', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useReminders', 'Could not snooze reminder', toast),
   })
 
   return {

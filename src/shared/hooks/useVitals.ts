@@ -20,7 +20,7 @@ export function useVitals() {
       void queryClient.invalidateQueries({ queryKey: ['vitals'] })
       toast('Vitals logged', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useVitals', 'Failed to save vitals', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useVitals', 'Could not save vitals', toast),
   })
 
   const updateMutation = useMutation({
@@ -30,7 +30,7 @@ export function useVitals() {
       void queryClient.invalidateQueries({ queryKey: ['vitals'] })
       toast('Vitals updated', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useVitals', 'Failed to save vitals', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useVitals', 'Could not save vitals', toast),
   })
 
   const deleteMutation = useMutation({
@@ -39,7 +39,7 @@ export function useVitals() {
       void queryClient.invalidateQueries({ queryKey: ['vitals'] })
       toast('Entry deleted', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useVitals', 'Failed to save vitals', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useVitals', 'Could not save vitals', toast),
   })
 
   return {

@@ -41,7 +41,7 @@ export function FeedbackModal({ open, onClose }: { open: boolean; onClose: () =>
     const { error } = await submitFeedback(type, message)
     setSubmitting(false)
     if (error) {
-      toast('Failed to send feedback. Please try again.', 'te')
+      toast('Could not send feedback. Please try again.', 'te')
       return
     }
     toast('Feedback sent \u2014 thank you!', 'ts')

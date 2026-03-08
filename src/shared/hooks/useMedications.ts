@@ -24,7 +24,7 @@ export function useMedications() {
       void queryClient.invalidateQueries({ queryKey: ['medications'] })
       toast('Medication added', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useMedications', 'Failed to add medication', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useMedications', 'Could not add medication', toast),
   })
 
   const createBundleMutation = useMutation({
@@ -35,7 +35,7 @@ export function useMedications() {
       void queryClient.invalidateQueries({ queryKey: ['refills'] })
       toast('Medication and schedule created', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useMedications', 'Failed to create medication bundle', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useMedications', 'Could not create medication bundle', toast),
   })
 
   const updateMutation = useMutation({
@@ -44,7 +44,7 @@ export function useMedications() {
       void queryClient.invalidateQueries({ queryKey: ['medications'] })
       toast('Medication updated', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useMedications', 'Failed to update medication', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useMedications', 'Could not update medication', toast),
   })
 
   const deleteMutation = useMutation({
@@ -54,7 +54,7 @@ export function useMedications() {
       AuditService.logAsync({ action: 'medication.deleted', entity_type: 'medication', entity_id: id })
       toast('Medication deleted', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useMedications', 'Failed to delete medication', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useMedications', 'Could not delete medication', toast),
   })
 
   const discontinueMutation = useMutation({
@@ -65,7 +65,7 @@ export function useMedications() {
       AuditService.logAsync({ action: 'medication.discontinued', entity_type: 'medication', entity_id: id })
       toast('Medication discontinued', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useMedications', 'Failed to discontinue medication', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useMedications', 'Could not discontinue medication', toast),
   })
 
   const restoreMutation = useMutation({
@@ -75,7 +75,7 @@ export function useMedications() {
       void queryClient.invalidateQueries({ queryKey: ['medications', 'archived'] })
       toast('Medication restored to active', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useMedications', 'Failed to restore medication', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useMedications', 'Could not restore medication', toast),
   })
 
   return {

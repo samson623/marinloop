@@ -19,7 +19,7 @@ export function useSchedules() {
       void queryClient.invalidateQueries({ queryKey: ['schedules'] })
       toast('Schedule updated', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useSchedules', 'Failed to update schedule', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useSchedules', 'Could not update schedule', toast),
   })
 
   const updateMutation = useMutation({
@@ -27,7 +27,7 @@ export function useSchedules() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['schedules'] })
     },
-    onError: (err: unknown) => handleMutationError(err, 'useSchedules', 'Failed to update schedule', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useSchedules', 'Could not update schedule', toast),
   })
 
   const deleteMutation = useMutation({
@@ -35,7 +35,7 @@ export function useSchedules() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['schedules'] })
     },
-    onError: (err: unknown) => handleMutationError(err, 'useSchedules', 'Failed to delete schedule', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useSchedules', 'Could not delete schedule', toast),
   })
 
   return {

@@ -23,7 +23,7 @@ export function useAppointments() {
       void queryClient.invalidateQueries({ queryKey: ['appointments'] })
       toast('Appointment added', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useAppointments', 'Failed to add appointment', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useAppointments', 'Could not add appointment', toast),
   })
 
   const updateMutation = useMutation({
@@ -32,7 +32,7 @@ export function useAppointments() {
       void queryClient.invalidateQueries({ queryKey: ['appointments'] })
       toast('Appointment updated', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useAppointments', 'Failed to update appointment', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useAppointments', 'Could not update appointment', toast),
   })
 
   const deleteMutation = useMutation({
@@ -41,7 +41,7 @@ export function useAppointments() {
       void queryClient.invalidateQueries({ queryKey: ['appointments'] })
       toast('Appointment deleted', 'ts')
     },
-    onError: (err: unknown) => handleMutationError(err, 'useAppointments', 'Failed to delete appointment', toast),
+    onError: (err: unknown) => handleMutationError(err, 'useAppointments', 'Could not delete appointment', toast),
   })
 
   return {

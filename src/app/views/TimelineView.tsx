@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { toLocalDateString } from '@/shared/lib/dates'
@@ -176,14 +176,18 @@ export function TimelineView() {
   const nextItemRef = useRef<HTMLButtonElement>(null)
   const [showJumpButton, setShowJumpButton] = useState(false)
 
+  // Keep a stable ref to refetch so the interval effect never needs to re-register
+  const refetchRef = useRef(refetch)
+  useEffect(() => { refetchRef.current = refetch }, [refetch])
+
   // Refresh timeline data and clock display every minute
   useEffect(() => {
     const iv = setInterval(() => {
-      refetch()
+      refetchRef.current()
       setTick((t) => t + 1)
     }, 60000)
     return () => clearInterval(iv)
-  }, [refetch])
+  }, []) // stable — refetch accessed via ref
 
   // Track whether the "next" item is in the viewport
   useEffect(() => {
@@ -200,22 +204,25 @@ export function TimelineView() {
   const now = new Date()
   const nM = now.getHours() * 60 + now.getMinutes()
 
-  let dn = 0
-  let lt = 0
-  let ms = 0
-  let total = 0
+  const { dn, lt, ms, pct } = useMemo(() => {
+    let dn = 0
+    let lt = 0
+    let ms = 0
+    let total = 0
 
-  sched.forEach((i) => {
-    if (i.type !== 'med') return
-    total += 1
-    if (i.status === 'done') dn += 1
-    else if (i.status === 'late') {
-      dn += 1
-      lt += 1
-    } else if (i.status === 'missed') ms += 1
-  })
+    sched.forEach((i) => {
+      if (i.type !== 'med') return
+      total += 1
+      if (i.status === 'done') dn += 1
+      else if (i.status === 'late') {
+        dn += 1
+        lt += 1
+      } else if (i.status === 'missed') ms += 1
+    })
 
-  const pct = total > 0 ? Math.round((dn / total) * 100) : 0
+    const pct = total > 0 ? Math.round((dn / total) * 100) : 0
+    return { dn, lt, ms, pct }
+  }, [sched])
   const ringColor =
     pct >= 80
       ? 'var(--color-ring-green)'
@@ -563,7 +570,8 @@ function TimelineItem({
   const setRefs = (el: HTMLButtonElement | null) => {
     ;(triggerRef as React.MutableRefObject<HTMLButtonElement | null>).current = el
     if (nextItemRef) {
-      ;(nextItemRef as React.MutableRefObject<HTMLButtonElement | null>).current = el
+      const mutableNextRef: { current: HTMLButtonElement | null } = nextItemRef
+      mutableNextRef.current = el
     }
   }
 
@@ -673,14 +681,15 @@ function DoseModal({
     retry: false,
   })
 
-  // Standard catch-up guidance based on elapsed time
+  // Standard catch-up guidance based on elapsed time.
+  // Returns a structured object so the display layer can distinguish FDA-label text
+  // from generic strings and render source attribution accordingly.
   const catchUpGuidance = (() => {
     if (minutesLate < 30) return null
-    if (fdaGuidance) return fdaGuidance
-    // Standard rule of thumb (not medical advice):
-    if (hoursLate < 4) return `You're ${Math.round(hoursLate * 10) / 10}h late. Generally safe to take now, but check with your pharmacist if unsure.`
-    if (hoursLate < 8) return `You're ${Math.round(hoursLate)}h late. For many medications you can still take it — skip only if your next dose is soon.`
-    return `You're ${Math.round(hoursLate)}h late. Consider skipping this dose and resuming your normal schedule. Ask your pharmacist to be sure.`
+    if (fdaGuidance) return { text: fdaGuidance, source: 'fda' as const }
+    if (hoursLate < 4) return { text: `You're ${Math.round(hoursLate * 10) / 10}h late. Contact your pharmacist or care team for guidance on whether to take this dose.`, source: 'generic' as const }
+    if (hoursLate < 8) return { text: `You're ${Math.round(hoursLate)}h late. Contact your pharmacist or care team for guidance on whether to take this dose.`, source: 'generic' as const }
+    return { text: `You're ${Math.round(hoursLate)}h late. Contact your pharmacist or care team before taking this dose.`, source: 'generic' as const }
   })()
 
   const markDone = () => {
@@ -727,10 +736,15 @@ function DoseModal({
       {/* Catch-up guidance for late/missed doses */}
       {catchUpGuidance && (
         <div className="mb-4 px-4 py-3 rounded-xl bg-[color-mix(in_srgb,var(--color-amber,#d97706)_8%,transparent)] border border-[color-mix(in_srgb,var(--color-amber,#d97706)_25%,transparent)]" role="note">
-          <p className="font-bold text-[#d97706] [font-size:var(--text-label)] mb-0.5">Catch-up Guidance</p>
+          <p className="font-bold text-[#d97706] [font-size:var(--text-label)] mb-0.5">Missed Dose — Seek Guidance</p>
           <p className="text-[var(--color-text-secondary)] [font-size:var(--text-caption)] leading-relaxed">
-            {catchUpGuidance}
+            {catchUpGuidance.text}
           </p>
+          {catchUpGuidance.source === 'fda' && (
+            <p className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] mt-1">
+              Source: FDA-approved prescribing information. Consult your pharmacist or care team before acting on this guidance.
+            </p>
+          )}
           <p className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] mt-1">
             Always follow your healthcare provider's instructions.
           </p>

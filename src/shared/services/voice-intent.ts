@@ -15,7 +15,7 @@ const DEFAULT_RESULT: VoiceIntentResult = {
   requires_confirmation: false,
 }
 
-const VOICE_INTENT_SYSTEM_PROMPT = `You are a clinical voice assistant for MarinLoop. Convert the user's voice command into strict JSON.
+const VOICE_INTENT_SYSTEM_PROMPT = `You are a medication tracking assistant for MarinLoop. Convert the user's voice command into strict JSON.
 
 Return only JSON with keys: intent, entities, confidence, missing, requires_confirmation, assistant_message.
 Do not include markdown fences.
@@ -335,9 +335,12 @@ export function heuristicParse(text: string): VoiceIntentResult {
 }
 
 export const VoiceIntentService = {
-  async parseTranscript(transcript: string): Promise<VoiceIntentResult> {
+  async parseTranscript(transcript: string, isConsented?: boolean): Promise<VoiceIntentResult> {
     const clean = transcript.trim()
     if (!clean) return { ...DEFAULT_RESULT }
+
+    // Skip AI and fall back to heuristic if consent has not been given
+    if (isConsented === false) return heuristicParse(clean)
 
     try {
       if (!AIService.isConfigured()) return heuristicParse(clean)

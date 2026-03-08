@@ -29,39 +29,37 @@ export function RemindersPanel() {
   const { isSupported, isSubscribed, subscribe, isLoading: isPushLoading } = usePushNotifications()
   const [showAddModal, setShowAddModal] = useState(false)
   const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null)
-  const [autoEditConsumed, setAutoEditConsumed] = useState<string | null>(null)
+  const autoEditConsumedRef = useRef<string | null>(null)
   const [showRecent, setShowRecent] = useState(false)
-  const [tick, setTick] = useState(0)
+  const [now, setNow] = useState(() => Date.now())
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Auto-open the detail modal for a newly created reminder (for editing)
   useEffect(() => {
-    if (autoEditReminderId && autoEditReminderId !== autoEditConsumed && reminders.length > 0) {
-      const target = reminders.find((r) => r.id === autoEditReminderId)
-      if (target) {
-        setSelectedReminder(target)
-        setAutoEditConsumed(autoEditReminderId)
-      }
-    }
-  }, [autoEditReminderId, autoEditConsumed, reminders])
+    if (!autoEditReminderId || autoEditConsumedRef.current === autoEditReminderId || reminders.length === 0) return
+    const target = reminders.find((r) => r.id === autoEditReminderId)
+    if (!target) return
+    autoEditConsumedRef.current = autoEditReminderId
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: open modal for newly created reminder, single cascade is expected and desired
+    setSelectedReminder(target)
+  }, [autoEditReminderId, reminders])
 
-  const now = Date.now()
   const upcoming = reminders.filter((r) => !r.fired && new Date(r.fire_at).getTime() > now)
   const overdue = reminders.filter((r) => !r.fired && new Date(r.fire_at).getTime() <= now)
-  const recent = reminders.filter((r) => r.fired && r.fired_at && Date.now() - new Date(r.fired_at).getTime() < 7 * 24 * 60 * 60 * 1000)
+  const recent = reminders.filter((r) => r.fired && r.fired_at && now - new Date(r.fired_at).getTime() < 7 * 24 * 60 * 60 * 1000)
 
   // Adaptive poll: 10s if any reminder is within 5 minutes, else 30s
-  const hasImminent = upcoming.some((r) => new Date(r.fire_at).getTime() - Date.now() < 5 * 60 * 1000)
+  const hasImminent = upcoming.some((r) => new Date(r.fire_at).getTime() - now < 5 * 60 * 1000)
 
   useEffect(() => {
     if (!showRemindersPanel) return
     if (intervalRef.current) clearInterval(intervalRef.current)
     const ms = hasImminent ? 10_000 : 30_000
-    intervalRef.current = setInterval(() => setTick((t) => t + 1), ms)
+    intervalRef.current = setInterval(() => setNow(Date.now()), ms)
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [showRemindersPanel, hasImminent, tick])
+  }, [showRemindersPanel, hasImminent])
 
   if (!showRemindersPanel) return null
 

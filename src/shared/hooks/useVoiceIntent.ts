@@ -11,6 +11,7 @@ import { useAdherenceHistory } from '@/shared/hooks/useAdherenceHistory'
 import { useRefillPredictions } from '@/shared/hooks/useRefillPredictions'
 import { VoiceIntentService } from '@/shared/services/voice-intent'
 import { AIService } from '@/shared/services/ai'
+import { useAIConsent } from '@/shared/hooks/useAIConsent'
 import { todayLocal, isoToLocalDate, toLocalTimeString } from '@/shared/lib/dates'
 import type { VoiceIntentResult } from '@/shared/types/contracts'
 import type { DoseLogCreateInput } from '@/shared/types/contracts'
@@ -21,7 +22,7 @@ import type {
 } from '@/shared/types/voice'
 
 export type VoiceIntentServiceLike = {
-  parseTranscript: (transcript: string) => Promise<VoiceIntentResult>
+  parseTranscript: (transcript: string, isConsented?: boolean) => Promise<VoiceIntentResult>
 }
 
 export type NotificationsServiceLike = {
@@ -50,6 +51,7 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
   } = options
 
   const navigate = useNavigate()
+  const { consented } = useAIConsent()
   const {
     openAddMedModal,
     openAddApptModal,
@@ -177,7 +179,7 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
     const contextualTranscript = assistantState.pendingIntent
       ? `Pending intent: ${assistantState.pendingIntent}. Missing: ${assistantState.missing.join(', ')}. User follow-up: ${transcript}`
       : transcript
-    const intent = await voiceIntentService.parseTranscript(contextualTranscript)
+    const intent = await voiceIntentService.parseTranscript(contextualTranscript, consented)
 
     if (intent.missing.length > 0) {
       const prompt = intent.assistant_message || `I need ${intent.missing.join(', ')} to continue.`
@@ -367,6 +369,12 @@ ${adherenceStr || 'No adherence data.'}
 ## Refill alerts
 ${refillStr || 'No urgent refills.'}`
 
+        if (!consented) {
+          const msg = 'AI features require consent. Enable them in Profile \u2192 Data & Privacy.'
+          setVoiceBubble(msg)
+          store.toast(msg, 'tw')
+          return
+        }
         if (!AIService.isConfigured()) {
           const fallback =
             question.toLowerCase().includes('schedule') || question.toLowerCase().includes('agenda')
@@ -387,7 +395,7 @@ ${refillStr || 'No urgent refills.'}`
           const response = await AIService.chat([
             {
               role: 'system',
-              content: `You are MarinLoop's clinical voice assistant. Answer the user's question using ONLY the data below. Be concise (1-3 sentences). Cite specifics. Do not make up data. If the data doesn't contain the answer, say so clearly. Do not give medical advice.`,
+              content: `You are MarinLoop's medication tracking assistant. Answer the user's question using ONLY the data below. Be concise (1-3 sentences). Cite specifics. Do not make up data. If the data doesn't contain the answer, say so clearly. Do not give medical advice. Do not provide clinical recommendations or interpret health data.`,
             },
             { role: 'user', content: `Data:\n${context}\n\nUser question: ${question}\n\nAnswer briefly:` },
           ])

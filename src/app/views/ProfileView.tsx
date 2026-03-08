@@ -14,11 +14,13 @@ import { Button, Input, Card } from '@/shared/components/ui'
 import { getPlatformLabel, isStandalone } from '@/shared/lib/device'
 import { env } from '@/shared/lib/env'
 import { AccountDeletionModal } from '@/shared/components/AccountDeletionModal'
+import { useAIConsent } from '@/shared/hooks/useAIConsent'
 
 export function ProfileView() {
   const { toast } = useAppStore()
   const navigate = useNavigate()
   const { user, profile, signOut, enrollMfa, verifyMfa, updatePlan } = useAuthStore()
+  const { consented, revoke, consent } = useAIConsent()
   const push = usePushNotifications()
   const installPrompt = useInstallPrompt()
 
@@ -345,6 +347,39 @@ export function ProfileView() {
             To request data deletion or report a privacy concern, email{' '}
             <a href="mailto:admin@marinloop.com" className="underline text-[var(--color-accent)]">admin@marinloop.com</a>.
           </p>
+        </div>
+        <div className="mt-3 pt-3 border-t border-[var(--color-border-secondary)] flex items-center justify-between gap-3">
+          <div>
+            <span className="font-semibold text-[var(--color-text-secondary)] [font-size:var(--text-caption)]">AI features</span>
+            <span className="ml-2 [font-size:var(--text-caption)] text-[var(--color-text-tertiary)]">
+              {consented ? 'Enabled' : 'Disabled'}
+            </span>
+          </div>
+          {consented ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                revoke()
+                toast('AI access revoked', 'ts')
+              }}
+            >
+              Revoke AI Access
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                consent()
+                toast('AI features enabled', 'ts')
+              }}
+            >
+              Enable AI Features
+            </Button>
+          )}
         </div>
       </Card>
 

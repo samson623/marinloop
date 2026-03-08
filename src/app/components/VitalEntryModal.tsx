@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Modal } from '@/shared/components/Modal'
 import { Button } from '@/shared/components/ui/Button'
 import { Input } from '@/shared/components/ui/Input'
@@ -95,20 +95,28 @@ export function VitalEntryModal({
   const [validationError, setValidationError] = useState<string | null>(null)
 
   // ---- populate from initialValues when modal opens ----------------------
+  // Capture initialValues in a ref so the effect that runs on `open` can read
+  // the latest prop values without needing to list them as dependencies.
+  // The intent is a controlled initialization pattern: reset fields each time
+  // the modal opens using whatever initialValues were passed at that moment.
+  const initialValuesRef = useRef(initialValues)
 
   useEffect(() => {
     if (!open) return
-    setRecordedAt(initialValues?.recorded_at?.slice(0, 16) ?? nowLocal())
-    setBpSystolic(fromNum(initialValues?.bp_systolic))
-    setBpDiastolic(fromNum(initialValues?.bp_diastolic))
-    setHeartRate(fromNum(initialValues?.heart_rate))
-    setGlucose(fromNum(initialValues?.glucose))
-    setWeight(fromNum(initialValues?.weight))
-    setTemperature(fromNum(initialValues?.temperature))
-    setO2Saturation(fromNum(initialValues?.o2_saturation))
-    setNotes(initialValues?.notes ?? '')
+    initialValuesRef.current = initialValues
+    const iv = initialValuesRef.current
+    setRecordedAt(iv?.recorded_at?.slice(0, 16) ?? nowLocal())
+    setBpSystolic(fromNum(iv?.bp_systolic))
+    setBpDiastolic(fromNum(iv?.bp_diastolic))
+    setHeartRate(fromNum(iv?.heart_rate))
+    setGlucose(fromNum(iv?.glucose))
+    setWeight(fromNum(iv?.weight))
+    setTemperature(fromNum(iv?.temperature))
+    setO2Saturation(fromNum(iv?.o2_saturation))
+    setNotes(iv?.notes ?? '')
     setValidationError(null)
-  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: initialValues captured via ref to reset form on open without re-triggering on every prop change
+  }, [open])
 
   // ---- submit -------------------------------------------------------------
 

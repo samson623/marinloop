@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useAppStore, fD, fT } from '@/shared/stores/app-store'
 import { todayLocal, isoToLocalDate, toLocalTimeString } from '@/shared/lib/dates'
 import { useAppointments } from '@/shared/hooks/useAppointments'
@@ -39,7 +39,10 @@ export function ApptsView() {
     start_time: a.start_time,
   }))
 
-  const sorted = [...displayAppts].sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime())
+  const sortedAppts = useMemo(
+    () => [...displayAppts].sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime()),
+    [realAppts], // eslint-disable-line react-hooks/exhaustive-deps
+  )
 
   return (
     <div className="animate-view-in w-full max-w-[480px] mx-auto">
@@ -54,7 +57,7 @@ export function ApptsView() {
             <SkeletonApptCard />
             <SkeletonApptCard />
           </>
-        ) : sorted.length === 0 ? (
+        ) : sortedAppts.length === 0 ? (
           <div className="py-8 px-5 text-center flex flex-col items-center gap-3 border-2 border-dashed border-[var(--color-border-secondary)] rounded-2xl sm:py-6 sm:px-4">
             <svg
               width="48"
@@ -80,7 +83,7 @@ export function ApptsView() {
             </div>
           </div>
         ) : (
-          sorted.map((a, i) => {
+          sortedAppts.map((a, i) => {
             const past = new Date(`${a.date}T${a.time}`) < new Date()
             const formattedDate = `${fD(a.date)} at ${fT(a.time)}`
             return (
@@ -137,6 +140,7 @@ export function ApptsView() {
 
       {showAddApptModal && (
         <AddApptModal
+          key={draftAppt?.title ?? 'new'}
           onClose={closeAddApptModal}
           createRealAppt={addAppt}
           initialDraft={draftAppt}
@@ -322,15 +326,6 @@ function AddApptModal({
   const [time, setTime] = useState(initialDraft?.time ?? '14:00')
   const [loc, setLoc] = useState(initialDraft?.loc ?? '')
   const [notes, setNotes] = useState(initialDraft?.notes ?? '')
-
-  useEffect(() => {
-    if (!initialDraft) return
-    if (initialDraft.title) setTitle(initialDraft.title)
-    if (initialDraft.date) setDate(initialDraft.date)
-    if (initialDraft.time) setTime(initialDraft.time)
-    if (initialDraft.loc) setLoc(initialDraft.loc)
-    if (initialDraft.notes) setNotes(initialDraft.notes)
-  }, [initialDraft])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

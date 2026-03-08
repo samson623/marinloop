@@ -16,6 +16,8 @@ type Profile = {
   ice_share_token: string | null
   vital_thresholds: Record<string, unknown> | null
   emergency_contacts?: unknown
+  ai_consent_granted?: boolean
+  ai_consent_granted_at?: string | null
 }
 
 type AuthResult = { error: Error | null }

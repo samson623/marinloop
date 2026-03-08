@@ -1,8 +1,9 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 
 vi.mock('@/shared/services/ai', () => ({ AIService: { chat: vi.fn(), isConfigured: vi.fn() } }))
 
-import { coerceResult, heuristicParse } from '@/shared/services/voice-intent'
+import { coerceResult, heuristicParse, VoiceIntentService } from '@/shared/services/voice-intent'
+import { AIService } from '@/shared/services/ai'
 
 describe('coerceResult', () => {
   it('returns default for null or non-object', () => {
@@ -168,5 +169,126 @@ describe('heuristicParse', () => {
     const out = heuristicParse('hello world')
     expect(out.intent).toBe('unknown')
     expect(out.confidence).toBe(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// VoiceIntentService.parseTranscript — AI consent enforcement
+// ---------------------------------------------------------------------------
+
+afterEach(() => {
+  vi.clearAllMocks()
+})
+
+describe('VoiceIntentService.parseTranscript', () => {
+  describe('when isConsented is false', () => {
+    it('returns heuristic result without calling AIService.chat', async () => {
+      vi.mocked(AIService.isConfigured).mockReturnValue(true)
+
+      const result = await VoiceIntentService.parseTranscript('what is my next dose', false)
+
+      expect(result.intent).toBe('query_next_dose')
+      expect(AIService.chat).not.toHaveBeenCalled()
+    })
+
+    it('does not call AIService.isConfigured when isConsented is false', async () => {
+      vi.mocked(AIService.isConfigured).mockReturnValue(true)
+
+      await VoiceIntentService.parseTranscript('go to meds', false)
+
+      expect(AIService.isConfigured).not.toHaveBeenCalled()
+    })
+
+    it('returns heuristic result for a log_dose phrase when not consented', async () => {
+      const result = await VoiceIntentService.parseTranscript('I took my medicine', false)
+
+      expect(result.intent).toBe('log_dose')
+      expect(result.entities.dose?.status).toBe('taken')
+      expect(AIService.chat).not.toHaveBeenCalled()
+    })
+
+    it('returns unknown intent for unrecognized text without calling AI', async () => {
+      const result = await VoiceIntentService.parseTranscript('hello world', false)
+
+      expect(result.intent).toBe('unknown')
+      expect(AIService.chat).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('when isConsented is true', () => {
+    it('calls AIService.chat when AIService is configured and heuristic returns unknown', async () => {
+      vi.mocked(AIService.isConfigured).mockReturnValue(true)
+      // Return a valid navigate JSON so the result is not 'unknown' (avoiding heuristic fallback)
+      vi.mocked(AIService.chat).mockResolvedValue(
+        JSON.stringify({ intent: 'navigate', entities: { navigate: { target: 'meds' } }, confidence: 0.9, missing: [], requires_confirmation: false })
+      )
+
+      const result = await VoiceIntentService.parseTranscript('hello world', true)
+
+      expect(AIService.chat).toHaveBeenCalledOnce()
+      expect(result.intent).toBe('navigate')
+    })
+
+    it('falls back to heuristic when AIService is not configured', async () => {
+      vi.mocked(AIService.isConfigured).mockReturnValue(false)
+
+      const result = await VoiceIntentService.parseTranscript('what is my next dose', true)
+
+      expect(AIService.chat).not.toHaveBeenCalled()
+      expect(result.intent).toBe('query_next_dose')
+    })
+
+    it('falls back to heuristic when AIService.chat throws', async () => {
+      vi.mocked(AIService.isConfigured).mockReturnValue(true)
+      vi.mocked(AIService.chat).mockRejectedValue(new Error('network failure'))
+
+      const result = await VoiceIntentService.parseTranscript('what is my next dose', true)
+
+      expect(result.intent).toBe('query_next_dose')
+    })
+
+    it('falls back to heuristic when AI returns unknown intent', async () => {
+      vi.mocked(AIService.isConfigured).mockReturnValue(true)
+      vi.mocked(AIService.chat).mockResolvedValue(
+        JSON.stringify({ intent: 'unknown', entities: {}, confidence: 0, missing: [], requires_confirmation: false })
+      )
+
+      // "show medications" is recognized by heuristic as 'navigate'
+      const result = await VoiceIntentService.parseTranscript('show medications', true)
+
+      expect(result.intent).toBe('navigate')
+    })
+
+    it('falls back to heuristic when AI returns unparseable JSON', async () => {
+      vi.mocked(AIService.isConfigured).mockReturnValue(true)
+      vi.mocked(AIService.chat).mockResolvedValue('not json at all')
+
+      const result = await VoiceIntentService.parseTranscript('what is my next dose', true)
+
+      expect(result.intent).toBe('query_next_dose')
+    })
+
+    it('returns empty result for blank transcript regardless of consent', async () => {
+      vi.mocked(AIService.isConfigured).mockReturnValue(true)
+
+      const result = await VoiceIntentService.parseTranscript('   ', true)
+
+      expect(result.intent).toBe('unknown')
+      expect(AIService.chat).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('when isConsented is undefined (default)', () => {
+    it('proceeds to call AIService when configured and transcript is unrecognized', async () => {
+      vi.mocked(AIService.isConfigured).mockReturnValue(true)
+      vi.mocked(AIService.chat).mockResolvedValue(
+        JSON.stringify({ intent: 'navigate', entities: { navigate: { target: 'summary' } }, confidence: 0.95, missing: [], requires_confirmation: false })
+      )
+
+      const result = await VoiceIntentService.parseTranscript('hello world')
+
+      expect(AIService.chat).toHaveBeenCalledOnce()
+      expect(result.intent).toBe('navigate')
+    })
   })
 })

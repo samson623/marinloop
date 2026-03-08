@@ -61,7 +61,7 @@ export function PrivacyPolicyView() {
 
             <div>
               <h3 className="font-semibold text-[var(--color-text-primary)] mb-1">NIH RxNav &amp; OpenFDA (Drug Information)</h3>
-              <p>Medication names are sent to the NIH RxNav API and OpenFDA API to look up drug interaction and label information. These are U.S. government public APIs; no personally identifiable information is transmitted.</p>
+              <p>Drug information lookups (interaction checks, label data) are made <strong className="text-[var(--color-text-primary)]">directly from your device</strong> to the NIH RxNav and OpenFDA APIs. As part of these requests, NIH and FDA servers may receive your IP address and browser metadata alongside the medication names and drug codes (NDC/RxCUI) being queried. MarinLoop does not transmit your user account identifiers in these requests. These services are operated by the U.S. government and are subject to their own privacy policies: <a href="https://www.nih.gov/web-policies-notices" className="underline text-[var(--color-accent)]" target="_blank" rel="noopener noreferrer">NIH Web Policies</a> and <a href="https://open.fda.gov/privacy/" className="underline text-[var(--color-accent)]" target="_blank" rel="noopener noreferrer">openFDA Privacy</a>.</p>
             </div>
 
             <div>

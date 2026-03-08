@@ -68,7 +68,10 @@ function mapApiError(msg: string): string {
  * Images are compressed client-side before sending to the Edge Function.
  * Pass mode='pill' to identify a pill by visual characteristics instead of reading a label.
  */
-export async function extractFromImages(files: File[], mode?: 'label' | 'pill'): Promise<LabelExtractResult> {
+export async function extractFromImages(files: File[], mode?: 'label' | 'pill', isConsented?: boolean): Promise<LabelExtractResult> {
+  if (isConsented === false) {
+    throw new Error('AI consent required')
+  }
   if (files.length === 0) {
     throw new Error('At least one image is required.')
   }
@@ -119,6 +122,6 @@ export async function extractFromImages(files: File[], mode?: 'label' | 'pill'):
 }
 
 /** Single-file convenience wrapper (backwards compatible). */
-export async function extractFromImage(file: File, mode?: 'label' | 'pill'): Promise<LabelExtractResult> {
-  return extractFromImages([file], mode)
+export async function extractFromImage(file: File, mode?: 'label' | 'pill', isConsented?: boolean): Promise<LabelExtractResult> {
+  return extractFromImages([file], mode, isConsented)
 }

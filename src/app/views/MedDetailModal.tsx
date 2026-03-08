@@ -429,6 +429,7 @@ export default function MedDetailModal({ med, isDeleting, onClose, onUpdate, onD
                     </li>
                   ))}
                 </ul>
+                <p className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] mt-2">Review these interactions with your pharmacist or healthcare provider.</p>
               </div>
             )}
           </div>

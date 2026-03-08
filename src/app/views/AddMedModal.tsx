@@ -4,6 +4,7 @@ import { BarcodeScanner } from '@/shared/components/BarcodeScanner'
 import { Modal } from '@/shared/components/Modal'
 import { lookupByBarcode } from '@/shared/services/openfda'
 import { extractFromImages } from '@/shared/services/label-extract'
+import { useAIConsent } from '@/shared/hooks/useAIConsent'
 import { lookupRxCUI, getOpenFDALabel, getIngredients } from '@/shared/services/rxnorm'
 import { useInteractions } from '@/shared/hooks/useInteractions'
 import type { DrugInteraction } from '@/shared/services/rxnorm'
@@ -37,6 +38,7 @@ type AddMedModalProps = {
 
 export default function AddMedModal({ onClose, createBundleAsync, isSaving, initialDraft, openScanner: openScannerProp, openPhoto: openPhotoProp, allMeds = [], upcomingAppts = [], userAllergies = [] }: AddMedModalProps) {
   const { toast } = useAppStore()
+  const { consented } = useAIConsent()
   const [name, setName] = useState('')
   const [dose, setDose] = useState('')
   const [freq, setFreq] = useState('1')
@@ -301,7 +303,7 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
     const modeLabel = photoMode === 'pill' ? 'Identifying pill...' : (labelPhotos.length > 1 ? `Reading ${labelPhotos.length} label photos...` : 'Reading label...')
     toast(modeLabel, 'ts')
     try {
-      const result = await extractFromImages(labelPhotos, photoMode)
+      const result = await extractFromImages(labelPhotos, photoMode, consented)
       const conf = result.confidence ?? 0.5
       const hasUsefulData = Boolean(
         result.name?.trim() || result.dosage?.trim() || result.instructions?.trim() || result.warnings?.trim()
@@ -748,6 +750,9 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
               <p className="text-[var(--color-red)] font-semibold [font-size:var(--text-label)] leading-snug">
                 {allergyWarning}
               </p>
+              <p className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] mt-1">
+                Always consult your pharmacist or healthcare provider before making any medication decisions.
+              </p>
             </div>
           )}
 
@@ -780,6 +785,9 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
                   {interaction.description}
                 </p>
               ))}
+              <p className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] mt-2">
+                Review these interactions with your pharmacist or healthcare provider before taking this medication.
+              </p>
             </div>
           )}
 

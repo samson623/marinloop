@@ -36,7 +36,7 @@ export function TermsView() {
         <section>
           <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">3. Not Medical Advice</h2>
           <p>
-            <strong className="text-[var(--color-text-primary)]">MarinLoop is not a medical device, clinical decision support tool, or substitute for professional medical advice.</strong> The App provides reminders, tracking, and informational tools only. Nothing in MarinLoop constitutes medical advice, diagnosis, or treatment recommendations.
+            <strong className="text-[var(--color-text-primary)]">MarinLoop is not a medical device, clinical decision support tool, or substitute for professional medical advice.</strong> The App provides reminders, tracking, and informational drug reference lookups only. Nothing in MarinLoop constitutes medical advice, diagnosis, or treatment recommendations. Drug interaction notices, allergy alerts, and missed-dose guidance are informational reference lookups — always consult your pharmacist or care team before acting on them.
           </p>
           <p className="mt-2">
             Always follow the instructions of your licensed healthcare provider regarding medications, dosages, and health decisions. In a medical emergency, call 911 or your local emergency number immediately.
@@ -96,7 +96,7 @@ export function TermsView() {
         <section>
           <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">9. Limitation of Liability</h2>
           <p>
-            <strong className="text-[var(--color-text-primary)]">To the maximum extent permitted by law, MarinLoop and its operators are not liable for any indirect, incidental, special, consequential, or punitive damages</strong>, including but not limited to health outcomes resulting from reliance on App features, missed medication reminders, data loss, or service interruptions.
+            <strong className="text-[var(--color-text-primary)]">To the maximum extent permitted by law, MarinLoop and its operators are not liable for any indirect, incidental, special, consequential, or punitive damages</strong>, including but not limited to health outcomes resulting from reliance on App features, missed medication reminders, informational drug reference lookups (including interaction warnings and allergy alerts), data loss, or service interruptions.
           </p>
           <p className="mt-2">
             Our total aggregate liability to you for any claims arising from use of the App shall not exceed the amount you paid for the App in the preceding 12 months (which, during beta, is zero).
@@ -133,7 +133,7 @@ export function TermsView() {
       </div>
 
       <p className="mt-10 text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] text-center">
-        MarinLoop provides reminders and tracking tools. Not medical advice. Always follow your healthcare provider&apos;s instructions.
+        MarinLoop provides reminders, tracking, and informational drug reference lookups. Not medical advice. Always follow your healthcare provider&apos;s instructions.
       </p>
     </div>
   )

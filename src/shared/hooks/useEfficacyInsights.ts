@@ -9,7 +9,7 @@ import { useQuery } from '@tanstack/react-query'
 import { EfficacyService } from '@/shared/services/efficacy'
 import { AIService } from '@/shared/services/ai'
 import type { Vital } from '@/shared/services/vitals'
-import { useAIConsent } from '@/shared/components/AIConsentModal'
+import { useAIConsent } from '@/shared/hooks/useAIConsent'
 
 export interface EfficacyInsight {
   medicationId: string
@@ -25,7 +25,7 @@ async function buildEfficacyInsights(vitals: Vital[]): Promise<EfficacyInsight[]
   const meaningful = correlations.filter((c) => c.delta != null && Math.abs(c.delta) >= 5)
   if (meaningful.length === 0) return []
 
-  const prompt = `You are a clinical data analyst. Based on this medication efficacy data, write ONE concise sentence (max 25 words) for each item describing the correlation between starting the medication and the vital change. Be factual, no medical advice.
+  const prompt = `You are a data summarization assistant. Based on this medication tracking data, write ONE concise sentence (max 25 words) for each item describing the observed correlation between the medication start date and the vital change. Be factual, no medical advice. Do not imply causation. Do not give medical advice. Present data as observations only.
 
 Data:
 ${meaningful.map((c) => `- ${c.medicationName}: ${c.vitalLabel} changed by ${c.delta} ${c.unit} (before avg: ${c.avgBeforeStart}, after avg: ${c.avgAfterStart})`).join('\n')}
@@ -43,7 +43,7 @@ Reply with a JSON array: [{"medicationId": "...", "summary": "..."}]`
         vitalLabel: c.vitalLabel,
         unit: c.unit,
         delta: c.delta!,
-        summary: match.summary || `Since starting ${c.medicationName}, your ${c.vitalLabel} changed by ${Math.abs(c.delta!)} ${c.unit}.`,
+        summary: match.summary || `After starting ${c.medicationName}, a change of ${Math.abs(c.delta!)} ${c.unit} was observed in your ${c.vitalLabel}.`,
       }
     })
   } catch {
@@ -54,7 +54,7 @@ Reply with a JSON array: [{"medicationId": "...", "summary": "..."}]`
       vitalLabel: c.vitalLabel,
       unit: c.unit,
       delta: c.delta!,
-      summary: `Since starting ${c.medicationName}, your ${c.vitalLabel} ${c.delta! < 0 ? 'decreased' : 'increased'} by ${Math.abs(c.delta!)} ${c.unit}.`,
+      summary: `After starting ${c.medicationName}, a change of ${Math.abs(c.delta!)} ${c.unit} was observed in your ${c.vitalLabel}.`,
     }))
   }
 }

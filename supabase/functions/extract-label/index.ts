@@ -208,6 +208,15 @@ serve(async (req) => {
       )
     }
 
+    // Consent check: user must have explicitly granted AI consent
+    const { data: profile } = await supabase.from('profiles').select('ai_consent_granted').eq('id', user.id).single()
+    if (!profile?.ai_consent_granted) {
+      return new Response(
+        JSON.stringify({ error: 'AI consent required. Please enable AI features in your profile settings.' }),
+        { status: 403, headers: corsHeaders },
+      )
+    }
+
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     if (!serviceRoleKey) {
       return new Response(

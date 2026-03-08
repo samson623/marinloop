@@ -3,6 +3,7 @@ import { useAdherenceHistory } from '@/shared/hooks/useAdherenceHistory'
 import { useMedications } from '@/shared/hooks/useMedications'
 import { AIService } from '@/shared/services/ai'
 import type { ChatMessage } from '@/shared/services/ai'
+import { useAIConsent } from '@/shared/hooks/useAIConsent'
 
 export interface InsightCard {
   id: string
@@ -68,6 +69,7 @@ export function useAdherenceInsights(): {
   isLoading: boolean
   isError: boolean
 } {
+  const { consented } = useAIConsent()
   const { adherence, isLoading: adherenceLoading } = useAdherenceHistory(30)
   const { meds, isLoading: medsLoading } = useMedications()
 
@@ -78,7 +80,7 @@ export function useAdherenceInsights(): {
     ? Object.values(adherence).filter(v => v.t > 0).length
     : 0
 
-  const enabled = dataReady && activeDays >= 7
+  const enabled = dataReady && activeDays >= 7 && consented
 
   const { data, isLoading: queryLoading, isError } = useQuery<InsightCard[]>({
     queryKey: ['adherence-insights'],

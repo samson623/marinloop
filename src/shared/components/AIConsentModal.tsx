@@ -1,37 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import { useState } from 'react'
 import { Button } from '@/shared/components/ui'
-
-const AI_CONSENT_KEY = 'marinloop_ai_consent_given'
-const AI_CONSENT_DECLINED_KEY = 'marinloop_ai_consent_declined'
-
-export function useAIConsent() {
-  const [consented, setConsented] = useState<boolean>(() => {
-    try { return localStorage.getItem(AI_CONSENT_KEY) === '1' } catch { return false }
-  })
-  const [declined, setDeclinedState] = useState<boolean>(() => {
-    try { return localStorage.getItem(AI_CONSENT_DECLINED_KEY) === '1' } catch { return false }
-  })
-
-  const setDeclined = (val: boolean) => {
-    try { localStorage.setItem(AI_CONSENT_DECLINED_KEY, val ? '1' : '0') } catch { /* ignore */ }
-    setDeclinedState(val)
-  }
-
-  const consent = () => {
-    try { localStorage.setItem(AI_CONSENT_KEY, '1') } catch { /* ignore */ }
-    try { localStorage.removeItem(AI_CONSENT_DECLINED_KEY) } catch { /* ignore */ }
-    setConsented(true)
-    setDeclinedState(false)
-  }
-
-  const revoke = () => {
-    try { localStorage.removeItem(AI_CONSENT_KEY) } catch { /* ignore */ }
-    setConsented(false)
-  }
-
-  return { consented, declined, setDeclined, consent, revoke }
-}
 
 export function AIConsentModal({ onAccept, onDecline }: { onAccept: () => void; onDecline: () => void }) {
   return (

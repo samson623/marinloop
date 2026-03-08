@@ -737,14 +737,14 @@ function DoseModal({
       {catchUpGuidance && (
         <div className="mb-4 px-4 py-3 rounded-xl bg-[color-mix(in_srgb,var(--color-amber,#d97706)_8%,transparent)] border border-[color-mix(in_srgb,var(--color-amber,#d97706)_25%,transparent)]" role="note">
           <p className="font-bold text-[#d97706] [font-size:var(--text-label)] mb-0.5">Missed Dose — Seek Guidance</p>
-          <p className="text-[var(--color-text-secondary)] [font-size:var(--text-caption)] leading-relaxed">
-            {catchUpGuidance.text}
-          </p>
           {catchUpGuidance.source === 'fda' && (
-            <p className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] mt-1">
-              Source: FDA-approved prescribing information. Consult your pharmacist or care team before acting on this guidance.
+            <p className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] mb-1">
+              From FDA-approved prescribing information — review with your pharmacist or care team:
             </p>
           )}
+          <p className="text-[var(--color-text-secondary)] [font-size:var(--text-caption)] leading-relaxed" style={catchUpGuidance.source === 'fda' ? { fontStyle: 'italic' } : undefined}>
+            {catchUpGuidance.text}
+          </p>
           <p className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] mt-1">
             Always follow your healthcare provider's instructions.
           </p>

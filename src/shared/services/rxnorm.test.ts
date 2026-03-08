@@ -1,26 +1,31 @@
 import { vi, describe, it, expect, afterEach } from 'vitest'
 
+vi.mock('@/shared/lib/supabase', () => ({
+  supabase: {
+    functions: {
+      invoke: vi.fn(),
+    },
+  },
+}))
+
+import { supabase } from '@/shared/lib/supabase'
+
+const mockInvoke = vi.mocked(supabase.functions.invoke)
+
 afterEach(() => {
-  vi.restoreAllMocks()
+  vi.clearAllMocks()
 })
 
-function mockFetchOk(body: unknown): void {
-  vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
-    ok: true,
-    json: () => Promise.resolve(body),
-  } as Response)
+function mockInvokeOk(data: unknown) {
+  mockInvoke.mockResolvedValueOnce({ data, error: null } as never)
 }
 
-function mockFetchError(status = 500): void {
-  vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
-    ok: false,
-    status,
-    json: () => Promise.resolve({}),
-  } as Response)
+function mockInvokeError() {
+  mockInvoke.mockResolvedValueOnce({ data: null, error: new Error('invoke error') } as never)
 }
 
-function mockFetchThrow(message = 'Network error'): void {
-  vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error(message))
+function mockInvokeThrow(message = 'Network error') {
+  mockInvoke.mockRejectedValueOnce(new Error(message))
 }
 
 function rxcuiResponse(rxnormId: string | undefined) {
@@ -69,26 +74,27 @@ import { lookupRxCUI, getDrugInteractions, getOpenFDALabel } from '@/shared/serv
 
 describe('lookupRxCUI()', () => {
   it('returns the first RxCUI from a successful NIH RxNav response', async () => {
-    mockFetchOk(rxcuiResponse('6809'))
+    mockInvokeOk(rxcuiResponse('6809'))
 
     const result = await lookupRxCUI('Metformin')
 
     expect(result).toBe('6809')
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('rxnav.nlm.nih.gov/REST/rxcui.json'),
+    expect(mockInvoke).toHaveBeenCalledWith(
+      'drug-reference',
+      expect.objectContaining({ body: expect.objectContaining({ action: 'lookupRxCUI' }) }),
     )
   })
 
   it('returns null when the drug is not found', async () => {
-    mockFetchOk(rxcuiResponse(undefined))
+    mockInvokeOk(rxcuiResponse(undefined))
 
     const result = await lookupRxCUI('NotARealDrug')
 
     expect(result).toBeNull()
   })
 
-  it('returns null when the API response is not ok', async () => {
-    mockFetchError(404)
+  it('returns null when the invoke call returns an error', async () => {
+    mockInvokeError()
 
     const result = await lookupRxCUI('Metformin')
 
@@ -96,7 +102,7 @@ describe('lookupRxCUI()', () => {
   })
 
   it('returns null on network failure', async () => {
-    mockFetchThrow('Failed to fetch')
+    mockInvokeThrow('Failed to fetch')
 
     const result = await lookupRxCUI('Metformin')
 
@@ -104,18 +110,16 @@ describe('lookupRxCUI()', () => {
   })
 
   it('returns null for a whitespace-only drug name without making any network call', async () => {
-    const spy = vi.spyOn(globalThis, 'fetch')
-
     const result = await lookupRxCUI('   ')
 
     expect(result).toBeNull()
-    expect(spy).not.toHaveBeenCalled()
+    expect(mockInvoke).not.toHaveBeenCalled()
   })
 })
 
 describe('getDrugInteractions()', () => {
   it('parses a high-severity interaction and returns the structured result', async () => {
-    mockFetchOk(
+    mockInvokeOk(
       interactionResponse({ severity: 'High', description: 'Risk of bleeding.', drug1: 'warfarin', drug2: 'aspirin' }),
     )
 
@@ -129,7 +133,7 @@ describe('getDrugInteractions()', () => {
   })
 
   it('maps "contraindicated" severity to the "high" tier', async () => {
-    mockFetchOk(interactionResponse({ severity: 'Contraindicated' }))
+    mockInvokeOk(interactionResponse({ severity: 'Contraindicated' }))
 
     const result = await getDrugInteractions(['rxcui-a', 'rxcui-b'])
 
@@ -137,7 +141,7 @@ describe('getDrugInteractions()', () => {
   })
 
   it('maps "moderate" severity correctly', async () => {
-    mockFetchOk(interactionResponse({ severity: 'Moderate' }))
+    mockInvokeOk(interactionResponse({ severity: 'Moderate' }))
 
     const result = await getDrugInteractions(['rxcui-a', 'rxcui-b'])
 
@@ -145,7 +149,7 @@ describe('getDrugInteractions()', () => {
   })
 
   it('maps unknown severity string to "low"', async () => {
-    mockFetchOk(interactionResponse({ severity: 'minor' }))
+    mockInvokeOk(interactionResponse({ severity: 'minor' }))
 
     const result = await getDrugInteractions(['rxcui-a', 'rxcui-b'])
 
@@ -153,25 +157,21 @@ describe('getDrugInteractions()', () => {
   })
 
   it('returns empty array when fewer than 2 RxCUIs are provided', async () => {
-    const spy = vi.spyOn(globalThis, 'fetch')
-
     const result = await getDrugInteractions(['6809'])
 
     expect(result).toEqual([])
-    expect(spy).not.toHaveBeenCalled()
+    expect(mockInvoke).not.toHaveBeenCalled()
   })
 
   it('returns empty array for empty rxcui list', async () => {
-    const spy = vi.spyOn(globalThis, 'fetch')
-
     const result = await getDrugInteractions([])
 
     expect(result).toEqual([])
-    expect(spy).not.toHaveBeenCalled()
+    expect(mockInvoke).not.toHaveBeenCalled()
   })
 
-  it('returns empty array on HTTP error', async () => {
-    mockFetchError(500)
+  it('returns empty array on invoke error', async () => {
+    mockInvokeError()
 
     const result = await getDrugInteractions(['rxcui-a', 'rxcui-b'])
 
@@ -179,7 +179,7 @@ describe('getDrugInteractions()', () => {
   })
 
   it('returns empty array on network failure', async () => {
-    mockFetchThrow()
+    mockInvokeThrow()
 
     const result = await getDrugInteractions(['rxcui-a', 'rxcui-b'])
 
@@ -189,7 +189,7 @@ describe('getDrugInteractions()', () => {
 
 describe('getOpenFDALabel()', () => {
   it('returns food interactions and contraindications from the label', async () => {
-    mockFetchOk({
+    mockInvokeOk({
       results: [
         {
           food_and_drug_interaction: ['Avoid grapefruit juice.'],
@@ -205,7 +205,7 @@ describe('getOpenFDALabel()', () => {
   })
 
   it('strips HTML tags from label text', async () => {
-    mockFetchOk({
+    mockInvokeOk({
       results: [
         {
           food_and_drug_interaction: ['<p>Avoid <b>grapefruit</b> juice.</p>'],
@@ -220,16 +220,14 @@ describe('getOpenFDALabel()', () => {
   })
 
   it('returns empty object when rxcui is blank', async () => {
-    const spy = vi.spyOn(globalThis, 'fetch')
-
     const result = await getOpenFDALabel('')
 
     expect(result).toEqual({})
-    expect(spy).not.toHaveBeenCalled()
+    expect(mockInvoke).not.toHaveBeenCalled()
   })
 
   it('returns empty object on network failure', async () => {
-    mockFetchThrow()
+    mockInvokeThrow()
 
     const result = await getOpenFDALabel('6809')
 
@@ -237,7 +235,7 @@ describe('getOpenFDALabel()', () => {
   })
 
   it('returns empty object when the API response has no results', async () => {
-    mockFetchOk({ results: [] })
+    mockInvokeOk({ results: [] })
 
     const result = await getOpenFDALabel('6809')
 

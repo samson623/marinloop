@@ -1,7 +1,10 @@
 /** NIH RxNav + OpenFDA Drug Safety Service
- * Uses free APIs — no API key required.
+ * All upstream calls are proxied through the `drug-reference` edge function
+ * to prevent the user's IP and medication lookups from reaching third-party APIs directly.
  * RxNav docs: https://rxnav.nlm.nih.gov/RxNormAPIs.html
  */
+
+import { supabase } from '@/shared/lib/supabase'
 
 export interface DrugInteraction {
   severity: 'high' | 'moderate' | 'low'
@@ -30,17 +33,12 @@ export async function lookupRxCUI(name: string): Promise<string | null> {
   if (!trimmed) return null
 
   try {
-    const url = `https://rxnav.nlm.nih.gov/REST/rxcui.json?name=${encodeURIComponent(trimmed)}&search=1`
-    const res = await fetch(url)
-    if (!res.ok) return null
-    const data = await res.json() as {
-      idGroup?: {
-        rxnormId?: string[]
-        name?: string
-      }
-    }
-    const rxnormId = data?.idGroup?.rxnormId?.[0]
-    return rxnormId ?? null
+    const { data, error } = await supabase.functions.invoke('drug-reference', {
+      body: { action: 'lookupRxCUI', params: { name: trimmed } },
+    })
+    if (error) return null
+    const typed = data as { idGroup?: { rxnormId?: string[] } }
+    return typed?.idGroup?.rxnormId?.[0] ?? null
   } catch {
     return null
   }
@@ -52,12 +50,12 @@ export async function getDrugInteractions(rxcuis: string[]): Promise<DrugInterac
   if (valid.length < 2) return []
 
   try {
-    const joined = valid.join('+')
-    const url = `https://rxnav.nlm.nih.gov/REST/interaction/list.json?rxcuis=${joined}`
-    const res = await fetch(url)
-    if (!res.ok) return []
+    const { data, error } = await supabase.functions.invoke('drug-reference', {
+      body: { action: 'getDrugInteractions', params: { rxcuis: valid } },
+    })
+    if (error) return []
 
-    const data = await res.json() as {
+    const typed = data as {
       fullInteractionTypeGroup?: Array<{
         fullInteractionType?: Array<{
           interactionPair?: Array<{
@@ -73,7 +71,7 @@ export async function getDrugInteractions(rxcuis: string[]): Promise<DrugInterac
 
     const interactions: DrugInteraction[] = []
 
-    for (const group of data.fullInteractionTypeGroup ?? []) {
+    for (const group of typed.fullInteractionTypeGroup ?? []) {
       for (const type of group.fullInteractionType ?? []) {
         for (const pair of type.interactionPair ?? []) {
           const sev = (pair.severity ?? '').toLowerCase()
@@ -112,10 +110,11 @@ export async function getDrugInteractions(rxcuis: string[]): Promise<DrugInterac
 export async function getIngredients(rxcui: string): Promise<string[]> {
   if (!rxcui) return []
   try {
-    const url = `https://rxnav.nlm.nih.gov/REST/rxcui/${encodeURIComponent(rxcui)}/related.json?rela=has_ingredient`
-    const res = await fetch(url)
-    if (!res.ok) return []
-    const data = await res.json() as {
+    const { data, error } = await supabase.functions.invoke('drug-reference', {
+      body: { action: 'getIngredients', params: { rxcui } },
+    })
+    if (error) return []
+    const typed = data as {
       relatedGroup?: {
         relatedByRelationship?: Array<{
           conceptGroup?: Array<{
@@ -125,7 +124,7 @@ export async function getIngredients(rxcui: string): Promise<string[]> {
       }
     }
     const names: string[] = []
-    for (const rel of data.relatedGroup?.relatedByRelationship ?? []) {
+    for (const rel of typed.relatedGroup?.relatedByRelationship ?? []) {
       for (const grp of rel.conceptGroup ?? []) {
         for (const prop of grp.conceptProperties ?? []) {
           if (prop.name) names.push(prop.name)
@@ -151,16 +150,18 @@ export async function getIngredients(rxcui: string): Promise<string[]> {
 export async function getCatchUpGuidance(rxcui: string): Promise<string | null> {
   if (!rxcui) return null
   try {
-    const url = `https://api.fda.gov/drug/label.json?search=openfda.rxcui:"${encodeURIComponent(rxcui)}"&limit=1`
-    const res = await fetch(url)
-    if (!res.ok) return null
-    const data = await res.json() as {
+    const { data, error } = await supabase.functions.invoke('drug-reference', {
+      body: { action: 'getCatchUpGuidance', params: { rxcui } },
+    })
+    if (error) return null
+    const typed = data as {
       results?: Array<{
         missed_dose?: string[]
         do_not_use?: string[]
       }>
-    }
-    const label = data.results?.[0]
+    } | null
+    if (!typed) return null
+    const label = typed.results?.[0]
     if (!label) return null
     const raw = label.missed_dose?.[0]
     if (!raw) return null
@@ -175,16 +176,18 @@ export async function getOpenFDALabel(rxcui: string): Promise<OpenFDALabelData> 
   if (!rxcui) return {}
 
   try {
-    const url = `https://api.fda.gov/drug/label.json?search=openfda.rxcui:"${encodeURIComponent(rxcui)}"&limit=1`
-    const res = await fetch(url)
-    if (!res.ok) return {}
-    const data = await res.json() as {
+    const { data, error } = await supabase.functions.invoke('drug-reference', {
+      body: { action: 'getOpenFDALabel', params: { rxcui } },
+    })
+    if (error) return {}
+    const typed = data as {
       results?: Array<{
         food_and_drug_interaction?: string[]
         contraindications?: string[]
       }>
-    }
-    const label = data.results?.[0]
+    } | null
+    if (!typed) return {}
+    const label = typed.results?.[0]
     if (!label) return {}
     return {
       foodInteractions: cleanText(label.food_and_drug_interaction?.[0]),

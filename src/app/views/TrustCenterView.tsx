@@ -4,8 +4,8 @@ export function TrustCenterView() {
   const navigate = useNavigate()
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg-primary)] px-4 py-8">
-      <div className="mx-auto max-w-[760px]">
+    <div className="min-h-screen bg-[var(--color-bg-primary)] px-4 py-8 flex justify-center">
+      <div className="w-full max-w-2xl">
         <button
           type="button"
           onClick={() => navigate(-1)}

@@ -27,9 +27,9 @@ export function LandingScreen() {
         </svg>
       </IconButton>
 
-      <div className="min-h-screen w-full px-6 py-8 sm:px-8 md:px-10">
-        <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-5xl flex-col items-center justify-center gap-8 text-center">
-          <div className="max-w-4xl">
+      <div className="flex min-h-screen w-full items-center justify-center px-6 py-16">
+        <div className="flex w-full max-w-2xl flex-col items-center gap-8 text-center">
+          <div className="w-full">
             <div className="mb-4 flex items-center justify-center gap-2">
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-[var(--shadow-elevated)]">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -48,13 +48,13 @@ export function LandingScreen() {
               </div>
             </div>
 
-            <p className="mx-auto mb-4 max-w-4xl font-semibold leading-tight text-[var(--color-text-primary)] [font-size:clamp(2.2rem,5vw,4.5rem)]">
+            <p className="mx-auto mb-4 font-semibold leading-tight text-[var(--color-text-primary)] [font-size:clamp(1.8rem,4vw,3rem)]">
               Medication routines, reminders, and care coordination with a clear safety boundary.
             </p>
-            <p className="mx-auto mb-4 max-w-3xl text-[var(--color-text-secondary)] [font-size:var(--text-body)]">
+            <p className="mx-auto mb-4 text-[var(--color-text-secondary)] [font-size:var(--text-body)]">
               Built for patients and caregivers who need an installable daily workflow for medications, adherence, vitals, notes, and care-network coordination.
             </p>
-            <p className="mx-auto mb-8 max-w-3xl text-[var(--color-text-tertiary)] [font-size:var(--text-label)]">
+            <p className="mx-auto mb-8 text-[var(--color-text-tertiary)] [font-size:var(--text-label)]">
               MarinLoop is a personal tracking and reminder product. It is not a medical device, not for emergency use, and not offered in this beta for covered-entity workflows requiring HIPAA business associate agreements.
             </p>
 
@@ -101,7 +101,7 @@ export function LandingScreen() {
             </div>
           </div>
 
-          <div className="w-full max-w-[720px] rounded-[28px] border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] p-5 text-left shadow-[var(--shadow-elevated)] sm:p-6">
+          <div className="w-full rounded-[28px] border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] p-5 text-left shadow-[var(--shadow-elevated)] sm:p-6">
             <div className="mb-5 flex items-center gap-2">
               <div className="h-2.5 w-2.5 rounded-full bg-[var(--color-green)]" aria-hidden />
               <p className="font-semibold text-[var(--color-text-primary)] [font-size:var(--text-label)]">

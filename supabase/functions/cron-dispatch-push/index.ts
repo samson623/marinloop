@@ -107,13 +107,14 @@ serve(async (req) => {
             )
         }
         const token = authHeader.replace('Bearer ', '').trim()
-        // MARINLOOP_SERVICE_ROLE_KEY stores the project JWT (same as dashboard service role key).
-        // Used to authenticate pg_cron calls from the vault without hitting the sb_secret_* format mismatch.
-        // TODO(name-unification): Rename to MARINLOOP_SERVICE_ROLE_KEY after provisioning new Vault secret and redeploying.
-        const medflowSrk = Deno.env.get('MEDFLOW_SERVICE_ROLE_KEY')?.trim()
+        // MARINLOOP_SERVICE_ROLE_KEY stores the project service role key JWT,
+        // sent by pg_cron from the Vault to authenticate server-to-server calls.
+        // Falls back to MEDFLOW_SERVICE_ROLE_KEY during the Vault secret transition window.
+        const marinloopSrk = Deno.env.get('MARINLOOP_SERVICE_ROLE_KEY')?.trim()
+            ?? Deno.env.get('MEDFLOW_SERVICE_ROLE_KEY')?.trim()
 
         let isServiceRole = false
-        if (medflowSrk && token === medflowSrk) {
+        if (marinloopSrk && token === marinloopSrk) {
             isServiceRole = true
             log('AUTH: Service role key matched ✅')
         } else if (token === serviceRoleKey) {

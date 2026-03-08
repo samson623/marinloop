@@ -49,7 +49,7 @@ export function FeedbackModal({ open, onClose }: { open: boolean; onClose: () =>
   }
 
   return (
-    <Modal open={open} onOpenChange={(o) => !o && handleClose()} title="Send Feedback" variant="bottom">
+    <Modal open={open} onOpenChange={(o) => !o && handleClose()} title="Send Feedback" variant="center">
       <form onSubmit={handleSubmit} className="pb-2">
         <div className="flex gap-2 mb-4">
           {TYPES.map((t) => (

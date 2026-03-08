@@ -76,7 +76,7 @@ export function RemindersPanel() {
           <button
             type="button"
             onClick={() => setShowAddModal(true)}
-            className="w-full flex items-center justify-center gap-2 py-3 mb-4 rounded-xl border border-dashed border-[var(--color-border-primary)] text-[var(--color-accent)] font-semibold text-[13px] bg-transparent cursor-pointer hover:bg-[var(--color-bg-secondary)] transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-3 mb-4 rounded-xl border border-dashed border-[var(--color-border-primary)] text-[var(--color-accent)] font-semibold text-[15px] bg-transparent cursor-pointer hover:bg-[var(--color-bg-secondary)] transition-colors"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <line x1="12" y1="5" x2="12" y2="19" />
@@ -88,14 +88,14 @@ export function RemindersPanel() {
           {/* Push subscription warning */}
           {isSupported && !isSubscribed && (
             <div className="flex items-center justify-between gap-3 mb-4 px-3 py-2.5 rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)]">
-              <p className="text-[12px] text-[var(--color-text-secondary)] leading-snug">
+              <p className="text-[14px] text-[var(--color-text-secondary)] leading-snug">
                 Push off — you may miss reminders when the app is closed.
               </p>
               <button
                 type="button"
                 onClick={subscribe}
                 disabled={isPushLoading}
-                className="shrink-0 text-[12px] font-semibold text-[var(--color-accent)] bg-transparent border-none cursor-pointer p-0 disabled:opacity-50"
+                className="shrink-0 text-[14px] font-semibold text-[var(--color-accent)] bg-transparent border-none cursor-pointer p-0 disabled:opacity-50"
               >
                 Enable
               </button>
@@ -103,13 +103,13 @@ export function RemindersPanel() {
           )}
 
           {isLoading && (
-            <p className="text-[var(--color-text-secondary)] text-[13px] py-2">Loading...</p>
+            <p className="text-[var(--color-text-secondary)] text-[14px] py-2">Loading...</p>
           )}
 
           {/* Overdue section */}
           {overdue.length > 0 && (
             <section className="mb-4">
-              <h3 className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-red)] mb-2">Overdue</h3>
+              <h3 className="text-[13px] font-bold uppercase tracking-[0.08em] text-[var(--color-red)] mb-2">Overdue</h3>
               <ul className="flex flex-col gap-2">
                 {overdue.map((r) => (
                   <ReminderCard key={r.id} reminder={r} label="overdue" labelColor="var(--color-red)" onClick={() => setSelectedReminder(r)} />
@@ -121,7 +121,7 @@ export function RemindersPanel() {
           {/* Upcoming section */}
           {upcoming.length > 0 && (
             <section className="mb-4">
-              <h3 className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)] mb-2">Upcoming</h3>
+              <h3 className="text-[13px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)] mb-2">Upcoming</h3>
               <ul className="flex flex-col gap-2">
                 {upcoming.map((r) => (
                   <ReminderCard key={r.id} reminder={r} label={formatCountdown(r.fire_at)} labelColor="var(--color-accent)" onClick={() => setSelectedReminder(r)} />
@@ -133,8 +133,8 @@ export function RemindersPanel() {
           {/* Empty state */}
           {!isLoading && upcoming.length === 0 && overdue.length === 0 && (
             <div className="py-8 text-center">
-              <p className="text-[var(--color-text-secondary)] text-[13px] mb-1">No upcoming reminders.</p>
-              <p className="text-[var(--color-text-tertiary)] text-[12px]">Try saying "Remind me in one hour" or tap + above.</p>
+              <p className="text-[var(--color-text-secondary)] text-[15px] mb-1">No upcoming reminders.</p>
+              <p className="text-[var(--color-text-tertiary)] text-[14px]">Try saying "Remind me in one hour" or tap + above.</p>
             </div>
           )}
 
@@ -148,11 +148,11 @@ export function RemindersPanel() {
                 aria-controls="reminders-recent-panel"
                 className="w-full flex items-center justify-between py-2 bg-transparent border-none cursor-pointer text-left"
               >
-                <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
+                <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
                   Recent ({recent.length})
                 </span>
                 <svg
-                  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
                   className={`text-[var(--color-text-tertiary)] transition-transform ${showRecent ? 'rotate-180' : ''}`}
                   aria-hidden
@@ -218,16 +218,16 @@ function ReminderCard({
         className={`w-full text-left bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)] rounded-xl px-4 py-3 cursor-pointer hover:bg-[var(--color-bg-primary)] transition-colors ${dimmed ? 'opacity-60' : ''}`}
       >
         <div className="flex items-center justify-between gap-3">
-          <span className="font-semibold text-[var(--color-text-primary)] text-[13px] truncate">{reminder.title}</span>
+          <span className="font-semibold text-[var(--color-text-primary)] text-[15px] truncate">{reminder.title}</span>
           <span
-            className="shrink-0 text-[11px] font-bold px-2 py-0.5 rounded-full"
+            className="shrink-0 text-[12px] font-bold px-2 py-0.5 rounded-full"
             style={{ color: labelColor, background: 'color-mix(in srgb, currentColor 10%, transparent)' }}
           >
             {label}
           </span>
         </div>
         {reminder.body && (
-          <p className="text-[var(--color-text-secondary)] text-[12px] mt-0.5 truncate">{reminder.body}</p>
+          <p className="text-[var(--color-text-secondary)] text-[13px] mt-0.5 truncate">{reminder.body}</p>
         )}
       </button>
     </li>

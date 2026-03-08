@@ -80,7 +80,7 @@ export function ProfileView() {
   }
 
   return (
-    <div className="animate-view-in">
+    <main aria-label="Profile" className="animate-view-in">
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-extrabold tracking-[-0.03em] text-[var(--color-text-primary)] [font-size:var(--text-title)]">Profile</h1>
         <IconButton
@@ -350,7 +350,11 @@ export function ProfileView() {
         <div className="mt-3 pt-3 border-t border-[var(--color-border-secondary)] flex items-center justify-between gap-3">
           <div>
             <span className="font-semibold text-[var(--color-text-secondary)] [font-size:var(--text-caption)]">AI features</span>
-            <span className="ml-2 [font-size:var(--text-caption)] text-[var(--color-text-tertiary)]">
+            <span
+              role="status"
+              aria-live="polite"
+              className="ml-2 [font-size:var(--text-caption)] text-[var(--color-text-tertiary)]"
+            >
               {consented ? 'Enabled' : 'Disabled'}
             </span>
           </div>
@@ -431,6 +435,6 @@ export function ProfileView() {
       <p className="mt-1 text-[var(--color-text-tertiary)] text-center [font-size:var(--text-caption)] opacity-60">
         MarinLoop v1.0.0-beta
       </p>
-    </div>
+    </main>
   )
 }

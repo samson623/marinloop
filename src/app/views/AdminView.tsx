@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/shared/stores/auth-store'
 import { AuditService } from '@/shared/services/audit'
@@ -728,8 +728,35 @@ export function AdminView() {
     )
   }
 
+  const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({
+    overview: null,
+    feedback: null,
+    users: null,
+    'ai-usage': null,
+  })
+
   function handleTabClick(tab: Tab) {
     setActiveTab(tab)
+  }
+
+  function handleTabKeyDown(e: React.KeyboardEvent<HTMLButtonElement>, currentIndex: number) {
+    const tabIds = TAB_LABELS.map((t) => t.id)
+    let nextIndex: number | null = null
+    if (e.key === 'ArrowRight') {
+      nextIndex = (currentIndex + 1) % tabIds.length
+    } else if (e.key === 'ArrowLeft') {
+      nextIndex = (currentIndex - 1 + tabIds.length) % tabIds.length
+    } else if (e.key === 'Home') {
+      nextIndex = 0
+    } else if (e.key === 'End') {
+      nextIndex = tabIds.length - 1
+    }
+    if (nextIndex !== null) {
+      e.preventDefault()
+      const nextTab = tabIds[nextIndex]
+      setActiveTab(nextTab)
+      tabRefs.current[nextTab]?.focus()
+    }
   }
 
   return (
@@ -759,16 +786,25 @@ export function AdminView() {
 
       {/* Tab bar */}
       <div
+        role="tablist"
+        aria-label="Admin panel sections"
         className="sticky top-[57px] z-10 flex border-b overflow-x-auto"
         style={{
           background: 'var(--color-bg-primary)',
           borderColor: 'var(--color-border-primary)',
         }}
       >
-        {TAB_LABELS.map(({ id, label }) => (
+        {TAB_LABELS.map(({ id, label }, index) => (
           <button
             key={id}
+            id={`admin-tab-${id}`}
+            role="tab"
+            aria-selected={activeTab === id}
+            aria-controls={`admin-panel-${id}`}
+            tabIndex={activeTab === id ? 0 : -1}
+            ref={(el) => { tabRefs.current[id] = el }}
             onClick={() => handleTabClick(id)}
+            onKeyDown={(e) => handleTabKeyDown(e, index)}
             className={cn(
               'flex-shrink-0 px-4 py-3 font-medium transition-colors border-b-2',
               activeTab === id ? 'border-[var(--color-accent)]' : 'border-transparent',
@@ -787,10 +823,21 @@ export function AdminView() {
 
       {/* Tab content */}
       <main className="flex-1 px-4 py-6 max-w-3xl w-full mx-auto">
-        {activeTab === 'overview' && <OverviewTab />}
-        {activeTab === 'feedback' && <FeedbackTab />}
-        {activeTab === 'users' && <UsersTab />}
-        {activeTab === 'ai-usage' && <AIUsageTab />}
+        {TAB_LABELS.map(({ id }) => (
+          <div
+            key={id}
+            id={`admin-panel-${id}`}
+            role="tabpanel"
+            aria-labelledby={`admin-tab-${id}`}
+            tabIndex={0}
+            hidden={activeTab !== id}
+          >
+            {id === 'overview' && <OverviewTab />}
+            {id === 'feedback' && <FeedbackTab />}
+            {id === 'users' && <UsersTab />}
+            {id === 'ai-usage' && <AIUsageTab />}
+          </div>
+        ))}
       </main>
     </div>
   )

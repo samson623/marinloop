@@ -19,9 +19,11 @@ import { BetaTermsModal, useBetaTermsAccepted } from '@/shared/components/BetaTe
 import { AIConsentModal } from '@/shared/components/AIConsentModal'
 import { useAIConsent } from '@/shared/hooks/useAIConsent'
 import { FeedbackModal } from '@/shared/components/FeedbackModal'
+import { IdleTimeoutWarning } from '@/shared/components/IdleTimeoutWarning'
 import { Modal } from '@/shared/components/Modal'
 import { IconButton } from '@/shared/components/IconButton'
 import { Button, Input } from '@/shared/components/ui'
+import { useIdleTimeout } from '@/shared/hooks/useIdleTimeout'
 import { useInstallPrompt } from '@/shared/hooks/useInstallPrompt'
 import { useServiceWorkerUpdate } from '@/shared/hooks/useServiceWorkerUpdate'
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
@@ -118,6 +120,7 @@ export function AppShell() {
       void queryClient.invalidateQueries({ queryKey: ['adherence-insights'] })
     },
   })
+  const { showWarning: idleWarning, secondsRemaining, resetTimer } = useIdleTimeout()
   const { accepted: betaTermsAccepted, accept: acceptBetaTerms } = useBetaTermsAccepted()
   const { consented: aiConsented, declined: aiDeclined, setDeclined: setAiDeclined, consent: grantAiConsent } = useAIConsent()
   const [showVoiceTest] = useState(() => {
@@ -207,7 +210,13 @@ export function AppShell() {
           onInstall={installPrompt.promptInstall}
         />
       )}
-      <a href="#main-content" className="sr-only focus-not-sr-only">Skip to main content</a>
+      {/* Skip to main content — WCAG 2.1 SC 2.4.1 */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:rounded-lg focus:bg-[var(--color-accent)] focus:px-4 focus:py-2 focus:text-white focus:font-semibold focus:outline-none"
+      >
+        Skip to main content
+      </a>
       <header
         className="sticky top-0 left-0 right-0 z-[100] w-full pt-[max(1rem,env(safe-area-inset-top))] pb-4 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:px-5 backdrop-blur-[12px] bg-[var(--color-bg-primary-translucent)] border-b border-[var(--color-border-primary)]"
         dir="ltr"
@@ -458,6 +467,9 @@ export function AppShell() {
 
       <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
       <Toasts toasts={toasts} />
+      {idleWarning && (
+        <IdleTimeoutWarning secondsRemaining={secondsRemaining} resetTimer={resetTimer} />
+      )}
     </div>
     </ErrorBoundary>
     </Sentry.ErrorBoundary>

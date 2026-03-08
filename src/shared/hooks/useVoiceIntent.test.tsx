@@ -26,7 +26,7 @@ import type { VoiceIntentResult } from '@/shared/types/contracts'
 // Mocks — declared before any import of the module under test
 // ---------------------------------------------------------------------------
 
-vi.mock('@/shared/components/AIConsentModal', () => ({
+vi.mock('@/shared/hooks/useAIConsent', () => ({
   useAIConsent: vi.fn(),
 }))
 

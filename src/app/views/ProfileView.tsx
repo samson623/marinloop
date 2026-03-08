@@ -7,7 +7,6 @@ import { getErrorMessage } from '@/shared/lib/errors'
 import { usePushNotifications } from '@/shared/hooks/usePushNotifications'
 import { useInstallPrompt } from '@/shared/hooks/useInstallPrompt'
 import { AddToHomeScreenPrompt } from '@/shared/components/AddToHomeScreenPrompt'
-import { AdminBetaStats } from '@/shared/components/AdminBetaStats'
 import { setAddToHomeScreenSeen } from '@/shared/lib/add-to-home-screen-storage'
 import { IconButton } from '@/shared/components/IconButton'
 import { Button, Input, Card } from '@/shared/components/ui'
@@ -386,9 +385,17 @@ export function ProfileView() {
       {user?.id === env.adminUserId && (
         <Card className="p-4 mb-5 rounded-xl border-2 border-[var(--color-amber)]">
           <div className="font-bold uppercase tracking-[0.08em] text-[var(--color-amber)] mb-3 [font-size:var(--text-label)] text-center">
-            Admin &mdash; Beta Stats
+            Admin Panel
           </div>
-          <AdminBetaStats />
+          <Button
+            type="button"
+            variant="secondary"
+            size="md"
+            className="w-full border-[var(--color-amber)] text-[var(--color-amber)]"
+            onClick={() => navigate('/admin')}
+          >
+            Open Admin Dashboard →
+          </Button>
         </Card>
       )}
 

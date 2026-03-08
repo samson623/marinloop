@@ -17,6 +17,11 @@ export type AuditAction =
   | 'account.delete_initiated'
   | 'vital_thresholds.updated'
   | 'ice_card.viewed'
+  | 'admin.panel_opened'
+  | 'admin.tab_viewed'
+  | 'admin.user_searched'
+  | 'admin.feedback_filtered'
+  | 'admin.ai_date_changed'
 
 /**
  * Shape of the metadata column written to audit_logs.

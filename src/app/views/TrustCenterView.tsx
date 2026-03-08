@@ -4,8 +4,7 @@ export function TrustCenterView() {
   const navigate = useNavigate()
 
   return (
-    <div className="min-h-screen w-full bg-[var(--color-bg-primary)] py-8">
-      <div className="mx-auto w-full max-w-2xl px-4">
+    <div className="min-h-screen bg-[var(--color-bg-primary)] px-4 py-8 max-w-2xl mx-auto">
         <button
           type="button"
           onClick={() => navigate(-1)}
@@ -91,7 +90,6 @@ export function TrustCenterView() {
         <p className="mt-10 text-center text-[var(--color-text-tertiary)] [font-size:var(--text-caption)]">
           MarinLoop provides reminders, tracking, and informational reference tools. Not medical advice. In a medical emergency, call 911 or your local emergency number.
         </p>
-      </div>
     </div>
   )
 }

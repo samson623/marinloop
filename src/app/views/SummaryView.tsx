@@ -143,11 +143,9 @@ export function SummaryView() {
   let dn = 0
   let lt = 0
   let ms = 0
-  let total = 0
 
   sched.forEach((i) => {
     if (i.type !== 'med') return
-    total += 1
     if (i.status === 'done') dn += 1
     else if (i.status === 'late') { dn += 1; lt += 1 }
     else if (i.status === 'missed') ms += 1

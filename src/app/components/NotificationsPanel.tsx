@@ -2,7 +2,7 @@
  * NotificationsPanel — modal panel displaying grouped, collapsible notification history.
  * Owns the NotificationItem type, notifDayLabel helper, and NotifIcon helper.
  */
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useNotifications } from '@/shared/hooks/useNotifications'
 import { Modal } from '@/shared/components/Modal'
 import {
@@ -74,26 +74,27 @@ export function NotificationsPanel({ onClose, triggerRef }: { onClose: () => voi
     return grps
   }, [notifs])
 
-  // Track which day labels are explicitly expanded. Default: only Today.
-  // Initialized unconditionally so it doesn't depend on data being loaded yet.
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(['Today']))
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
-  // After loading: if Today has no items, auto-expand the first group that has unread items.
-  const hasAutoExpanded = useRef(false)
-  useEffect(() => {
-    if (isLoading || hasAutoExpanded.current || !groups.length) return
-    hasAutoExpanded.current = true
+  const defaultExpandedLabel = useMemo(() => {
+    if (isLoading || groups.length === 0) return 'Today'
     const todayGroup = groups.find((g) => g.label === 'Today')
-    if (!todayGroup || todayGroup.items.length === 0) {
-      const firstUnread = groups.find((g) => g.items.some((i) => !i.read))
-      if (firstUnread) {
-        setExpanded((prev) => { const s = new Set(prev); s.add(firstUnread.label); return s })
-      }
-    }
-  }, [isLoading, groups])
+    if (todayGroup?.items.length) return 'Today'
+    return groups.find((g) => g.items.some((i) => !i.read))?.label ?? 'Today'
+  }, [groups, isLoading])
+
+  const activeExpanded = useMemo(() => {
+    if (expanded.size > 0) return expanded
+    return new Set([defaultExpandedLabel])
+  }, [defaultExpandedLabel, expanded])
 
   const toggle = (label: string) =>
-    setExpanded((prev) => { const next = new Set(prev); next.has(label) ? next.delete(label) : next.add(label); return next })
+    setExpanded((prev) => {
+      const next = prev.size > 0 ? new Set(prev) : new Set([defaultExpandedLabel])
+      if (next.has(label)) next.delete(label)
+      else next.add(label)
+      return next
+    })
 
   const totalUnread = notifs.filter((n) => !n.read).length
 
@@ -122,7 +123,7 @@ export function NotificationsPanel({ onClose, triggerRef }: { onClose: () => voi
         )}
 
         {groups.map((group, gi) => {
-          const isCollapsed = !expanded.has(group.label)
+          const isCollapsed = !activeExpanded.has(group.label)
           const unread = group.items.filter((i) => !i.read).length
           return (
             <div key={group.label} className={gi > 0 ? 'mt-3' : ''}>

@@ -1,21 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import { useState } from 'react'
 import { Button } from '@/shared/components/ui'
-
-const STORAGE_KEY = 'marinloop_beta_terms_accepted'
-
-export function useBetaTermsAccepted() {
-  const [accepted, setAccepted] = useState<boolean>(() => {
-    try { return localStorage.getItem(STORAGE_KEY) === '1' } catch { return false }
-  })
-
-  const accept = () => {
-    try { localStorage.setItem(STORAGE_KEY, '1') } catch { /* ignore */ }
-    setAccepted(true)
-  }
-
-  return { accepted, accept }
-}
 
 export function BetaTermsModal({ onAccept }: { onAccept: () => void }) {
   return (

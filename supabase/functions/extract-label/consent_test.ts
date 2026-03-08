@@ -42,12 +42,16 @@ function makeEnv(overrides: Record<string, string> = {}): Record<string, string>
 
 /** Patch Deno.env.get and return a restore function. */
 function patchEnv(envMap: Record<string, string>): () => void {
-  const original = Deno.env.get.bind(Deno.env)
-  // deno-lint-ignore no-explicit-any
-  ;(Deno.env as any).get = (key: string): string | undefined => envMap[key]
+  const original = Deno.env.get
+  Object.defineProperty(Deno.env, 'get', {
+    configurable: true,
+    value: (key: string): string | undefined => envMap[key],
+  })
   return () => {
-    // deno-lint-ignore no-explicit-any
-    ;(Deno.env as any).get = original
+    Object.defineProperty(Deno.env, 'get', {
+      configurable: true,
+      value: original,
+    })
   }
 }
 
@@ -78,8 +82,8 @@ interface FetchScenario {
   incrementResult?: number
 }
 
-function makeFetchStub(scenario: FetchScenario): (url: string | URL | Request, init?: RequestInit) => Promise<Response> {
-  return async (url: string | URL | Request, _init?: RequestInit): Promise<Response> => {
+function makeFetchStub(scenario: FetchScenario): (url: string | URL | Request) => Promise<Response> {
+  return async (url: string | URL | Request): Promise<Response> => {
     const urlStr = typeof url === 'string' ? url : url instanceof URL ? url.toString() : (url as Request).url
 
     // Supabase auth.getUser() — anon-key client

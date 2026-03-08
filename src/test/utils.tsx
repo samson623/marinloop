@@ -21,7 +21,7 @@ export function renderWithProviders(
   ui: React.ReactElement,
   options: RenderWithProvidersOptions = {},
 ) {
-  const { initialEntries = ['/'], route: _route, ...renderOptions } = options
+  const { initialEntries = ['/'], ...renderOptions } = options
   const queryClient = createTestQueryClient()
 
   function Wrapper({ children }: { children: React.ReactNode }) {

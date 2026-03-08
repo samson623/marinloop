@@ -678,6 +678,12 @@ export function AdminView() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const [activeTab, setActiveTab] = useState<Tab>('overview')
+  const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({
+    overview: null,
+    feedback: null,
+    users: null,
+    'ai-usage': null,
+  })
 
   const isAdmin = user?.id === env.adminUserId
 
@@ -727,13 +733,6 @@ export function AdminView() {
       </div>
     )
   }
-
-  const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({
-    overview: null,
-    feedback: null,
-    users: null,
-    'ai-usage': null,
-  })
 
   function handleTabClick(tab: Tab) {
     setActiveTab(tab)

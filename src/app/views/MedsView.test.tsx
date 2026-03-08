@@ -20,7 +20,7 @@ vi.mock('@/app/views/AddMedModal', () => ({
   default: () => <div data-testid="add-med-modal" />,
 }))
 vi.mock('@/shared/lib/medication-utils', () => ({
-  getSupplyInfo: (_supply: number, _total: number, _dpd: number) => ({
+  getSupplyInfo: () => ({
     pct: 60,
     days: 10,
     color: 'green',

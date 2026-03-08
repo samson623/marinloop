@@ -39,7 +39,6 @@ test.describe('View Timeline', () => {
     await page.waitForURL(/\/timeline/, { timeout: 10_000 })
 
     // Capture current date label
-    const dateLabel = page.locator('[aria-label*="date" i], [data-testid="date-label"]').first()
     const prevButton = page.getByRole('button', { name: /previous|prev|◀|←|‹/i })
     const nextButton = page.getByRole('button', { name: /next|▶|→|›/i })
 

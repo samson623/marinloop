@@ -18,6 +18,7 @@ vi.mock('@/shared/stores/auth-store', () => ({
 import { useAuthStore } from '@/shared/stores/auth-store'
 
 const mockSignOut = vi.fn()
+type AuthStoreSlice = { signOut: typeof mockSignOut }
 
 const WARN_AT   = 13 * 60 * 1000 // 13 min
 const LOGOUT_AT = 15 * 60 * 1000 // 15 min
@@ -29,9 +30,8 @@ describe('useIdleTimeout', () => {
     mockSignOut.mockReset()
     // Restore selector-based mock (mockReset: true clears the implementation).
     vi.mocked(useAuthStore).mockImplementation(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ((selector: (s: any) => unknown) =>
-        selector({ signOut: mockSignOut })) as any,
+      ((selector: (s: AuthStoreSlice) => unknown) =>
+        selector({ signOut: mockSignOut })) as typeof useAuthStore,
     )
     // Seed Date.now() at a known starting point so refs initialise correctly.
     vi.setSystemTime(0)

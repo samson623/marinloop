@@ -26,7 +26,7 @@ create index if not exists idx_push_subscriptions_updated_at
 -- 4. Retention cron: purge ai_daily_usage rows older than 90 days.
 --    Rate-limit counters older than 90 days are never needed for enforcement.
 select cron.schedule(
-  'medflow-ai-usage-retention',
+  'marinloop-ai-usage-retention',
   '0 4 * * *',
   $$ delete from public.ai_daily_usage where usage_date < current_date - interval '90 days'; $$
 );
@@ -35,7 +35,7 @@ select cron.schedule(
 --    Subscriptions not refreshed in 180 days represent wiped or uninstalled
 --    devices. Keeping them wastes push attempts and clutters the table.
 select cron.schedule(
-  'medflow-push-subscription-cleanup',
+  'marinloop-push-subscription-cleanup',
   '0 5 * * *',
   $$ delete from public.push_subscriptions where updated_at < now() - interval '180 days'; $$
 );

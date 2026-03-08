@@ -91,9 +91,10 @@ serve(async (req) => {
         }
 
         const token = authHeader.replace('Bearer ', '').trim()
-        // MEDFLOW_SERVICE_ROLE_KEY is the same JWT as the project service role key,
+        // MARINLOOP_SERVICE_ROLE_KEY is the same JWT as the project service role key,
         // stored as a custom secret to avoid the SUPABASE_ prefix restriction.
         // This is what pg_cron sends from the vault and what we compare against.
+        // TODO(name-unification): Rename to MARINLOOP_SERVICE_ROLE_KEY after provisioning new Vault secret and redeploying.
         const medflowSrk = Deno.env.get('MEDFLOW_SERVICE_ROLE_KEY')?.trim()
         let authenticatedUserId: string | null = null
 

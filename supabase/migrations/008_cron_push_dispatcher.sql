@@ -50,7 +50,7 @@ begin
 
   -- Abort with visible warning if config missing
   if supabase_url is null or service_role_key is null then
-    raise warning '[MedFlow Cron] Missing vault secrets (supabase_url=%, service_role_key=%) — run setup-push.sql to configure.',
+    raise warning '[MarinLoop Cron] Missing vault secrets (supabase_url=%, service_role_key=%) — run setup-push.sql to configure.',
       case when supabase_url is null then 'NULL' else 'SET' end,
       case when service_role_key is null then 'NULL' else 'SET' end;
     return;
@@ -105,13 +105,13 @@ begin
       );
       total_dispatched := total_dispatched + 1;
 
-      raise log '[MedFlow Cron] Dispatched push for "%" to user % (tz=%, time=%)',
+      raise log '[MarinLoop Cron] Dispatched push for "%" to user % (tz=%, time=%)',
         rec.medication_name, rec.user_id, rec.user_timezone, rec.schedule_time;
     end if;
   end loop;
 
   if total_due > 0 then
-    raise log '[MedFlow Cron] Due=%, Dispatched=%, Skipped(dedup)=%',
+    raise log '[MarinLoop Cron] Due=%, Dispatched=%, Skipped(dedup)=%',
       total_due, total_dispatched, total_due - total_dispatched;
   end if;
 
@@ -123,14 +123,14 @@ $$;
 
 -- Schedule the job: every minute
 select cron.schedule(
-  'medflow-push-dispatcher',
+  'marinloop-push-dispatcher',
   '* * * * *',
   $$ select public.dispatch_due_notifications(); $$
 );
 
 -- Cleanup old dispatch logs weekly as an extra safety net
 select cron.schedule(
-  'medflow-dispatch-log-cleanup',
+  'marinloop-dispatch-log-cleanup',
   '0 3 * * 0',
   $$ delete from public.notification_dispatch_log where created_at < now() - interval '7 days'; $$
 );

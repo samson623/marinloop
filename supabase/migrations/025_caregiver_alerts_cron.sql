@@ -88,6 +88,7 @@ BEGIN
   END IF;
 
   IF service_role_key IS NULL OR service_role_key = '' THEN
+    -- TODO(name-unification): Rename vault secret to 'MARINLOOP_SERVICE_ROLE_KEY' after coordinated Vault update.
     SELECT decrypted_secret INTO service_role_key
       FROM vault.decrypted_secrets
       WHERE name = 'MEDFLOW_SERVICE_ROLE_KEY'

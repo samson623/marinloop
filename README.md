@@ -1,14 +1,31 @@
 # MarinLoop
 
-Medication management app built with React, TypeScript, Vite, and Supabase.
+MarinLoop is a pre-release beta medication adherence and daily care application for the medical community. It enables patients and caregivers to track medications, log doses, review adherence trends, and receive scheduled push notifications for reminders and refills. AI-assisted features — including prescription label extraction from photos and a medication tracking assistant — are gated behind explicit user consent and run server-side only, never in the browser. The app is a Progressive Web App (PWA) installable on iOS and Android.
+
+**Stack:** React 19 · TypeScript · Vite 7 · Supabase · Tailwind CSS v4 · Zustand · React Query · PWA
 
 ---
 
-## Quick Start / Full Setup
+## Architecture
 
-Follow these steps in order to get MarinLoop running end-to-end.
+- **Frontend:** React 19 SPA with React Router v7, deployed as a PWA on Vercel. Vite build with TypeScript strict mode. Sentry integrated with PII scrubbing before events are sent.
+- **Backend:** Supabase — PostgreSQL with Row Level Security, Supabase Auth (email + Google OAuth), and Supabase Edge Functions (Deno runtime).
+- **AI:** All OpenAI calls are made exclusively from Supabase Edge Functions (`openai-chat`, `extract-label`). The API key is never exposed to the client. AI features require explicit per-user consent stored in the database.
+- **Push Notifications:** Web Push via VAPID. The `send-push` Edge Function delivers notifications; `cron-dispatch-push` is triggered by a `pg_cron` job to dispatch scheduled reminders automatically.
+- **External APIs:** NIH RxNav and OpenFDA are called client-side for drug reference lookups (drug interactions, allergy checks). No PHI is transmitted to these services.
+- **Hosting:** Vercel (Vite framework preset). SPA rewrites and security headers configured in `vercel.json`.
 
-### 1. Clone, install, and env copy
+---
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js 20 or later
+- A Supabase project (free tier is sufficient for development)
+- An OpenAI API key (required for AI features; not required to run the app without them)
+
+### 1. Clone & Install
 
 ```bash
 git clone <repo-url>
@@ -17,300 +34,227 @@ npm install
 cp .env.example .env
 ```
 
-### 2. Fill `.env` checklist
+### 2. Environment Variables
 
-Edit `.env` and set:
+Edit `.env` and fill in the values below. See the [Environment Variables Reference](#environment-variables-reference) for full descriptions.
 
-| Variable | Where to get it |
-|----------|-----------------|
-| `VITE_SUPABASE_URL` | Supabase Dashboard → Project Settings → API → Project URL |
-| `VITE_SUPABASE_ANON_KEY` | Supabase Dashboard → Project Settings → API → anon/public key |
-| `VITE_OAUTH_REDIRECT_URL` | For local dev: `http://localhost:5173` (production uses window origin) |
-| `VITE_VAPID_PUBLIC_KEY` | From step 3 below (VAPID public key) |
-| `VITE_OPENAI_MODEL` | Optional — display only; model is set server-side (e.g. `gpt-5-nano`) |
+```bash
+VITE_APP_MODE=prod
+VITE_SUPABASE_URL=https://<your-project-ref>.supabase.co
+VITE_SUPABASE_ANON_KEY=<anon-public-key>
+VITE_OAUTH_REDIRECT_URL=http://localhost:5173/auth/callback   # local dev only
+VITE_VAPID_PUBLIC_KEY=<public-key-from-step-5>
+```
 
-### 3. Generate VAPID keys (where each key goes)
+`VITE_OPENAI_MODEL` is optional and display-only — the model is enforced server-side.
 
-Run once:
+### 3. Apply Database Migrations
+
+**Option A — Supabase CLI (recommended):**
+```bash
+supabase db push
+```
+
+**Option B — Dashboard (no CLI):** Open Supabase Dashboard → SQL Editor and run in order:
+1. `supabase/schema.sql` (base schema)
+2. `supabase/run-migrations.sql` (migrations 001 onward)
+
+Then run `supabase/setup-push.sql` to configure the `pg_cron` push dispatcher. Edit the `\set SERVICE_ROLE_KEY` line with your actual service role key (Dashboard → Settings → API → service_role) before running it. Without this, the cron dispatcher will be unable to invoke `cron-dispatch-push` and no push notifications will be sent automatically.
+
+### 4. Set Supabase Secrets
+
+Set all server-side secrets before deploying Edge Functions:
+
+```bash
+supabase secrets set OPENAI_API_KEY=sk-your-openai-api-key
+supabase secrets set ALLOWED_ORIGINS=https://your-app-domain.com,http://localhost:5173
+supabase secrets set AI_DAILY_LIMIT=50
+supabase secrets set VAPID_PUBLIC_KEY=<your-vapid-public-key>
+supabase secrets set VAPID_PRIVATE_KEY=<your-vapid-private-key>
+supabase secrets set VAPID_SUBJECT=mailto:your-email@example.com
+```
+
+See the [Supabase Secrets Reference](#supabase-secrets-reference) for descriptions of each secret.
+
+### 5. Configure VAPID Keys
+
+VAPID keys authenticate your server with browser push services. Generate them once:
 
 ```bash
 npx web-push generate-vapid-keys
 ```
 
-You'll get two keys:
+This outputs a public key and a private key. Place each key as follows:
 
-| Output | Goes to |
-|--------|---------|
-| **Public key** | `.env` as `VITE_VAPID_PUBLIC_KEY=<public-key>` |
-| **Private key** | Supabase secrets (step 4), never put in `.env` |
+| Key | Destination |
+|-----|-------------|
+| Public key | `.env` as `VITE_VAPID_PUBLIC_KEY` **and** Supabase secret `VAPID_PUBLIC_KEY` |
+| Private key | Supabase secret `VAPID_PRIVATE_KEY` only — never in `.env` or client code |
 
-Example:
+Additionally, store the Supabase project URL and service role key in the Postgres Vault so the database cron job can invoke `cron-dispatch-push`:
 
-```bash
-# Output:
-Public Key: BEl62iUYgUivxIkv69yViEuiBIa...
-Private Key: UUxI4O8F...
+```sql
+CREATE EXTENSION IF NOT EXISTS supabase_vault;
+
+SELECT vault.create_secret('https://<your-project-ref>.supabase.co', 'supabase_url', 'Supabase URL for Cron');
+SELECT vault.create_secret('<your-service-role-key>', 'service_role_key', 'Service Role Key for Cron');
 ```
 
-- Put the **public** value in `.env`:
-  ```env
-  VITE_VAPID_PUBLIC_KEY=BEl62iUYgUivxIkv69yViEuiBIa...
-  ```
-- Save the **private** value for Supabase secrets (next step).
+Run this in Dashboard → SQL Editor.
 
-### 4. Supabase secrets (backend only)
-
-Set these in your Supabase project (Dashboard → Project Settings → Edge Functions → Secrets, or CLI):
+### 6. Deploy Edge Functions
 
 ```bash
-supabase secrets set OPENAI_API_KEY=sk-your-openai-api-key
-supabase secrets set ALLOWED_ORIGINS=https://your-app-domain.com,https://www.your-app-domain.com
-supabase secrets set VAPID_PUBLIC_KEY=your-public-key
-supabase secrets set VAPID_PRIVATE_KEY=your-private-key
-supabase secrets set VAPID_SUBJECT=mailto:your-email@example.com
+npm run deploy:functions
 ```
 
-- **`ALLOWED_ORIGINS`** (required for `openai-chat` in production): comma-separated list of allowed CORS origins. If unset, the API rejects all cross-origin requests (fail-closed). For local dev use e.g. `http://localhost:5173`.
-- **`AI_DAILY_LIMIT`** (optional for `openai-chat`): max chat requests per user per calendar day (UTC). Default 50 if unset. Returns 429 with `Retry-After` and `X-RateLimit-*` headers when exceeded; resets at midnight UTC.
-- `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` are the same pair from step 3.
-- `VAPID_SUBJECT` is a contact email for the push service (e.g. `mailto:you@example.com`).
+Or deploy individually:
 
-### 5. Deploy Edge Functions
+| Function | npm script | Description |
+|----------|-----------|-------------|
+| `openai-chat` | `npm run deploy:openai-chat` | AI medication assistant; requires `OPENAI_API_KEY`, `ALLOWED_ORIGINS` |
+| `extract-label` | `npm run deploy:extract-label` | Prescription label extraction from images; shares `AI_DAILY_LIMIT` with `openai-chat` |
+| `send-push` | `npm run deploy:send-push` | Web Push delivery; requires VAPID secrets |
+| `cron-dispatch-push` | `npm run deploy:cron-dispatch-push` | Cron-triggered push dispatcher; requires Vault entries from step 5 |
+
+All deploy scripts require `SUPABASE_PROJECT_REF` to be set in your environment, or you can run `npx supabase login` and deploy directly with the Supabase CLI.
+
+After changing `ALLOWED_ORIGINS` in Supabase secrets, redeploy the affected functions for the change to take effect.
+
+### 7. Configure Google OAuth
+
+In Supabase Dashboard → Authentication → URL Configuration:
+
+- **Site URL:** Your app URL (e.g. `https://marinloop.com` or `http://localhost:5173` for local dev)
+- **Redirect URLs:** Add the exact callback URL for each environment:
+  - Production: `https://marinloop.com/auth/callback`
+  - Local dev: `http://localhost:5173/auth/callback`
+  - Vercel preview: `https://<your-preview-slug>.vercel.app/auth/callback`
+
+In Google Cloud Console, set the OAuth redirect URI to `https://<your-project-ref>.supabase.co/auth/v1/callback`.
+
+### 8. Run Locally
 
 ```bash
-supabase functions deploy openai-chat
-supabase functions deploy send-push
-supabase functions deploy extract-label
-supabase functions deploy cron-dispatch-push
+npm run dev
 ```
 
-### 6. Setup Push Notification Cron (one-time, after deploy)
-
-Open **Supabase Dashboard → SQL Editor** and run `supabase/setup-push.sql`.
-
-> **⚠️ IMPORTANT:** Edit the `\set SERVICE_ROLE_KEY` line in the script with your actual service role key (from Dashboard → Settings → API → service_role). Without this, the cron dispatcher will silently skip every minute and **no push notifications will be sent**.
-
-If notifications stop working, run `supabase/diagnose-push.sql` to identify the exact failure point.
-
-### 7. Apply migrations
-
-**Dashboard (no CLI):** Supabase Dashboard → SQL Editor. Run in order:
-
-1. `supabase/schema.sql` (base schema)
-2. `supabase/run-migrations.sql` (001–008)
-
-**CLI:** `supabase db push` (if Supabase CLI is installed and linked)
+The app will be available at `http://localhost:5173`.
 
 ---
 
-## Environment Checklist
+## Environment Variables Reference
 
-Before running or deploying, ensure these variables are set. Use `.env` locally and your hosting provider's env vars (e.g. Vercel) for production.
+These are client-side variables set in `.env` locally and in the Vercel project dashboard for production.
 
-| Variable | Required | Notes |
-|----------|----------|-------|
-| `VITE_APP_MODE` | Yes | `demo` or `prod` |
-| `VITE_SUPABASE_URL` | Yes | Your Supabase project URL |
-| `VITE_SUPABASE_ANON_KEY` | Yes | Supabase anon/public key |
-| `VITE_OAUTH_REDIRECT_URL` | Optional | For local dev OAuth callback (e.g. `http://localhost:5173`) |
-| `VITE_OPENAI_MODEL` | Optional | Display only; server uses its own model (see Edge Function) |
-| `VITE_VAPID_PUBLIC_KEY` | Yes | From `npx web-push generate-vapid-keys` (public key only) |
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `VITE_APP_MODE` | Yes | `demo` or `prod`. Controls demo data vs. live Supabase backend. |
+| `VITE_SUPABASE_URL` | Yes | Supabase project URL (Dashboard → Project Settings → API → Project URL). |
+| `VITE_SUPABASE_ANON_KEY` | Yes | Supabase anon/public key. Safe to expose in client bundles. |
+| `VITE_OAUTH_REDIRECT_URL` | No | OAuth callback URL override. Defaults to `window.location.origin + /auth/callback`. Set to `http://localhost:5173/auth/callback` for local dev. |
+| `VITE_VAPID_PUBLIC_KEY` | Yes | VAPID public key for Web Push subscription. Generated with `npx web-push generate-vapid-keys`. |
+| `VITE_OPENAI_MODEL` | No | Display-only label for the AI model name shown in the UI. The actual model is configured server-side in the Edge Function. |
 
-**Note:** `OPENAI_API_KEY` is set in Supabase secrets only, never in `.env` or frontend env.
+**`OPENAI_API_KEY` is never set in `.env`.** It lives exclusively in Supabase secrets.
 
 ---
 
+## Supabase Secrets Reference
 
-## Secrets handling
+These are server-side secrets set via `supabase secrets set` or the Supabase Dashboard (Project Settings → Edge Functions → Secrets). They are never exposed to the client.
 
-- **Do** keep runtime secrets in provider secret stores (Supabase, Vercel, GitHub Actions secrets), not in tracked files.
-- **Do** use `.env` only for local development and keep it uncommitted.
-- **Do** use sanitized placeholders when documenting setup (see `docs/templates/supabase-secrets-export.template.txt`).
-- **Don't** commit secret exports, CLI dumps, or hashed/digested secret listings (for example `*secrets*.txt`).
-- **Don't** paste service-role keys, API keys, tokens, or vault exports into PRs/issues.
+| Secret | Required | Description |
+|--------|----------|-------------|
+| `OPENAI_API_KEY` | Yes (AI features) | OpenAI API key. Used by `openai-chat` and `extract-label`. |
+| `ALLOWED_ORIGINS` | Yes (production) | Comma-separated list of allowed CORS origins for AI Edge Functions. Fail-closed: if unset, all cross-origin requests are rejected with 403. Example: `https://marinloop.com,http://localhost:5173`. |
+| `AI_DAILY_LIMIT` | No | Maximum AI requests (chat + label extraction combined) per user per UTC calendar day. Default: `50`. Exceeded requests return 429 with `Retry-After` and `X-RateLimit-*` headers. |
+| `VAPID_PUBLIC_KEY` | Yes (push) | VAPID public key. Must match `VITE_VAPID_PUBLIC_KEY` in client env. |
+| `VAPID_PRIVATE_KEY` | Yes (push) | VAPID private key. Never set on the client side. |
+| `VAPID_SUBJECT` | Yes (push) | Contact identifier for the push service. Use `mailto:you@example.com`. |
 
-## Edge Functions Deployment
+---
 
-Deploy the Edge Functions after setting their prerequisites:
+## Database Schema
 
-| Function | Deploy Command | Prerequisites |
-|----------|----------------|---------------|
-| `openai-chat` | `supabase functions deploy openai-chat` | `OPENAI_API_KEY` + `ALLOWED_ORIGINS` (see below) |
-| `extract-label` | `supabase functions deploy extract-label` | Same as `openai-chat`; shares `AI_DAILY_LIMIT` |
-| `send-push` | `supabase functions deploy send-push` | VAPID keys in Supabase (see Push Notifications Setup) |
-| `cron-dispatch-push` | `supabase functions deploy cron-dispatch-push` | Supabase URL & Service Role Key in Vault (see Push Notifications Setup) |
+| Table | Purpose |
+|-------|---------|
+| `profiles` | User profile data and AI consent state |
+| `medications` | Medication records per user |
+| `schedules` | Dosing schedules linked to medications |
+| `dose_logs` | Per-dose adherence log |
+| `appointments` | Appointment tracking |
+| `notes` | Free-text notes |
+| `refills` | Refill tracking and reminders |
+| `notifications` | In-app notification records |
+| `push_subscriptions` | Web Push endpoint subscriptions per device |
+| `ai_conversations` | AI chat history per user |
+| `ai_daily_usage` | Per-user rate limit counter for AI chat and label extraction |
 
-**Prerequisites for `openai-chat`:**
-```bash
-supabase secrets set OPENAI_API_KEY=sk-your-openai-api-key
-supabase secrets set ALLOWED_ORIGINS=https://your-app-domain.com
-supabase secrets set AI_DAILY_LIMIT=50
-```
-In production, `ALLOWED_ORIGINS` must be set (comma-separated). If unset, the function returns 403 for all requests (CORS fail-closed). `AI_DAILY_LIMIT` is optional (default 50); when exceeded, returns 429 with `Retry-After` and `X-RateLimit-*` headers; resets at midnight UTC.
+For full schema details, see `supabase/DATABASE_SETUP.md`.
 
-**Prerequisite for `send-push`:** Configure VAPID keys in Supabase secrets (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`). See [Push Notifications Setup](#push-notifications-setup) below.
-`send-push` only allows `POST` (and `OPTIONS` for CORS preflight); `GET` diagnostics are intentionally disabled and now return `405 Method Not Allowed`.
+---
 
-**Deploy all:**
-```bash
-supabase functions deploy openai-chat
-supabase functions deploy extract-label
-supabase functions deploy send-push
-supabase functions deploy cron-dispatch-push
-```
+## Troubleshooting
 
-**Prerequisites for `extract-label`:** Reuses `OPENAI_API_KEY` and `ALLOWED_ORIGINS` from `openai-chat`. Counts against the same `AI_DAILY_LIMIT` as chat (no separate quota). Max image size 6MB base64.
+### App works on Vercel but not locally
 
-### Finish deployment after setting ALLOWED_ORIGINS (one-time)
+Vercel injects environment variables from its project dashboard. Locally, they must exist in a `.env` file.
 
-If you set or changed **ALLOWED_ORIGINS** in the Supabase dashboard, the Edge Function must be redeployed so it picks up the secret.
+1. Copy `.env.example` to `.env` and fill in `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (same values as in Vercel).
+2. In Supabase Dashboard → Authentication → URL Configuration → Redirect URLs, add `http://localhost:5173/auth/callback`. Without this, OAuth will succeed on Vercel but the local callback will be rejected.
+3. After editing `.env`, restart the dev server (`Ctrl+C`, then `npm run dev`) so Vite picks up the new variables.
 
-**Option A — From this repo (no Supabase CLI installed):**
-1. In a terminal, run once (opens browser to log in):
+### Label extraction shows "Could not reach the server"
+
+The `extract-label` Edge Function is rejecting the request due to CORS. The requesting origin is not in `ALLOWED_ORIGINS`.
+
+1. Add all origins users can access the app from:
    ```bash
-   npx supabase login
+   supabase secrets set ALLOWED_ORIGINS=https://marinloop.com,https://<preview-slug>.vercel.app,http://localhost:5173
    ```
-2. Deploy the function:
-   ```bash
-   npm run deploy:openai-chat
-   ```
-
-**Option B — From the dashboard:**
-Go to [Edge Functions](https://supabase.com/dashboard/project/lcbdafnxwvqbziootvmi/functions) → click **openai-chat** → **Redeploy**.
-
----
-
-## GPT-5 Nano Setup
-
-> See **Quick Start / Full Setup** above for the full deployment flow. This section is reference for GPT/OpenAI configuration.
-
-1. **Model is configured server-side** in the `openai-chat` Edge Function (e.g. `gpt-5-nano`). The client does not choose the model. Optionally set `VITE_OPENAI_MODEL` in `.env` if you want the UI to display the model name:
-   ```env
-   VITE_OPENAI_MODEL=gpt-5-nano
-   ```
-
-2. **Supabase Edge Function (production):** Set the secret so the API key stays server-side (see [Edge Functions Deployment](#edge-functions-deployment) for deploy commands):
-   ```bash
-   supabase secrets set OPENAI_API_KEY=sk-your-openai-api-key
-   ```
-
----
-
-### Push Notifications Setup
-
-> See **Quick Start / Full Setup** above for the full flow and VAPID key placement. This section is reference.
-
-1. **Generate VAPID keys** (one-time):
-   ```bash
-   npx web-push generate-vapid-keys
-   ```
-   You'll get a public and private key.
-
-2. **Add the public key to `.env`**:
-   ```env
-   VITE_VAPID_PUBLIC_KEY=your-public-key-base64
-   ```
-   The public key is safe to expose in the client bundle.
-
-3. **Add secrets to Supabase Edge Functions** (for the `send-push` function):
-   ```bash
-   supabase secrets set VAPID_PUBLIC_KEY=your-public-key
-   supabase secrets set VAPID_PRIVATE_KEY=your-private-key
-   supabase secrets set VAPID_SUBJECT=mailto:your-email@example.com
-   ```
-
-4. **Add Supabase URL and Service Role Key to Postgres Vault** (for the Cron job to trigger `cron-dispatch-push`):
-
-   The database cron job runs strictly within PostgreSQL and needs explicit access to your Supabase URL and Service Role Key.
-   Go to **Supabase Dashboard → SQL Editor** and run:
-   ```sql
-   create extension if not exists supabase_vault;
-
-   select vault.create_secret('https://<your-project>.supabase.co', 'supabase_url', 'Supabase URL for Cron');
-   select vault.create_secret('<your-service-role-key>', 'service_role_key', 'Service Role Key for Cron');
-   ```
-
-5. **Deploy the Edge Functions** (`send-push` and `cron-dispatch-push`) — see [Edge Functions Deployment](#edge-functions-deployment).
-
-Without these, push notifications will fail with a generic "Failed to enable push notifications", and the cron automatic dispatcher will be unable to trigger notifications.
-
----
-
-## Supabase Setup
-
-> See **Quick Start / Full Setup** above for the full flow. This section has details.
-
-### Apply migrations
-
-**Dashboard (no CLI):** Supabase Dashboard → SQL Editor. Run in order:
-1. `supabase/schema.sql` (base schema)
-2. `supabase/run-migrations.sql` (001–008; includes `create_medication_bundle` fix, `ai_daily_usage` for per-user quota, and cron push dispatcher)
-
-**CLI:** `supabase db push` (if Supabase CLI is installed and linked)
-
-Details: see [supabase/DATABASE_SETUP.md](supabase/DATABASE_SETUP.md)
-
-### Google OAuth (Sign in with Google)
-
-1. In Supabase Dashboard → **Authentication** → **URL Configuration**:
-   - **Site URL**: Your app URL (e.g. `https://marinloop.com` or `http://localhost:5173` for dev)
-   - **Redirect URLs**: Add the **exact** OAuth callback URL for each environment. The app redirects to `/auth/callback`, so you must include:
-     - Production: `https://marinloop.com/auth/callback`
-     - Local dev: `http://localhost:5173/auth/callback`
-     - Any Vercel preview: `https://marinloop-xxxx.vercel.app/auth/callback`
-     If the callback URL is missing, Google sign-in will redirect to the wrong place or show a Supabase error.
-
-2. Optional: set `VITE_OAUTH_REDIRECT_URL` in `.env` to override the callback URL (e.g. `http://localhost:5173/auth/callback` for local dev).
-
-3. In Google Cloud Console, ensure the OAuth redirect URI is `https://<your-supabase-project>.supabase.co/auth/v1/callback`.
-
----
-
-## Works on Vercel but not locally
-
-If the app works in production (Vercel) but fails when running locally (`npm run dev`):
-
-1. **Create a local `.env`**
-   Vercel uses env vars from the project dashboard; locally you must have a `.env` file in the project root. Copy from `.env.example` and fill in:
-   - `VITE_APP_MODE=prod`
-   - `VITE_SUPABASE_URL=` your Supabase project URL (same as in Vercel)
-   - `VITE_SUPABASE_ANON_KEY=` your Supabase anon key (same as in Vercel)
-   - Optional for Google sign-in: `VITE_OAUTH_REDIRECT_URL=http://localhost:5173`
-
-2. **Allow localhost callback in Supabase**
-   In Supabase Dashboard → **Authentication** → **URL Configuration** → **Redirect URLs**, add:
-   - `http://localhost:5173/auth/callback`
-   If this is missing, OAuth sign-in will work on Vercel but redirect back to localhost will be rejected.
-
-3. **Restart the dev server**
-   After changing `.env`, stop the dev server (Ctrl+C) and run `npm run dev` again so Vite picks up the new variables.
-
----
-
-## Label extraction: "Could not reach the server"
-
-If taking or uploading a photo of a prescription label shows "Could not reach the server", the Edge Function is likely rejecting the request due to CORS. Fix it by:
-
-1. **Add your app URL to `ALLOWED_ORIGINS`** — Include every origin users can access the app from:
-   ```bash
-   supabase secrets set ALLOWED_ORIGINS=https://marinloop.com,https://marinloop-xxxx.vercel.app,http://localhost:5173
-   ```
-   Replace `marinloop-xxxx.vercel.app` with your actual Vercel preview domain if needed.
-
-2. **Redeploy the extract-label function** (required after changing secrets):
+2. Redeploy the function to pick up the updated secret:
    ```bash
    supabase functions deploy extract-label --project-ref <your-project-ref>
    ```
 
-Without the correct origins, the browser blocks the request before it reaches the function.
+### Push notifications not working
 
-### Tables
+1. Confirm that `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` are set in Supabase secrets and match the public key in `VITE_VAPID_PUBLIC_KEY`.
+2. Confirm that the Postgres Vault contains `supabase_url` and `service_role_key` entries (see step 5 of Quick Start).
+3. Confirm `send-push` and `cron-dispatch-push` are deployed.
+4. Run `supabase/diagnose-push.sql` in the SQL Editor to identify the exact failure point in the cron dispatcher chain.
 
-| Table | Purpose |
-|-------|---------|
-| profiles, medications, schedules | Core medication data |
-| dose_logs | Adherence tracking |
-| appointments, notes, refills, notifications | Supporting data |
-| push_subscriptions | Web Push notifications |
-| ai_conversations | GPT chat history |
-| ai_daily_usage | Per-user rate limit (AI chat and label extraction) |
+### Google OAuth redirect errors
+
+Ensure the Supabase redirect URL allowlist includes the exact callback URL for the environment where the error occurs (see step 7 of Quick Start). A mismatch between the registered URL and the URL the app redirects to will produce an error from Supabase or Google. Vercel preview deployments each have a unique hostname and must be added individually, or use a wildcard redirect pattern if your Supabase plan supports it.
+
+---
+
+## Development
+
+| Script | Command | Description |
+|--------|---------|-------------|
+| Dev server | `npm run dev` | Vite dev server at `http://localhost:5173` |
+| Build | `npm run build` | TypeScript compile + Vite production build to `dist/` |
+| Type check | `npm run typecheck` | Run `tsc -b` without emitting files |
+| Lint | `npm run lint` | ESLint 9.x with typescript-eslint and react-hooks plugin |
+| Unit tests | `npm test` | Vitest (run once) |
+| Unit tests (watch) | `npm run test:watch` | Vitest in watch mode |
+| E2E tests | `npm run test:e2e` | Playwright |
+| Preview build | `npm run preview` | Serve the production build locally |
+
+---
+
+## Secrets Handling
+
+- Keep runtime secrets in provider secret stores (Supabase secrets, Vercel environment variables, GitHub Actions secrets). Never commit them to the repository.
+- Use `.env` only for local development. The file is gitignored and must never be committed.
+- Use sanitized placeholders when documenting setup (see `docs/templates/supabase-secrets-export.template.txt`).
+- Never paste service-role keys, API keys, tokens, or vault exports into pull requests, issues, or commit messages.
+
+---
+
+## Legal
+
+MarinLoop is pre-release beta software provided for informational purposes only. It is not a medical device, does not provide clinical advice, and is not a HIPAA-covered entity. AI-assisted features are informational tools only and do not constitute medical recommendations. Full terms of service and privacy policy are available in-app.

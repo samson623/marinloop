@@ -1,4 +1,4 @@
-# 🚨 MEDFLOW AI HEALTHOS HANDOFF 🚨
+# 🚨 MARINLOOP AI HEALTHOS HANDOFF 🚨
 
 **Project**: HealthOS (Voice AI Upgrade)
 **Goal**: Transform the voice feature from a simple tab-switcher to a context-aware health assistant ("Body" + "Brain").

@@ -201,13 +201,13 @@ begin
 
   -- Abort with visible warning if config missing
   if supabase_url is null or service_role_key is null then
-    raise warning '[MedFlow Cron] ❌ MISSING vault secrets! supabase_url=%, service_role_key=%. Run setup-push.sql.',
+    raise warning '[MarinLoop Cron] ❌ MISSING vault secrets! supabase_url=%, service_role_key=%. Run setup-push.sql.',
       case when supabase_url is null then 'NULL' else 'SET' end,
       case when service_role_key is null then 'NULL' else 'SET' end;
     return;
   end if;
 
-  raise log '[MedFlow Cron] ▶ Starting dispatch at % UTC', to_char(now_utc, 'HH24:MI:SS');
+  raise log '[MarinLoop Cron] ▶ Starting dispatch at % UTC', to_char(now_utc, 'HH24:MI:SS');
 
   -- Find all due schedules
   for rec in
@@ -254,19 +254,19 @@ begin
       );
       total_dispatched := total_dispatched + 1;
 
-      raise log '[MedFlow Cron] ✅ Dispatched "%" to user % (tz=%, time=%)',
+      raise log '[MarinLoop Cron] ✅ Dispatched "%" to user % (tz=%, time=%)',
         rec.medication_name, rec.user_id, rec.user_timezone, rec.schedule_time;
     else
       total_skipped := total_skipped + 1;
-      raise log '[MedFlow Cron] ⏭ Already dispatched "%" for user % — skipping',
+      raise log '[MarinLoop Cron] ⏭ Already dispatched "%" for user % — skipping',
         rec.medication_name, rec.user_id;
     end if;
   end loop;
 
   if total_due = 0 then
-    raise debug '[MedFlow Cron] No due schedules at % UTC', to_char(now_utc, 'HH24:MI');
+    raise debug '[MarinLoop Cron] No due schedules at % UTC', to_char(now_utc, 'HH24:MI');
   else
-    raise log '[MedFlow Cron] 📊 Due=%, Dispatched=%, Skipped=%',
+    raise log '[MarinLoop Cron] 📊 Due=%, Dispatched=%, Skipped=%',
       total_due, total_dispatched, total_skipped;
   end if;
 

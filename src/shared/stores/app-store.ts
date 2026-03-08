@@ -21,7 +21,7 @@ export interface SchedItem {
     isNext?: boolean; ws?: string; wm?: number; loc?: string
 }
 export type AddNotePayload = { content: string; medication_id?: string | null; appointment_id?: string | null }
-export type Tab = 'timeline' | 'meds' | 'appts' | 'summary' | 'care'
+export type Tab = 'timeline' | 'meds' | 'appts' | 'summary' | 'care' | 'profile'
 export type ToastType = 'ts' | 'tw' | 'te'
 export interface Toast {
     id: string; msg: string; cls: ToastType

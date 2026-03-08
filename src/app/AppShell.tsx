@@ -32,7 +32,7 @@ import { NotificationsPanel } from '@/app/components/NotificationsPanel'
 import { NotificationsService } from '@/shared/services/notifications'
 import {
   LogoIcon, BellAlarmIcon, BellIcon, SunIcon, MoonIcon, MicIcon,
-  ClockIcon, PillIcon, CalendarIcon, BarChartIcon, UsersIcon,
+  ClockIcon, PillIcon, CalendarIcon, BarChartIcon, UsersIcon, UserIcon,
 } from '@/shared/components/icons'
 
 const tabs: { id: Tab; label: string; icon: (active: boolean) => React.ReactNode }[] = [
@@ -41,6 +41,7 @@ const tabs: { id: Tab; label: string; icon: (active: boolean) => React.ReactNode
   { id: 'appts',    label: 'Appts',    icon: (a) => <CalendarIcon size={22} strokeWidth={a ? 2.2 : 1.6} /> },
   { id: 'summary',  label: 'Health',   icon: (a) => <BarChartIcon size={22} strokeWidth={a ? 2.2 : 1.6} /> },
   { id: 'care',     label: 'Care',     icon: (a) => <UsersIcon    size={22} strokeWidth={a ? 2.2 : 1.6} /> },
+  { id: 'profile',  label: 'Profile',  icon: (a) => <UserIcon     size={22} strokeWidth={a ? 2.2 : 1.6} /> },
 ]
 
 function Toasts({ toasts }: { toasts: { id: string; msg: string; cls: string }[] }) {

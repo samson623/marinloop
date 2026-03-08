@@ -188,6 +188,33 @@ export const UsersIcon = React.forwardRef<SVGSVGElement, IconProps>(
 )
 UsersIcon.displayName = 'UsersIcon'
 
+/**
+ * UserIcon - Profile/account tab. Single user silhouette.
+ * Used in: AppShell profile navigation tab.
+ */
+export const UserIcon = React.forwardRef<SVGSVGElement, IconProps>(
+  ({ size = 20, strokeWidth = 2, title, 'aria-hidden': ariaHidden = true, ...props }, ref) => (
+    <svg
+      ref={ref}
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden={ariaHidden}
+      {...props}
+    >
+      <SvgTitle title={title} />
+      <path d="M20 21a8 8 0 0 0-16 0" />
+      <circle cx="12" cy="8" r="4" />
+    </svg>
+  ),
+)
+UserIcon.displayName = 'UserIcon'
+
 // ---------------------------------------------------------------------------
 // Logo
 // ---------------------------------------------------------------------------

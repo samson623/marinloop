@@ -28,8 +28,10 @@ export function useAIConsent() {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
         const now = new Date().toISOString()
-        await supabase.from('profiles').update({ ai_consent_granted: true, ai_consent_granted_at: now }).eq('id', user.id)
-        await supabase.from('ai_consent_audit').insert({ user_id: user.id, action: 'granted', created_at: now })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- columns added in migration 040, ahead of generated types
+        const db = supabase as any
+        await db.from('profiles').update({ ai_consent_granted: true, ai_consent_granted_at: now }).eq('id', user.id)
+        await db.from('ai_consent_audit').insert({ user_id: user.id, action: 'granted', created_at: now })
       } catch { /* ignore — localStorage is source of truth for UI */ }
     })()
   }
@@ -43,8 +45,10 @@ export function useAIConsent() {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
         const now = new Date().toISOString()
-        await supabase.from('profiles').update({ ai_consent_granted: false }).eq('id', user.id)
-        await supabase.from('ai_consent_audit').insert({ user_id: user.id, action: 'revoked', created_at: now })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- columns added in migration 040, ahead of generated types
+        const db = supabase as any
+        await db.from('profiles').update({ ai_consent_granted: false }).eq('id', user.id)
+        await db.from('ai_consent_audit').insert({ user_id: user.id, action: 'revoked', created_at: now })
       } catch { /* ignore */ }
     })()
   }

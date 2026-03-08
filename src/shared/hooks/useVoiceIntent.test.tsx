@@ -108,13 +108,13 @@ function setupStoreMocks({ consented }: { consented: boolean }) {
     session: { user: { id: 'user-1' } },
   } as ReturnType<typeof useAuthStore>)
 
-  vi.mocked(useTimeline).mockReturnValue({ timeline: [] } as ReturnType<typeof useTimeline>)
-  vi.mocked(useMedications).mockReturnValue({ meds: [] } as ReturnType<typeof useMedications>)
-  vi.mocked(useSchedules).mockReturnValue({ scheds: [] } as ReturnType<typeof useSchedules>)
-  vi.mocked(useAppointments).mockReturnValue({ appts: [] } as ReturnType<typeof useAppointments>)
-  vi.mocked(useNotes).mockReturnValue({ notes: [] } as ReturnType<typeof useNotes>)
-  vi.mocked(useAdherenceHistory).mockReturnValue({ adherence: {} } as ReturnType<typeof useAdherenceHistory>)
-  vi.mocked(useRefillPredictions).mockReturnValue({ predictions: [] } as ReturnType<typeof useRefillPredictions>)
+  vi.mocked(useTimeline).mockReturnValue({ timeline: [] } as unknown as ReturnType<typeof useTimeline>)
+  vi.mocked(useMedications).mockReturnValue({ meds: [] } as unknown as ReturnType<typeof useMedications>)
+  vi.mocked(useSchedules).mockReturnValue({ scheds: [] } as unknown as ReturnType<typeof useSchedules>)
+  vi.mocked(useAppointments).mockReturnValue({ appts: [] } as unknown as ReturnType<typeof useAppointments>)
+  vi.mocked(useNotes).mockReturnValue({ notes: [] } as unknown as ReturnType<typeof useNotes>)
+  vi.mocked(useAdherenceHistory).mockReturnValue({ adherence: {} } as unknown as ReturnType<typeof useAdherenceHistory>)
+  vi.mocked(useRefillPredictions).mockReturnValue({ predictions: [] } as unknown as ReturnType<typeof useRefillPredictions>)
 }
 
 function wrapper() {

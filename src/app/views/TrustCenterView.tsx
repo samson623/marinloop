@@ -4,7 +4,7 @@ export function TrustCenterView() {
   const navigate = useNavigate()
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg-primary)] py-8">
+    <div className="min-h-screen w-full bg-[var(--color-bg-primary)] py-8">
       <div className="mx-auto w-full max-w-2xl px-4">
         <button
           type="button"

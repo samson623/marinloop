@@ -1,8 +1,51 @@
 # MarinLoop
 
-MarinLoop is a pre-release beta medication adherence and daily care application for the medical community. It enables patients and caregivers to track medications, log doses, review adherence trends, and receive scheduled push notifications for reminders and refills. AI-assisted features — including prescription label extraction from photos and a medication tracking assistant — are gated behind explicit user consent and run server-side only, never in the browser. The app is a Progressive Web App (PWA) installable on iOS and Android.
+**Medication adherence and daily care, simplified.**
 
-**Stack:** React 19 · TypeScript · Vite 7 · Supabase · Tailwind CSS v4 · Zustand · React Query · PWA
+[![CI](https://github.com/samson623/marinloop/actions/workflows/ci.yml/badge.svg)](https://github.com/samson623/marinloop/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/samson623/marinloop/branch/main/graph/badge.svg)](https://codecov.io/gh/samson623/marinloop)
+
+MarinLoop helps patients and caregivers stay on top of medications, appointments, and health trends — without the complexity of traditional EHR portals. It is a privacy-first Progressive Web App installable on iOS and Android, built for people who manage daily medication routines and the caregivers who support them.
+
+![React](https://img.shields.io/badge/React_19-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?logo=supabase&logoColor=white)
+![Tailwind](https://img.shields.io/badge/Tailwind_v4-06B6D4?logo=tailwindcss&logoColor=white)
+![PWA](https://img.shields.io/badge/PWA-5A0FC8?logo=pwa&logoColor=white)
+
+---
+
+## Why MarinLoop
+
+Managing medications across multiple prescriptions, refill dates, and care providers is error-prone and stressful. Missed doses lead to worse outcomes. Caregivers often have no visibility into whether their loved ones are staying on track.
+
+MarinLoop solves this by putting medication tracking, adherence history, and caregiver coordination into a single lightweight app that works offline and sends timely push reminders — no app store download required.
+
+---
+
+## Key Features
+
+- **Medication management** — Add medications manually or scan a prescription label with AI-powered extraction. Track dosing schedules, refill dates, and inventory.
+- **Dose logging & adherence** — Log doses with one tap. View adherence streaks, history charts, and trend insights over time.
+- **Smart reminders** — Scheduled push notifications for doses and refills, dispatched automatically via server-side cron. Works even when the app is closed.
+- **Care network** — Invite caregivers to monitor adherence and receive alerts. Share an ICE (In Case of Emergency) card with QR code.
+- **Health tracking** — Log vitals and symptoms alongside medications. Set threshold alerts for out-of-range readings.
+- **AI assistant** — Ask questions about your medications, interactions, and schedules. All AI runs server-side with explicit opt-in consent; no data leaves your control without permission.
+- **Drug safety lookups** — Real-time interaction and allergy checks via NIH RxNav and OpenFDA. No PHI transmitted.
+- **Offline-first PWA** — Works without a connection. Actions queue locally and sync when back online. Installable on any device from the browser.
+- **Privacy by design** — Sentry error reporting strips PII before transmission. AI consent is per-user and revocable. Row Level Security on every database table.
+
+---
+
+## Screenshots
+
+<!-- Add your screenshots to docs/screenshots/ and uncomment the lines below -->
+<!-- ![Timeline](docs/screenshots/timeline.png) -->
+<!-- ![Medications](docs/screenshots/medications.png) -->
+<!-- ![Reminders](docs/screenshots/reminders.png) -->
+<!-- ![AI Assistant](docs/screenshots/ai-assistant.png) -->
+
+*Screenshots coming soon — the app is in pre-release beta.*
 
 ---
 
@@ -195,42 +238,6 @@ For full schema details, see `supabase/DATABASE_SETUP.md`.
 
 ---
 
-## Troubleshooting
-
-### App works on Vercel but not locally
-
-Vercel injects environment variables from its project dashboard. Locally, they must exist in a `.env` file.
-
-1. Copy `.env.example` to `.env` and fill in `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (same values as in Vercel).
-2. In Supabase Dashboard → Authentication → URL Configuration → Redirect URLs, add `http://localhost:5173/auth/callback`. Without this, OAuth will succeed on Vercel but the local callback will be rejected.
-3. After editing `.env`, restart the dev server (`Ctrl+C`, then `npm run dev`) so Vite picks up the new variables.
-
-### Label extraction shows "Could not reach the server"
-
-The `extract-label` Edge Function is rejecting the request due to CORS. The requesting origin is not in `ALLOWED_ORIGINS`.
-
-1. Add all origins users can access the app from:
-   ```bash
-   supabase secrets set ALLOWED_ORIGINS=https://marinloop.com,https://<preview-slug>.vercel.app,http://localhost:5173
-   ```
-2. Redeploy the function to pick up the updated secret:
-   ```bash
-   supabase functions deploy extract-label --project-ref <your-project-ref>
-   ```
-
-### Push notifications not working
-
-1. Confirm that `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` are set in Supabase secrets and match the public key in `VITE_VAPID_PUBLIC_KEY`.
-2. Confirm that the Postgres Vault contains `supabase_url` and `service_role_key` entries (see step 5 of Quick Start).
-3. Confirm `send-push` and `cron-dispatch-push` are deployed.
-4. Run `supabase/diagnose-push.sql` in the SQL Editor to identify the exact failure point in the cron dispatcher chain.
-
-### Google OAuth redirect errors
-
-Ensure the Supabase redirect URL allowlist includes the exact callback URL for the environment where the error occurs (see step 7 of Quick Start). A mismatch between the registered URL and the URL the app redirects to will produce an error from Supabase or Google. Vercel preview deployments each have a unique hostname and must be added individually, or use a wildcard redirect pattern if your Supabase plan supports it.
-
----
-
 ## Development
 
 | Script | Command | Description |
@@ -241,8 +248,21 @@ Ensure the Supabase redirect URL allowlist includes the exact callback URL for t
 | Lint | `npm run lint` | ESLint 9.x with typescript-eslint and react-hooks plugin |
 | Unit tests | `npm test` | Vitest (run once) |
 | Unit tests (watch) | `npm run test:watch` | Vitest in watch mode |
+| Coverage | `npm run test:coverage` | Vitest with V8 coverage report |
 | E2E tests | `npm run test:e2e` | Playwright |
 | Preview build | `npm run preview` | Serve the production build locally |
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, conventions, and the pull request process.
+
+---
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for supported versions and responsible disclosure instructions.
 
 ---
 

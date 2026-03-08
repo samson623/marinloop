@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import React from 'react'
 import { renderWithProviders } from '@/test/utils'
 import { AdminView } from '@/app/views/AdminView'
 import {

@@ -31,7 +31,7 @@ export function AIConsentModal({ onAccept, onDecline }: { onAccept: () => void; 
             </p>
             <ul className="list-disc list-inside space-y-2">
               <li><strong>What is sent:</strong> Medication names, dosages, schedules, notes, and images of prescription labels may be sent to OpenAI&apos;s API servers for processing.</li>
-              <li><strong>Third-party processing:</strong> OpenAI is not a HIPAA-covered entity. Data is processed per OpenAI&apos;s privacy policy (openai.com/privacy).</li>
+              <li><strong>Third-party processing:</strong> Data is processed per OpenAI&apos;s privacy policy (openai.com/privacy). MarinLoop beta is not offering these AI features under HIPAA business associate agreements.</li>
               <li><strong>What not to include:</strong> Do not enter real patient names, MRN numbers, Social Security numbers, or other sensitive personal identifiers.</li>
               <li><strong>Optional:</strong> AI features are optional. Core medication tracking, scheduling, and reminders work without AI.</li>
               <li><strong>Revoke anytime:</strong> You can withdraw consent at any time in Profile &rarr; Data &amp; Privacy.</li>

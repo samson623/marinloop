@@ -33,8 +33,8 @@ export function BetaTermsModal({ onAccept }: { onAccept: () => void }) {
               <li>MarinLoop is <strong>pre-release software</strong> and may contain bugs or unexpected behavior.</li>
               <li>This service is <strong>not a medical device</strong> and is not intended to diagnose, treat, cure, or prevent any disease or health condition.</li>
               <li>Always follow your healthcare provider&apos;s instructions. <strong>Do not rely solely on this app for medication management.</strong></li>
-              <li>Your data is stored on Supabase infrastructure and is <strong>not covered by a HIPAA Business Associate Agreement</strong> during this beta. Do not enter sensitive protected health information.</li>
-              <li>AI features (insights, label scanning, voice commands) use <strong>OpenAI&apos;s API</strong>. Medication names, notes, and images may be processed by OpenAI. OpenAI is not a HIPAA-covered entity. <strong>Do not enter personally identifiable health information.</strong></li>
+              <li>This beta is <strong>not being offered for covered-entity workflows that require HIPAA business associate agreements</strong>. Do not use it for third-party PHI or production clinical operations.</li>
+              <li>AI features (insights, label scanning, voice commands) use <strong>OpenAI&apos;s API</strong>. Medication names, notes, and images may be processed by OpenAI. In this beta, AI features should be treated as non-HIPAA and used only with non-regulated data. <strong>Do not enter personally identifiable health information.</strong></li>
               <li>Beta data may be reset or deleted before general availability.</li>
               <li>By continuing you agree to provide honest feedback to help improve the product.</li>
             </ul>

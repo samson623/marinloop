@@ -79,7 +79,7 @@ export function TermsView() {
         <section>
           <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">7. AI Features</h2>
           <p>
-            AI-powered features (adherence insights, medication label extraction, voice commands) are optional and require your explicit consent. AI features are powered by OpenAI&apos;s API. By enabling AI features, you acknowledge that relevant medication data may be processed by OpenAI, which is not a HIPAA Business Associate.
+            AI-powered features (adherence insights, medication label extraction, voice commands) are optional and require your explicit consent. AI features are powered by OpenAI&apos;s API. By enabling AI features, you acknowledge that relevant medication data may be processed by OpenAI and that MarinLoop beta is not offering these AI features under the business associate agreements required for HIPAA-regulated workflows.
           </p>
           <p className="mt-2">
             AI-generated content is informational only and is not medical advice. Always verify AI suggestions with a qualified healthcare provider.
@@ -87,14 +87,21 @@ export function TermsView() {
         </section>
 
         <section>
-          <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">8. Intellectual Property</h2>
+          <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">8. Covered-Entity Workflow Restriction</h2>
+          <p>
+            MarinLoop beta is not offered for provider-deployed workflows, production clinical operations, or other uses that require HIPAA business associate agreements. Do not use the App to store or process third-party PHI on behalf of a covered entity during this beta.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">9. Intellectual Property</h2>
           <p>
             MarinLoop and its underlying technology, design, and content are owned by the MarinLoop team. You retain ownership of all personal health data you enter. By using the App, you grant us a limited license to process your data solely to provide the service as described in our Privacy Policy.
           </p>
         </section>
 
         <section>
-          <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">9. Limitation of Liability</h2>
+          <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">10. Limitation of Liability</h2>
           <p>
             <strong className="text-[var(--color-text-primary)]">To the maximum extent permitted by law, MarinLoop and its operators are not liable for any indirect, incidental, special, consequential, or punitive damages</strong>, including but not limited to health outcomes resulting from reliance on App features, missed medication reminders, informational drug reference lookups (including interaction warnings and allergy alerts), data loss, or service interruptions.
           </p>
@@ -104,28 +111,28 @@ export function TermsView() {
         </section>
 
         <section>
-          <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">10. Termination</h2>
+          <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">11. Termination</h2>
           <p>
             We may suspend or terminate your access at any time for violation of these Terms or for any other reason at our discretion. You may delete your account at any time from Profile &rarr; Account Actions. Upon termination, your health data will be removed from active storage per our data retention policy.
           </p>
         </section>
 
         <section>
-          <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">11. Governing Law</h2>
+          <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">12. Governing Law</h2>
           <p>
             These Terms are governed by the laws of the United States and the State of California, without regard to conflict of law principles. Any disputes shall be resolved through good-faith negotiation before pursuing legal remedies.
           </p>
         </section>
 
         <section>
-          <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">12. Changes to These Terms</h2>
+          <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">13. Changes to These Terms</h2>
           <p>
             We may update these Terms as the App evolves. We will notify you of material changes via in-app notice or email. Continued use of the App after such notice constitutes your acceptance of the updated Terms.
           </p>
         </section>
 
         <section>
-          <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">13. Contact</h2>
+          <h2 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-subtitle)] mb-2">14. Contact</h2>
           <p>
             Questions about these Terms: <a href="mailto:admin@marinloop.com" className="underline text-[var(--color-accent)]">admin@marinloop.com</a>
           </p>

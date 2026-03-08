@@ -3,11 +3,10 @@
 **Medication adherence and daily care, simplified.**
 
 [![CI](https://github.com/samson623/marinloop/actions/workflows/ci.yml/badge.svg)](https://github.com/samson623/marinloop/actions/workflows/ci.yml)
-[![Coverage](https://codecov.io/gh/samson623/marinloop/branch/main/graph/badge.svg)](https://codecov.io/gh/samson623/marinloop)
 
-MarinLoop helps patients and caregivers stay on top of medications, appointments, and health trends — without the complexity of traditional EHR portals. It is a privacy-first Progressive Web App installable on iOS and Android, built for people who manage daily medication routines and the caregivers who support them.
+MarinLoop is a medication adherence and daily care Progressive Web App for patients and caregivers who manage recurring prescriptions, refill timing, symptoms, and care coordination. It is built to reduce day-to-day friction around medication routines while staying explicit about its safety boundary: MarinLoop is a personal tracking and reminder tool, not a diagnostic system, emergency service, or clinical decision-maker.
 
-**Live app:** [https://marinloop.com](https://marinloop.com) · **Status:** Pre-release beta
+**Live app:** [https://marinloop.com](https://marinloop.com) · **Status:** Pre-release beta · **Trust center:** [https://marinloop.com/trust](https://marinloop.com/trust)
 
 ![React](https://img.shields.io/badge/React_19-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
@@ -22,6 +21,24 @@ MarinLoop helps patients and caregivers stay on top of medications, appointments
 Managing medications across multiple prescriptions, refill dates, and care providers is error-prone and stressful. Missed doses lead to worse outcomes. Caregivers often have no visibility into whether their loved ones are staying on track.
 
 MarinLoop solves this by putting medication tracking, adherence history, and caregiver coordination into a single lightweight app that works offline and sends timely push reminders — no app store download required.
+
+---
+
+## Who It Is For
+
+- **Patients** who want a calmer way to manage daily medications, health notes, and refill timing.
+- **Caregivers** who need more visibility into routines, reminders, and care coordination.
+- **Clinical and technical reviewers** evaluating a medication-management workflow with explicit safety, privacy, and consent boundaries.
+
+---
+
+## Safety Boundary
+
+- **Not a medical device:** MarinLoop is a reminder, tracking, and reference product. It does not diagnose, treat, or make clinical decisions.
+- **Not for emergency use:** Push reminders are best-effort and must not be relied on as a sole safeguard for time-critical medication administration.
+- **Not a HIPAA deployment for covered-entity workflows in this beta:** This beta is not being offered under the business associate agreements required for HIPAA-regulated use. Do not use it for third-party PHI, provider-deployed workflows, or production clinical operations.
+- **AI is optional and consent-based:** Core tracking works without AI. AI features are opt-in, revocable, and should not be used with regulated PHI in this beta.
+- **Human review stays in control:** Drug reference lookups, interaction warnings, and AI responses are informational only and should be verified with a qualified clinician or pharmacist.
 
 ---
 
@@ -53,17 +70,13 @@ Open [marinloop.com](https://marinloop.com), create an account, and walk through
 
 For the full tester guide with detailed steps, scope, and how to report issues, see **[TESTERS.md](TESTERS.md)**.
 
+For a concise summary of intended use, HIPAA boundary, AI posture, and external references, see **[docs/TRUST-CENTER.md](docs/TRUST-CENTER.md)**.
+
 ---
 
-## Screenshots
+## Product Overview
 
-<!-- Add your screenshots to docs/screenshots/ and uncomment the lines below -->
-<!-- ![Timeline](docs/screenshots/timeline.png) -->
-<!-- ![Medications](docs/screenshots/medications.png) -->
-<!-- ![Reminders](docs/screenshots/reminders.png) -->
-<!-- ![AI Assistant](docs/screenshots/ai-assistant.png) -->
-
-*Screenshots coming soon — the app is in pre-release beta.*
+![MarinLoop product overview](docs/screenshots/marinloop-overview.svg)
 
 ---
 
@@ -75,6 +88,26 @@ For the full tester guide with detailed steps, scope, and how to report issues, 
 - **Push Notifications:** Web Push via VAPID. The `send-push` Edge Function delivers notifications; `cron-dispatch-push` is triggered by a `pg_cron` job to dispatch scheduled reminders automatically.
 - **External APIs:** NIH RxNav and OpenFDA are called client-side for drug reference lookups (drug interactions, allergy checks). No PHI is transmitted to these services.
 - **Hosting:** Vercel (Vite framework preset). SPA rewrites and security headers configured in `vercel.json`.
+
+---
+
+## Quality Signals
+
+- **Breadth of implementation:** medications, adherence, reminders, appointments, care network, vitals, journal, offline sync, AI consent, and installable PWA flows.
+- **Automated verification:** `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, Playwright E2E, Lighthouse CI, and secret scanning in GitHub Actions.
+- **Current local test result:** `34` test files and `252` passing tests across views, hooks, services, and stores.
+- **Trust surfaces:** in-app beta terms, privacy policy, trust center, account export/delete controls, and explicit AI consent.
+
+---
+
+## For Reviewers
+
+If you are evaluating MarinLoop for clinical safety, technical diligence, or investment readiness, start here:
+
+1. **Product story:** this README
+2. **Trust and compliance posture:** [docs/TRUST-CENTER.md](docs/TRUST-CENTER.md)
+3. **Hands-on evaluation flows:** [TESTERS.md](TESTERS.md)
+4. **Legal and privacy surfaces:** in-app `/terms`, `/privacy`, and `/trust`
 
 ---
 
@@ -227,7 +260,7 @@ These are server-side secrets set via `supabase secrets set` or the Supabase Das
 
 | Secret | Required | Description |
 |--------|----------|-------------|
-| `OPENAI_API_KEY` | Yes (AI features) | OpenAI API key. Used by `openai-chat` and `extract-label`. |
+| `OPENAI_API_KEY` | Yes (AI features) | OpenAI API key. Used by `openai-chat` and `extract-label`. If you intend to process regulated PHI in a HIPAA workflow, a separate compliance review and applicable BAAs would generally be required before production use. |
 | `ALLOWED_ORIGINS` | Yes (production) | Comma-separated list of allowed CORS origins for AI Edge Functions. Fail-closed: if unset, all cross-origin requests are rejected with 403. Example: `https://marinloop.com,http://localhost:5173`. |
 | `AI_DAILY_LIMIT` | No | Maximum AI requests (chat + label extraction combined) per user per UTC calendar day. Default: `50`. Exceeded requests return 429 with `Retry-After` and `X-RateLimit-*` headers. |
 | `VAPID_PUBLIC_KEY` | Yes (push) | VAPID public key. Must match `VITE_VAPID_PUBLIC_KEY` in client env. |
@@ -295,4 +328,4 @@ See [SECURITY.md](SECURITY.md) for supported versions and responsible disclosure
 
 ## Legal
 
-MarinLoop is pre-release beta software provided for informational purposes only. It is not a medical device, does not provide clinical advice, and is not a HIPAA-covered entity. AI-assisted features are informational tools only and do not constitute medical recommendations. Full terms of service and privacy policy are available in-app.
+MarinLoop is pre-release beta software provided for informational purposes only. It is not a medical device, does not provide clinical advice, and is not being offered in this beta as a HIPAA-regulated deployment for covered-entity workflows. AI-assisted features are optional informational tools only and do not constitute medical recommendations. Full terms of service, privacy policy, and trust guidance are available in-app.

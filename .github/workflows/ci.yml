@@ -39,7 +39,7 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Test with coverage
+      - name: Test suite with coverage report
         run: npm run test:coverage
 
       - name: Upload coverage to Codecov

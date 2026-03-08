@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+coverage
 *.local
 
 # Editor / IDE local config (may contain secrets)
@@ -17,9 +18,7 @@ dist-ssr
 .agent/
 
 # Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
+.vscode/
 .idea
 .DS_Store
 *.suo

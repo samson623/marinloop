@@ -14,8 +14,8 @@ This guide tells you everything you need to know to test MarinLoop effectively.
 
 - MarinLoop is **not a medical device** and is not intended to diagnose, treat, cure, or prevent any disease or health condition.
 - **Do not rely solely on this app for medication management.** Always follow your healthcare provider's instructions.
-- This beta is **not covered by a HIPAA Business Associate Agreement.** Do not enter real protected health information (PHI), Social Security numbers, or medical record numbers.
-- If you enable AI features, medication names, notes, and label images are processed by OpenAI's API. OpenAI is not a HIPAA-covered entity. **Use sample or fictional data for testing.**
+- This beta is **not offered for covered-entity workflows that require HIPAA business associate agreements.** Do not enter real protected health information (PHI), Social Security numbers, or medical record numbers.
+- If you enable AI features, medication names, notes, and label images are processed by OpenAI's API. MarinLoop beta is not offering these AI features under HIPAA BAAs. **Use sample or fictional data for testing.**
 - AI-generated responses are **informational only** and do not constitute medical advice, clinical recommendations, or professional guidance.
 - Push reminders are delivered on a best-effort basis and are **not a substitute for clinical alerting systems.**
 - Beta data may be reset or deleted before general availability.

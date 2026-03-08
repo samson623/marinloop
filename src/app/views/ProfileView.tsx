@@ -333,14 +333,15 @@ export function ProfileView() {
         </div>
         <div className="space-y-2 text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] leading-relaxed">
           <p>
-            MarinLoop is pre-release beta software. It is <strong className="text-[var(--color-text-secondary)]">not a medical device</strong> and is not covered by a HIPAA Business Associate Agreement during this beta period.
+            MarinLoop is pre-release beta software. It is <strong className="text-[var(--color-text-secondary)]">not a medical device</strong> and is not offered in this beta for covered-entity workflows that require HIPAA business associate agreements.
           </p>
           <p>
-            Your health data is stored in <strong className="text-[var(--color-text-secondary)]">Supabase</strong> (encrypted at rest). If you enable AI features, medication names, notes, and images are processed by <strong className="text-[var(--color-text-secondary)]">OpenAI&apos;s API</strong> (not HIPAA-covered). Error reports are sent to <strong className="text-[var(--color-text-secondary)]">Sentry</strong>. Beta data may be reset before general availability.
+            Your health data is stored in <strong className="text-[var(--color-text-secondary)]">Supabase</strong> (encrypted at rest). If you enable AI features, medication names, notes, and images are processed by <strong className="text-[var(--color-text-secondary)]">OpenAI&apos;s API</strong>; those AI features are not offered under HIPAA BAAs in this beta. Error reports are sent to <strong className="text-[var(--color-text-secondary)]">Sentry</strong>. Beta data may be reset before general availability.
           </p>
           <p className="flex flex-wrap gap-3">
             <a href="/privacy" className="underline text-[var(--color-accent)]">Privacy Policy</a>
             <a href="/terms" className="underline text-[var(--color-accent)]">Terms of Service</a>
+            <a href="/trust" className="underline text-[var(--color-accent)]">Trust Center</a>
           </p>
           <p>
             To request data deletion or report a privacy concern, email{' '}

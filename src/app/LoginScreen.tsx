@@ -135,7 +135,7 @@ export function LoginScreen() {
           </span>
         </div>
         <p className="text-[var(--color-text-secondary)] mb-8 sm:mb-10 font-normal [font-size:var(--text-body)]">
-          {isSignUp ? 'Create your account.' : 'Stay on time. Stay safe. Stay confident.'}
+          {isSignUp ? 'Create your account for the MarinLoop beta.' : 'Sign in to your medication and care routine workspace.'}
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-5" autoComplete="off">
@@ -181,7 +181,7 @@ export function LoginScreen() {
                 className="min-h-[44px] font-mono tracking-widest"
               />
               <p className="mt-1.5 text-[var(--color-text-tertiary)] [font-size:var(--text-caption)]">
-                MarinLoop is invite-only during beta.
+                MarinLoop is invite-only during beta and not offered for covered-entity workflows requiring HIPAA BAAs.
               </p>
             </div>
           )}
@@ -271,9 +271,22 @@ export function LoginScreen() {
           </div>
         </form>
 
-        <p className="mt-8 sm:mt-10 pt-5 sm:pt-6 border-t border-[var(--color-border-primary)] text-[var(--color-text-tertiary)] leading-relaxed [font-size:var(--text-caption)]">
-          MarinLoop provides reminders and tracking tools. Not medical advice. Always follow your healthcare provider&apos;s instructions.
-        </p>
+        <div className="mt-8 space-y-3 border-t border-[var(--color-border-primary)] pt-5 sm:mt-10 sm:pt-6">
+          <p className="text-[var(--color-text-tertiary)] leading-relaxed [font-size:var(--text-caption)]">
+            MarinLoop provides reminders and tracking tools. Not medical advice. Always follow your healthcare provider&apos;s instructions. This beta is not offered for covered-entity workflows requiring HIPAA business associate agreements.
+          </p>
+          <div className="flex flex-wrap gap-x-4 gap-y-2 text-[var(--color-text-tertiary)] [font-size:var(--text-caption)]">
+            <button type="button" onClick={() => navigate('/terms')} className="cursor-pointer border-none bg-transparent p-0 text-inherit underline underline-offset-4">
+              Terms
+            </button>
+            <button type="button" onClick={() => navigate('/privacy')} className="cursor-pointer border-none bg-transparent p-0 text-inherit underline underline-offset-4">
+              Privacy
+            </button>
+            <button type="button" onClick={() => navigate('/trust')} className="cursor-pointer border-none bg-transparent p-0 text-inherit underline underline-offset-4">
+              Trust Center
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )

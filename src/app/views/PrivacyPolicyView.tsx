@@ -25,7 +25,7 @@ export function PrivacyPolicyView() {
             MarinLoop (&ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;) is a medication management and health tracking application. We take your privacy seriously. This policy explains what information we collect, how we use it, and your rights regarding your data.
           </p>
           <p className="mt-2">
-            <strong className="text-[var(--color-text-primary)]">MarinLoop is not a medical device and is not HIPAA-covered software.</strong> Do not use it to store personally identifiable health information (e.g., patient MRN numbers, Social Security numbers) beyond what is required for personal medication tracking.
+            <strong className="text-[var(--color-text-primary)]">MarinLoop is not a medical device and this beta is not offered as a HIPAA-regulated deployment for covered-entity workflows.</strong> Do not use it to store third-party PHI, patient MRN numbers, Social Security numbers, or other regulated identifiers for production clinical use.
           </p>
         </section>
 
@@ -51,7 +51,7 @@ export function PrivacyPolicyView() {
 
             <div>
               <h3 className="font-semibold text-[var(--color-text-primary)] mb-1">OpenAI (AI Features — Optional)</h3>
-              <p>If you consent to AI features, medication names, dosages, schedules, notes, and images of prescription labels may be sent to OpenAI&apos;s API for processing (insights, label extraction, voice commands). <strong className="text-[var(--color-text-primary)]">OpenAI is not a HIPAA Business Associate.</strong> Do not include real patient names, MRN numbers, or Social Security numbers. See <a href="https://openai.com/privacy" className="underline text-[var(--color-accent)]" target="_blank" rel="noopener noreferrer">openai.com/privacy</a>. You can revoke AI consent at any time in Profile &rarr; Data &amp; Privacy.</p>
+              <p>If you consent to AI features, medication names, dosages, schedules, notes, and images of prescription labels may be sent to OpenAI&apos;s API for processing (insights, label extraction, voice commands). MarinLoop beta is not offering these AI features under the business associate agreements required for HIPAA-regulated workflows, so do not include regulated PHI, real patient names, MRN numbers, or Social Security numbers. See <a href="https://openai.com/privacy" className="underline text-[var(--color-accent)]" target="_blank" rel="noopener noreferrer">openai.com/privacy</a>. You can revoke AI consent at any time in Profile &rarr; Data &amp; Privacy.</p>
             </div>
 
             <div>

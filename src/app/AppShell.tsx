@@ -364,7 +364,7 @@ export function AppShell() {
         className="fixed bottom-0 left-0 right-0 w-full min-h-[72px] bg-[var(--color-bg-primary)] border-t border-[var(--color-border-primary)] flex items-center justify-center z-[90] pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
         style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
       >
-        <div className="max-w-[480px] mx-auto w-full flex justify-around items-center h-full">
+        <div className="max-w-[480px] mx-auto w-full flex items-stretch h-full">
         {tabs.map((t) => {
           const active = activeTab === t.id
           return (
@@ -375,7 +375,7 @@ export function AppShell() {
               aria-selected={active}
               tabIndex={active ? 0 : -1}
               onClick={() => navigate('/' + t.id)}
-              className={`flex flex-col items-center justify-center gap-1.5 min-h-[44px] min-w-[44px] py-2 px-4 relative border-none cursor-pointer bg-transparent outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${active ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-tertiary)]'}`}
+              className={`flex-1 min-w-0 flex flex-col items-center justify-center gap-1 min-h-[44px] py-2 px-2 sm:px-3 relative border-none cursor-pointer bg-transparent outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${active ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-tertiary)]'}`}
             >
               {active && (
                 <span
@@ -384,7 +384,9 @@ export function AppShell() {
                 />
               )}
               {t.icon(active)}
-              <span className={`font-medium leading-none [font-size:var(--text-caption)] ${!active ? 'max-[374px]:hidden' : ''}`}>{t.label}</span>
+              <span className="max-[374px]:hidden font-medium leading-none text-center truncate [font-size:var(--text-caption)]">
+                {t.label}
+              </span>
             </button>
           )
         })}

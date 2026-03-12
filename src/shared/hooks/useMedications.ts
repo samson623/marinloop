@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { MedsService } from '@/shared/services/medications'
 import type { Database } from '@/shared/types/database.types'
-import type { MedicationBundleCreateInput } from '@/shared/types/contracts'
+import type { MedicationBundleCreateInput, MedicationCreateInput } from '@/shared/types/contracts'
 import { useAppStore } from '@/shared/stores/app-store'
+import { useAuthStore } from '@/shared/stores/auth-store'
 import { handleMutationError } from '@/shared/lib/errors'
 import { AuditService } from '@/shared/services/audit'
 
@@ -11,15 +12,17 @@ type Medication = Database['public']['Tables']['medications']['Row']
 export function useMedications() {
   const queryClient = useQueryClient()
   const { toast } = useAppStore()
+  const activeProfileId = useAuthStore((s) => s.activeProfileId)
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['medications'],
-    queryFn: MedsService.getAll,
+    queryKey: ['medications', activeProfileId],
+    queryFn: () => MedsService.getAll(activeProfileId),
     staleTime: 1000 * 60 * 5,
   })
 
   const createMutation = useMutation({
-    mutationFn: MedsService.create,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mutationFn: (input: MedicationCreateInput) => MedsService.create({ ...input, profile_id: activeProfileId ?? null } as any),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['medications'] })
       toast('Medication added', 'ts')
@@ -28,7 +31,8 @@ export function useMedications() {
   })
 
   const createBundleMutation = useMutation({
-    mutationFn: (input: MedicationBundleCreateInput) => MedsService.createBundle(input),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mutationFn: (input: MedicationBundleCreateInput) => MedsService.createBundle(input, activeProfileId ?? null),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['medications'] })
       void queryClient.invalidateQueries({ queryKey: ['schedules'] })

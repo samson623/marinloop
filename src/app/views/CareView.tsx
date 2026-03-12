@@ -3,6 +3,8 @@ import { useCareNetwork } from '@/shared/hooks/useCareNetwork'
 import { useProviders } from '@/shared/hooks/useProviders'
 import { useEmergencyContacts } from '@/shared/hooks/useEmergencyContacts'
 import { Button, Card, Input } from '@/shared/components/ui'
+import { UpgradePrompt } from '@/shared/components/UpgradePrompt'
+import { useSubscription } from '@/shared/hooks/useSubscription'
 import { SkeletonCard } from '@/shared/components/Skeleton'
 import { cn } from '@/shared/lib/utils'
 import type {
@@ -376,6 +378,7 @@ function CareTeamTab() {
 
 function CaregiversTab() {
   const { connections, isLoading, addConnection, revokeConnection, deleteConnection, updateConnection } = useCareNetwork()
+  const { canUseCaregiverMode } = useSubscription()
   const [showForm, setShowForm] = useState(false)
 
   const [cgName, setCgName] = useState('')
@@ -506,8 +509,10 @@ function CaregiversTab() {
         )}
       </ul>
 
-      {/* Accordion add form */}
-      {showForm ? (
+      {/* Accordion add form — gated behind Pro */}
+      {!canUseCaregiverMode ? (
+        <UpgradePrompt feature="Caregiver mode" requiredTier="pro" className="mt-1" />
+      ) : showForm ? (
         <div className="rounded-2xl border-2 border-[var(--color-accent)] bg-[var(--color-bg-secondary)] p-4 mb-3 animate-view-in">
           <p className="font-bold text-[var(--color-text-primary)] mb-4 [font-size:var(--text-body)]">
             Invite Caregiver

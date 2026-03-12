@@ -12,6 +12,7 @@ import { useRefillPredictions } from '@/shared/hooks/useRefillPredictions'
 import { VoiceIntentService } from '@/shared/services/voice-intent'
 import { AIService } from '@/shared/services/ai'
 import { useAIConsent } from '@/shared/hooks/useAIConsent'
+import { useSubscription } from '@/shared/hooks/useSubscription'
 import { todayLocal, isoToLocalDate, toLocalTimeString } from '@/shared/lib/dates'
 import type { VoiceIntentResult } from '@/shared/types/contracts'
 import type { DoseLogCreateInput } from '@/shared/types/contracts'
@@ -52,6 +53,7 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
 
   const navigate = useNavigate()
   const { consented } = useAIConsent()
+  const { canUseAi } = useSubscription()
   const {
     openAddMedModal,
     openAddApptModal,
@@ -369,6 +371,12 @@ ${adherenceStr || 'No adherence data.'}
 ## Refill alerts
 ${refillStr || 'No urgent refills.'}`
 
+        if (!canUseAi) {
+          const msg = 'AI features require Basic or Pro. Upgrade in Profile \u2192 Subscription.'
+          setVoiceBubble(msg)
+          store.toast(msg, 'tw')
+          return
+        }
         if (!consented) {
           const msg = 'AI features require consent. Enable them in Profile \u2192 Data & Privacy.'
           setVoiceBubble(msg)

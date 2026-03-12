@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/shared/stores/app-store'
 import { BarcodeScanner } from '@/shared/components/BarcodeScanner'
 import { Modal } from '@/shared/components/Modal'
@@ -8,6 +9,7 @@ import { useAIConsent } from '@/shared/hooks/useAIConsent'
 import { lookupRxCUI, getOpenFDALabel, getIngredients } from '@/shared/services/rxnorm'
 import { useInteractions } from '@/shared/hooks/useInteractions'
 import type { DrugInteraction } from '@/shared/services/rxnorm'
+import { useSubscription } from '@/shared/hooks/useSubscription'
 import { handleMutationError } from '@/shared/lib/errors'
 import { Button, Input } from '@/shared/components/ui'
 import { generateEvenlySpacedTimes } from '@/shared/lib/scheduling'
@@ -37,8 +39,10 @@ type AddMedModalProps = {
 }
 
 export default function AddMedModal({ onClose, createBundleAsync, isSaving, initialDraft, openScanner: openScannerProp, openPhoto: openPhotoProp, allMeds = [], upcomingAppts = [], userAllergies = [] }: AddMedModalProps) {
+  const navigate = useNavigate()
   const { toast } = useAppStore()
   const { consented } = useAIConsent()
+  const { canUseBarcode, canUseOcr } = useSubscription()
   const [name, setName] = useState('')
   const [dose, setDose] = useState('')
   const [freq, setFreq] = useState('1')
@@ -177,15 +181,15 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
   }, [initialDraft])
 
   useEffect(() => {
-    if (openScannerProp) setShowScanner(true)
-  }, [openScannerProp])
+    if (openScannerProp && canUseBarcode) setShowScanner(true)
+  }, [openScannerProp, canUseBarcode])
 
   useEffect(() => {
-    if (openPhotoProp) {
+    if (openPhotoProp && canUseOcr) {
       const timer = setTimeout(() => labelPhotoInputRef.current?.click(), 150)
       return () => clearTimeout(timer)
     }
-  }, [openPhotoProp])
+  }, [openPhotoProp, canUseOcr])
 
   // Background rxcui lookup on name blur + food interaction + allergy check
   const handleNameBlur = async () => {
@@ -437,69 +441,85 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
           onKeyDown={handleScannerInputKeyDown}
           onInput={handleScannerInput}
         />
-        <button
-          type="button"
-          onClick={() => setShowScanner(true)}
-          disabled={isLooking}
-          className="tap-spring w-full max-w-full py-4 px-6 mb-3 bg-[var(--color-accent-bg)] border-2 border-[var(--color-green-border)] rounded-2xl font-bold text-[var(--color-accent)] cursor-pointer flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-wait outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] min-h-[52px] [font-size:var(--text-body)]"
-        >
-          {isLooking ? (
-            <>
-              <div className="w-5 h-5 border-2 border-[var(--color-green-border)] border-t-2 border-t-[var(--color-accent)] rounded-full spin-loading shrink-0" />
-              <span>Looking up medication...</span>
-            </>
-          ) : (
-            <>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden>
-                <path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" />
-                <line x1="7" y1="12" x2="17" y2="12" /><line x1="7" y1="8" x2="13" y2="8" /><line x1="7" y1="16" x2="15" y2="16" />
-              </svg>
-              <span>Scan Barcode</span>
-            </>
-          )}
-        </button>
+        {canUseBarcode ? (
+          <>
+            <button
+              type="button"
+              onClick={() => setShowScanner(true)}
+              disabled={isLooking}
+              className="tap-spring w-full max-w-full py-4 px-6 mb-3 bg-[var(--color-accent-bg)] border-2 border-[var(--color-green-border)] rounded-2xl font-bold text-[var(--color-accent)] cursor-pointer flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-wait outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] min-h-[52px] [font-size:var(--text-body)]"
+            >
+              {isLooking ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-[var(--color-green-border)] border-t-2 border-t-[var(--color-accent)] rounded-full spin-loading shrink-0" />
+                  <span>Looking up medication...</span>
+                </>
+              ) : (
+                <>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden>
+                    <path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+                    <line x1="7" y1="12" x2="17" y2="12" /><line x1="7" y1="8" x2="13" y2="8" /><line x1="7" y1="16" x2="15" y2="16" />
+                  </svg>
+                  <span>Scan Barcode</span>
+                </>
+              )}
+            </button>
 
-        {!showBarcodeInput ? (
+            {!showBarcodeInput ? (
+              <button
+                type="button"
+                onClick={() => setShowBarcodeInput(true)}
+                disabled={isLooking}
+                className="w-full py-3 px-6 mb-2 rounded-2xl font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border-primary)] hover:bg-[var(--color-bg-secondary)] cursor-pointer disabled:opacity-60 [font-size:var(--text-body)]"
+              >
+                I have the barcode number
+              </button>
+            ) : (
+              <div className="mb-5 flex gap-2">
+                <Input
+                  ref={barcodeInputRef}
+                  type="text"
+                  inputMode="text"
+                  autoComplete="off"
+                  value={barcodeInputValue}
+                  onChange={(e) => setBarcodeInputValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      void handleBarcodeLookup()
+                    }
+                    if (e.key === 'Escape') setShowBarcodeInput(false)
+                  }}
+                  placeholder="e.g. B580-142436-1431"
+                  className="flex-1 font-mono"
+                />
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="md"
+                  onClick={() => { void handleBarcodeLookup() }}
+                  disabled={!canLookupCode(barcodeInputValue)}
+                >
+                  Look up
+                </Button>
+                <Button type="button" variant="ghost" size="md" onClick={() => { setShowBarcodeInput(false); setBarcodeInputValue('') }}>
+                  Cancel
+                </Button>
+              </div>
+            )}
+          </>
+        ) : (
           <button
             type="button"
-            onClick={() => setShowBarcodeInput(true)}
-            disabled={isLooking}
-            className="w-full py-3 px-6 mb-2 rounded-2xl font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border-primary)] hover:bg-[var(--color-bg-secondary)] cursor-pointer disabled:opacity-60 [font-size:var(--text-body)]"
+            onClick={() => navigate('/subscription')}
+            className="w-full max-w-full py-4 px-6 mb-3 border-2 border-dashed border-[var(--color-border-primary)] rounded-2xl font-bold text-[var(--color-text-tertiary)] cursor-pointer flex items-center justify-center gap-3 min-h-[52px] [font-size:var(--text-body)] opacity-60 hover:opacity-80 transition-opacity"
+            aria-label="Barcode scanning requires Basic or Pro — tap to upgrade"
           >
-            I have the barcode number
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden>
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <span>Scan Barcode — requires Basic</span>
           </button>
-        ) : (
-          <div className="mb-5 flex gap-2">
-            <Input
-              ref={barcodeInputRef}
-              type="text"
-              inputMode="text"
-              autoComplete="off"
-              value={barcodeInputValue}
-              onChange={(e) => setBarcodeInputValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  void handleBarcodeLookup()
-                }
-                if (e.key === 'Escape') setShowBarcodeInput(false)
-              }}
-              placeholder="e.g. B580-142436-1431"
-              className="flex-1 font-mono"
-            />
-            <Button
-              type="button"
-              variant="primary"
-              size="md"
-              onClick={() => { void handleBarcodeLookup() }}
-              disabled={!canLookupCode(barcodeInputValue)}
-            >
-              Look up
-            </Button>
-            <Button type="button" variant="ghost" size="md" onClick={() => { setShowBarcodeInput(false); setBarcodeInputValue('') }}>
-              Cancel
-            </Button>
-          </div>
         )}
 
         <>
@@ -579,43 +599,64 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
 
             {/* Photo mode split buttons — shown when no photos loaded yet */}
             {labelPhotos.length === 0 && (
-              <div className="flex gap-2 mb-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPhotoMode('label')
-                    labelPhotoInputRef.current?.click()
-                  }}
-                  disabled={isLooking}
-                  aria-label="Take or upload photos of prescription label or pill bottle"
-                  aria-busy={isLooking}
-                  aria-live="polite"
-                  className="flex-1 py-3 px-4 rounded-2xl font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border-primary)] hover:bg-[var(--color-bg-secondary)] cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 [font-size:var(--text-body)]"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden>
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <polyline points="21 15 16 10 5 21" />
-                  </svg>
-                  <span>📸 Label photo</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPhotoMode('pill')
-                    labelPhotoInputRef.current?.click()
-                  }}
-                  disabled={isLooking}
-                  aria-label="Take or upload a photo of the pill to identify it"
-                  aria-busy={isLooking}
-                  className="flex-1 py-3 px-4 rounded-2xl font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border-primary)] hover:bg-[var(--color-bg-secondary)] cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 [font-size:var(--text-body)]"
-                >
-                  <span>💊 Identify pill</span>
-                </button>
-              </div>
+              canUseOcr ? (
+                <div className="flex gap-2 mb-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPhotoMode('label')
+                      labelPhotoInputRef.current?.click()
+                    }}
+                    disabled={isLooking}
+                    aria-label="Take or upload photos of prescription label or pill bottle"
+                    aria-busy={isLooking}
+                    aria-live="polite"
+                    className="flex-1 py-3 px-4 rounded-2xl font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border-primary)] hover:bg-[var(--color-bg-secondary)] cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 [font-size:var(--text-body)]"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden>
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21 15 16 10 5 21" />
+                    </svg>
+                    <span>📸 Label photo</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPhotoMode('pill')
+                      labelPhotoInputRef.current?.click()
+                    }}
+                    disabled={isLooking}
+                    aria-label="Take or upload a photo of the pill to identify it"
+                    aria-busy={isLooking}
+                    className="flex-1 py-3 px-4 rounded-2xl font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border-primary)] hover:bg-[var(--color-bg-secondary)] cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 [font-size:var(--text-body)]"
+                  >
+                    <span>💊 Identify pill</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2 mb-3">
+                  {(['📸 Label photo', '💊 Identify pill'] as const).map((label) => (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => navigate('/subscription')}
+                      className="flex-1 py-3 px-4 rounded-2xl font-semibold text-[var(--color-text-tertiary)] border border-dashed border-[var(--color-border-primary)] cursor-pointer opacity-60 hover:opacity-80 transition-opacity flex items-center justify-center gap-2 [font-size:var(--text-body)]"
+                      aria-label={`${label} — requires Basic — tap to upgrade`}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden>
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                      <span>{label}</span>
+                    </button>
+                  ))}
+                </div>
+              )
             )}
             <p className="text-[var(--color-text-tertiary)] text-xs mb-4 -mt-1 px-1">
-              Photograph all sides of your pill bottle for best results. You can add up to 5 photos.
+              {canUseOcr
+                ? 'Photograph all sides of your pill bottle for best results. You can add up to 5 photos.'
+                : 'Photo label scanning requires Basic or Pro.'}
             </p>
           </>
 

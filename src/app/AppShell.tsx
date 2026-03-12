@@ -28,6 +28,8 @@ import { useIdleTimeout } from '@/shared/hooks/useIdleTimeout'
 import { useInstallPrompt } from '@/shared/hooks/useInstallPrompt'
 import { useServiceWorkerUpdate } from '@/shared/hooks/useServiceWorkerUpdate'
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
+import { TrialBanner } from '@/shared/components/TrialBanner'
+import { ProfileSwitcher } from '@/shared/components/ProfileSwitcher'
 import { useReminders } from '@/shared/hooks/useReminders'
 import { useRealtimeSync } from '@/shared/hooks/useRealtimeSync'
 import { useOfflineQueue } from '@/shared/hooks/useOfflineQueue'
@@ -279,6 +281,7 @@ export function AppShell() {
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
           </IconButton>
+          <ProfileSwitcher />
           <IconButton size="md" aria-label="Open profile" onClick={() => navigate('/profile')} className="overflow-hidden p-0">
             {profile?.avatar_url ? (
               <img src={profile.avatar_url} alt={profile.name ?? 'Profile'} className="w-full h-full object-cover" />
@@ -337,6 +340,8 @@ export function AppShell() {
           </div>
         </div>
       )}
+
+      <TrialBanner />
 
       <div className="flex-1 w-full flex justify-center">
         <main

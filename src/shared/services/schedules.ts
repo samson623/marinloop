@@ -5,12 +5,22 @@ import type { ScheduleCreateInput } from '@/shared/types/contracts'
 type Schedule = Database['public']['Tables']['schedules']['Row']
 
 export const SchedulesService = {
-  async getAll(): Promise<Schedule[]> {
-    const { data, error } = await supabase
+  async getAll(profileId?: string | null): Promise<Schedule[]> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let query: any = supabase
       .from('schedules')
       .select('*')
       .order('time')
 
+    if (profileId === undefined) {
+      // no filter
+    } else if (profileId === null) {
+      query = query.is('profile_id', null)
+    } else {
+      query = query.eq('profile_id', profileId)
+    }
+
+    const { data, error } = await query
     if (error) throw error
     return data
   },

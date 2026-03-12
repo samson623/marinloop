@@ -10,17 +10,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { buildRateLimitHeaders, runQuotaTrackedRequest } from '../_shared/quota-tracker.ts'
+import { getUserTierLimits } from '../_shared/tier-limits.ts'
 
 const ALLOWED_MODEL = 'gpt-5-nano'
 const MAX_MESSAGES = 20
 const MAX_CONTENT_LENGTH = 8000
-
-function getAiDailyLimit(): number {
-  const raw = Deno.env.get('AI_DAILY_LIMIT')
-  if (raw == null || raw.trim() === '') return 50
-  const n = parseInt(raw, 10)
-  return Number.isNaN(n) || n < 1 ? 50 : n
-}
 
 function getMidnightUtcNext(): number {
   const now = new Date()
@@ -152,6 +146,24 @@ serve(async (req) => {
       )
     }
     const supabaseService = createClient(supabaseUrl, serviceRoleKey)
+
+    let tierLimits: { aiDailyLimit: number }
+    try {
+      tierLimits = await getUserTierLimits(supabaseService, user.id)
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Service configuration error' }),
+        { status: 500, headers: corsHeaders },
+      )
+    }
+
+    if (tierLimits.aiDailyLimit === 0) {
+      return new Response(
+        JSON.stringify({ error: 'AI features require a paid plan. Upgrade to Basic or Pro.' }),
+        { status: 403, headers: corsHeaders },
+      )
+    }
+
     const today = new Date().toISOString().slice(0, 10)
     const { data: usageRow, error: usageError } = await supabaseService
       .from('ai_daily_usage')
@@ -166,7 +178,7 @@ serve(async (req) => {
       )
     }
 
-    const limit = getAiDailyLimit()
+    const limit = tierLimits.aiDailyLimit
     const currentUsage = usageRow?.request_count ?? 0
     let validatedMessages: ChatMessage[] = []
     const quotaResult = await runQuotaTrackedRequest({

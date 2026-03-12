@@ -4,23 +4,17 @@
 // Usage: POST with Authorization: Bearer <user-jwt>
 // Body: { images: ["data:image/jpeg;base64,...", ...] }  (or legacy: { imageBase64: "..." })
 //
-// Requires: OPENAI_API_KEY, ALLOWED_ORIGINS. Reuses AI_DAILY_LIMIT (shared with openai-chat).
+// Requires: OPENAI_API_KEY, ALLOWED_ORIGINS. AI limit is resolved per-tier (Basic: 10, Pro: 30; free tier blocked).
 // Max total payload: 18MB base64. Max 5 images. Returns 400 if exceeded.
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { buildRateLimitHeaders, runQuotaTrackedRequest } from '../_shared/quota-tracker.ts'
+import { getUserTierLimits } from '../_shared/tier-limits.ts'
 
 const ALLOWED_MODEL = 'gpt-5-nano'
 const MAX_TOTAL_BASE64_BYTES = 18 * 1024 * 1024 // 18MB total across all images
 const MAX_IMAGES = 5
-
-function getAiDailyLimit(): number {
-  const raw = Deno.env.get('AI_DAILY_LIMIT')
-  if (raw == null || raw.trim() === '') return 50
-  const n = parseInt(raw, 10)
-  return Number.isNaN(n) || n < 1 ? 50 : n
-}
 
 function getMidnightUtcNext(): number {
   const now = new Date()
@@ -225,6 +219,24 @@ serve(async (req) => {
       )
     }
     const supabaseService = createClient(supabaseUrl, serviceRoleKey)
+
+    let tierLimits: { aiDailyLimit: number; hasOcr: boolean }
+    try {
+      tierLimits = await getUserTierLimits(supabaseService, user.id)
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Service configuration error' }),
+        { status: 500, headers: corsHeaders },
+      )
+    }
+
+    if (!tierLimits.hasOcr) {
+      return new Response(
+        JSON.stringify({ error: 'OCR label scanning requires Basic or Pro. Upgrade to unlock this feature.' }),
+        { status: 403, headers: corsHeaders },
+      )
+    }
+
     const today = new Date().toISOString().slice(0, 10)
     const { data: usageRow, error: usageError } = await supabaseService
       .from('ai_daily_usage')
@@ -239,7 +251,7 @@ serve(async (req) => {
       )
     }
 
-    const limit = getAiDailyLimit()
+    const limit = tierLimits.aiDailyLimit
     const currentUsage = usageRow?.request_count ?? 0
     let imageList: string[] = []
     let isPillMode = false

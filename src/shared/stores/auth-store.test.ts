@@ -87,8 +87,15 @@ function mockDeps({
   }
 
   // Override from for beta_invite_codes table
+  const managedProfilesChain = {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    order: vi.fn().mockResolvedValue({ data: [], error: null }),
+  }
+
   mockFrom.mockImplementation((table: string) => {
     if (table === 'beta_invite_codes') return betaCodeChain
+    if (table === 'managed_profiles') return managedProfilesChain
     return selectChain
   })
 

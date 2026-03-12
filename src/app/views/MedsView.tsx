@@ -7,6 +7,8 @@ import { useSchedules } from '@/shared/hooks/useSchedules'
 import { useRefills } from '@/shared/hooks/useRefillsList'
 import { useAppointments } from '@/shared/hooks/useAppointments'
 import { Button } from '@/shared/components/ui'
+import { UpgradePrompt } from '@/shared/components/UpgradePrompt'
+import { useSubscription } from '@/shared/hooks/useSubscription'
 import { getSupplyInfo } from '@/shared/lib/medication-utils'
 import { MedsService } from '@/shared/services/medications'
 import MedDetailModal from './MedDetailModal'
@@ -61,16 +63,17 @@ export function MedsView() {
   } = useAppStore()
   const [selectedMed, setSelectedMed] = useState<DisplayMed | null>(null)
   const [activeTab, setActiveTab] = useState<MedsTab>('active')
-  const { profile } = useAuthStore()
+  const { profile, activeProfileId } = useAuthStore()
   const userAllergies = profile?.allergies ?? []
+  const { isAtMedLimit, getMedLimitDisplay, limits } = useSubscription()
   const { meds: realMeds, isLoading: medsLoading, addMedBundleAsync, updateMed, deleteMed, discontinueMedAsync, restoreMed, isAdding, isDeleting, isDiscontinuing } = useMedications()
   const { scheds, addSchedAsync, updateSched, deleteSched } = useSchedules()
   const { refills, updateRefill } = useRefills()
   const { appts } = useAppointments()
 
   const { data: archivedMeds = [], isLoading: archivedLoading } = useQuery({
-    queryKey: ['medications', 'archived'],
-    queryFn: MedsService.getArchived,
+    queryKey: ['medications', 'archived', activeProfileId],
+    queryFn: () => MedsService.getArchived(activeProfileId),
     enabled: activeTab === 'archived',
     staleTime: 5 * 60 * 1000,
   })
@@ -101,9 +104,20 @@ export function MedsView() {
 
   return (
     <div className="animate-view-in w-full max-w-[480px] mx-auto">
-      <h2 className="font-extrabold tracking-[-0.02em] mb-4 text-[var(--color-text-primary)] text-xl sm:[font-size:var(--text-title)]">
-        Medications
-      </h2>
+      <div className="flex items-baseline justify-between mb-4">
+        <h2 className="font-extrabold tracking-[-0.02em] text-[var(--color-text-primary)] text-xl sm:[font-size:var(--text-title)]">
+          Medications
+        </h2>
+        {!medsLoading && limits.maxMeds !== -1 && (
+          <span className={`[font-size:var(--text-caption)] font-semibold tabular-nums ${
+            isAtMedLimit(realMeds.length)
+              ? 'text-[var(--color-red)]'
+              : 'text-[var(--color-text-tertiary)]'
+          }`}>
+            {realMeds.length} / {getMedLimitDisplay()}
+          </span>
+        )}
+      </div>
 
       {/* Active / Archived tabs */}
       <div className="flex gap-1 mb-5 p-1 bg-[var(--color-bg-secondary)] rounded-xl border border-[var(--color-border-primary)]">
@@ -259,16 +273,24 @@ export function MedsView() {
       ))}
 
       {activeTab === 'active' && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="md"
-          onClick={() => openAddMedModal(null)}
-          className="mt-4 py-4 text-lg font-bold border-2 border-dashed border-[var(--color-border-primary)] text-[var(--color-text-secondary)] flex items-center justify-center gap-2 min-h-[52px] sm:mt-2.5 sm:py-3.5 sm:text-base sm:font-semibold sm:min-h-0"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 sm:w-[18px] sm:h-[18px]"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-          Add Medication
-        </Button>
+        isAtMedLimit(realMeds.length) ? (
+          <UpgradePrompt
+            feature="More medications"
+            requiredTier={limits.maxMeds <= 3 ? 'basic' : 'pro'}
+            className="mt-4"
+          />
+        ) : (
+          <Button
+            type="button"
+            variant="ghost"
+            size="md"
+            onClick={() => openAddMedModal(null)}
+            className="mt-4 py-4 text-lg font-bold border-2 border-dashed border-[var(--color-border-primary)] text-[var(--color-text-secondary)] flex items-center justify-center gap-2 min-h-[52px] sm:mt-2.5 sm:py-3.5 sm:text-base sm:font-semibold sm:min-h-0"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 sm:w-[18px] sm:h-[18px]"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+            Add Medication
+          </Button>
+        )
       )}
 
       {selectedMed && (

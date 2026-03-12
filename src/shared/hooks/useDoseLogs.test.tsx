@@ -65,7 +65,7 @@ describe('useDoseLogs', () => {
     result.current.logDose(input)
 
     await waitFor(() => {
-      expect(DoseLogsService.logDose).toHaveBeenCalledWith(input)
+      expect(DoseLogsService.logDose).toHaveBeenCalledWith({ ...input, profile_id: null })
     })
   })
 })

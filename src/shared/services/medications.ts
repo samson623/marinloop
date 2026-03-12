@@ -16,24 +16,44 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 }
 
 export const MedsService = {
-  async getAll(): Promise<Medication[]> {
-    const { data, error } = await supabase
+  async getAll(profileId?: string | null): Promise<Medication[]> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let query: any = supabase
       .from('medications')
       .select('*')
       .is('discontinued_at', null)
       .order('name')
 
+    if (profileId === undefined) {
+      // no filter
+    } else if (profileId === null) {
+      query = query.is('profile_id', null)
+    } else {
+      query = query.eq('profile_id', profileId)
+    }
+
+    const { data, error } = await query
     if (error) throw error
     return data
   },
 
-  async getArchived(): Promise<Medication[]> {
-    const { data, error } = await supabase
+  async getArchived(profileId?: string | null): Promise<Medication[]> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let query: any = supabase
       .from('medications')
       .select('*')
       .not('discontinued_at', 'is', null)
       .order('discontinued_at', { ascending: false })
 
+    if (profileId === undefined) {
+      // no filter
+    } else if (profileId === null) {
+      query = query.is('profile_id', null)
+    } else {
+      query = query.eq('profile_id', profileId)
+    }
+
+    const { data, error } = await query
     if (error) throw error
     return data
   },
@@ -77,11 +97,12 @@ export const MedsService = {
     return data
   },
 
-  async createBundle(input: MedicationBundleCreateInput): Promise<string> {
+  async createBundle(input: MedicationBundleCreateInput, profileId: string | null = null): Promise<string> {
     const scheduleTimes = input.schedules.map((s) => s.time)
     const scheduleDays = input.schedules[0]?.days ?? [0, 1, 2, 3, 4, 5, 6]
 
-    const rpcPromise = Promise.resolve(supabase.rpc('create_medication_bundle', {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rpcPromise = Promise.resolve((supabase as any).rpc('create_medication_bundle', {
       medication_name: input.medication.name,
       medication_dosage: input.medication.dosage ?? null,
       medication_instructions: input.medication.instructions ?? null,
@@ -96,6 +117,7 @@ export const MedsService = {
       refill_total_quantity: input.refill.total_quantity ?? 30,
       refill_date: input.refill.refill_date ?? null,
       refill_pharmacy: input.refill.pharmacy ?? null,
+      medication_profile_id: profileId,
     }))
 
     const { data, error } = await withTimeout(rpcPromise, RPC_TIMEOUT_MS, 'Adding medication')

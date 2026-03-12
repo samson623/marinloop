@@ -2,20 +2,23 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { DoseLogsService } from '@/shared/services/dose-logs'
 import type { DoseLogCreateInput } from '@/shared/types/contracts'
 import { useAppStore } from '@/shared/stores/app-store'
+import { useAuthStore } from '@/shared/stores/auth-store'
 import { handleMutationError } from '@/shared/lib/errors'
 
 export function useDoseLogs(date?: string) {
   const queryClient = useQueryClient()
   const { toast } = useAppStore()
+  const activeProfileId = useAuthStore((s) => s.activeProfileId)
 
   const { data, isLoading } = useQuery({
-    queryKey: date ? ['dose_logs', 'date', date] : ['dose_logs', 'today'],
-    queryFn: date ? () => DoseLogsService.getForDate(date) : DoseLogsService.getToday,
+    queryKey: date ? ['dose_logs', 'date', date, activeProfileId] : ['dose_logs', 'today', activeProfileId],
+    queryFn: date ? () => DoseLogsService.getForDate(date, activeProfileId) : () => DoseLogsService.getToday(activeProfileId),
     staleTime: 1000 * 60,
   })
 
   const logMutation = useMutation({
-    mutationFn: (input: DoseLogCreateInput) => DoseLogsService.logDose(input),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mutationFn: (input: DoseLogCreateInput) => DoseLogsService.logDose({ ...input, profile_id: activeProfileId ?? null } as any),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['dose_logs'] })
       void queryClient.invalidateQueries({ queryKey: ['adherence'] })

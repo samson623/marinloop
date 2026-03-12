@@ -60,7 +60,7 @@ describe('useSchedules', () => {
 
     await waitFor(() => {
       expect(SchedulesService.create).toHaveBeenCalled()
-      expect(vi.mocked(SchedulesService.create).mock.calls[0][0]).toEqual(input)
+      expect(vi.mocked(SchedulesService.create).mock.calls[0][0]).toEqual({ ...input, profile_id: null })
     })
   })
 })

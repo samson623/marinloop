@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '@/shared/lib/supabase'
 import { env } from '@/shared/lib/env'
+import type { Subscription, SubscriptionTier } from '@/shared/types/subscription'
+import type { ManagedProfile } from '@/shared/types/managed-profile'
 
 type Profile = {
   id: string
@@ -36,6 +38,9 @@ interface AuthState {
   session: Session | null
   user: User | null
   profile: Profile | null
+  subscription: Subscription | null
+  managedProfiles: ManagedProfile[]
+  activeProfileId: string | null  // null = owner's own profile
   isLoading: boolean
 
   initialize: () => Promise<void>
@@ -45,20 +50,54 @@ interface AuthState {
   signOut: () => Promise<AuthResult>
   enrollMfa: () => Promise<{ data: MfaEnrollResult; error: Error | null }>
   verifyMfa: (factorId: string, code: string) => Promise<AuthResult>
-  updatePlan: (plan: 'free' | 'pro' | 'family') => Promise<AuthResult>
+  getEffectiveTier: () => SubscriptionTier
+  refreshSubscription: () => Promise<void>
+  setActiveProfile: (id: string | null) => void
+  refreshManagedProfiles: () => Promise<void>
 }
 
 let authSubscription: AuthSubscription | null = null
 
-async function fetchProfile(userId: string): Promise<Profile | null> {
+async function fetchProfile(userId: string): Promise<{ profile: Profile; subscription: Subscription | null } | null> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, name, avatar_url, timezone, plan, allergies, blood_type, conditions, ice_share_token, vital_thresholds')
+    .select('*, subscriptions(*)')
     .eq('id', userId)
     .single()
 
   if (error) return null
-  return data as unknown as Profile
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const row = data as any
+  // Extract the joined subscription (Supabase returns it as an object or null)
+  const subscription: Subscription | null = row.subscriptions ?? null
+
+  // Strip the joined key so Profile stays clean
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { subscriptions: _joined, ...profileData } = row
+  return { profile: profileData as unknown as Profile, subscription }
+}
+
+async function fetchManagedProfiles(userId: string): Promise<ManagedProfile[]> {
+  const { data, error } = await supabase
+    .from('managed_profiles')
+    .select('*')
+    .eq('owner_user_id', userId)
+    .order('created_at')
+
+  if (error) return []
+  return data as ManagedProfile[]
+}
+
+async function fetchSubscription(userId: string): Promise<Subscription | null> {
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', userId)
+    .single()
+
+  if (error) return null
+  return data as unknown as Subscription
 }
 
 function cleanupOAuthUrl() {
@@ -76,10 +115,13 @@ function cleanupOAuthUrl() {
   window.history.replaceState({}, document.title, nextUrl)
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   session: null,
   user: null,
   profile: null,
+  subscription: null,
+  managedProfiles: [],
+  activeProfileId: null,
   isLoading: true,
 
   initialize: async () => {
@@ -98,7 +140,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         // If we know a PKCE exchange was started, keep isLoading=true until the
         // session arrives (or the 5-second safety net fires).
         if (oauthExchangeInProgress) return
-        set({ session: null, user: null, profile: null, isLoading: false })
+        set({ session: null, user: null, profile: null, subscription: null, managedProfiles: [], activeProfileId: null, isLoading: false })
         return
       }
 
@@ -109,8 +151,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       cleanupOAuthUrl()
 
       try {
-        const profile = await fetchProfile(nextSession.user.id)
-        set({ session: nextSession, user: nextSession.user, profile, isLoading: false })
+        const result = await fetchProfile(nextSession.user.id)
+        const profile = result?.profile ?? null
+        const subscription = result?.subscription ?? null
+        const managedProfiles = await fetchManagedProfiles(nextSession.user.id)
+        set({ session: nextSession, user: nextSession.user, profile, subscription, managedProfiles, isLoading: false })
 
         // Silently sync IANA timezone to the database so the cron dispatcher fires at the right wall-clock time
         const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -119,7 +164,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         }
       } catch (err) {
         console.warn('[Auth] failed to fetch profile:', err)
-        set({ session: nextSession, user: nextSession.user, profile: null, isLoading: false })
+        set({ session: nextSession, user: nextSession.user, profile: null, subscription: null, managedProfiles: [], isLoading: false })
       }
     }
 
@@ -146,7 +191,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       await applySession(data.session)
     } catch (err) {
       console.error('[Auth] init error:', err)
-      set({ session: null, user: null, profile: null, isLoading: false })
+      set({ session: null, user: null, profile: null, subscription: null, managedProfiles: [], activeProfileId: null, isLoading: false })
     }
   },
 
@@ -219,7 +264,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   signOut: async () => {
     const { error } = await supabase.auth.signOut()
     if (!error) {
-      set({ session: null, user: null, profile: null })
+      set({ session: null, user: null, profile: null, subscription: null, managedProfiles: [], activeProfileId: null })
     }
     return { error: error ? new Error(error.message) : null }
   },
@@ -259,16 +304,38 @@ export const useAuthStore = create<AuthState>((set) => ({
     return { error: verify.error ? new Error(verify.error.message) : null }
   },
 
-  updatePlan: async (plan) => {
+  getEffectiveTier: (): SubscriptionTier => {
+    const { subscription } = get()
+
+    if (!subscription || subscription.status === 'expired' || subscription.status === 'canceled') {
+      return 'free'
+    }
+
+    if (subscription.status === 'trialing' && subscription.trial_ends_at) {
+      if (new Date(subscription.trial_ends_at) < new Date()) {
+        return 'free'
+      }
+    }
+
+    return subscription.tier
+  },
+
+  refreshSubscription: async () => {
     const { data } = await supabase.auth.getSession()
-    if (!data.session?.user?.id) return { error: new Error('Not authenticated') }
+    if (!data.session?.user?.id) return
 
-    const { error } = await supabase.from('profiles').update({ plan }).eq('id', data.session.user.id)
+    const subscription = await fetchSubscription(data.session.user.id)
+    set({ subscription })
+  },
 
-    if (error) return { error: new Error(error.message) }
+  setActiveProfile: (id) => {
+    set({ activeProfileId: id })
+  },
 
-    const refreshed = await fetchProfile(data.session.user.id)
-    set({ profile: refreshed })
-    return { error: null }
+  refreshManagedProfiles: async () => {
+    const { data } = await supabase.auth.getSession()
+    if (!data.session?.user?.id) return
+    const managedProfiles = await fetchManagedProfiles(data.session.user.id)
+    set({ managedProfiles })
   },
 }))

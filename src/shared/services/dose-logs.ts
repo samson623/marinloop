@@ -13,7 +13,8 @@ function getDayOfWeek(dateStr: string): number {
 
 export const DoseLogsService = {
   async getAdherenceByDay(
-    daysBack: number
+    daysBack: number,
+    profileId?: string | null
   ): Promise<Record<string, { t: number; d: number }>> {
     const dates: string[] = []
     for (let i = 0; i < daysBack; i++) {
@@ -31,14 +32,25 @@ export const DoseLogsService = {
     latestDate.setHours(23, 59, 59, 999)
     const endISO = latestDate.toISOString()
 
-    const [logsResult, schedulesResult] = await Promise.all([
-      supabase
-        .from('dose_logs')
-        .select('taken_at, status')
-        .gte('taken_at', startISO)
-        .lte('taken_at', endISO),
-      supabase.from('schedules').select('days').eq('active', true),
-    ])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let logsQuery: any = supabase
+      .from('dose_logs')
+      .select('taken_at, status')
+      .gte('taken_at', startISO)
+      .lte('taken_at', endISO)
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let schedulesQuery: any = supabase.from('schedules').select('days').eq('active', true)
+
+    if (profileId === null) {
+      logsQuery = logsQuery.is('profile_id', null)
+      schedulesQuery = schedulesQuery.is('profile_id', null)
+    } else if (profileId !== undefined) {
+      logsQuery = logsQuery.eq('profile_id', profileId)
+      schedulesQuery = schedulesQuery.eq('profile_id', profileId)
+    }
+
+    const [logsResult, schedulesResult] = await Promise.all([logsQuery, schedulesQuery])
 
     if (logsResult.error) throw logsResult.error
     if (schedulesResult.error) throw schedulesResult.error
@@ -66,23 +78,33 @@ export const DoseLogsService = {
     return result
   },
 
-  async getForDate(dateStr: string): Promise<DoseLog[]> {
+  async getForDate(dateStr: string, profileId?: string | null): Promise<DoseLog[]> {
     const start = new Date(`${dateStr}T00:00:00`)
     const end = new Date(`${dateStr}T23:59:59.999`)
 
-    const { data, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let query: any = supabase
       .from('dose_logs')
       .select('*')
       .gte('taken_at', start.toISOString())
       .lte('taken_at', end.toISOString())
       .order('taken_at')
 
+    if (profileId === undefined) {
+      // no filter
+    } else if (profileId === null) {
+      query = query.is('profile_id', null)
+    } else {
+      query = query.eq('profile_id', profileId)
+    }
+
+    const { data, error } = await query
     if (error) throw error
     return data
   },
 
-  async getToday(): Promise<DoseLog[]> {
-    return DoseLogsService.getForDate(todayLocal())
+  async getToday(profileId?: string | null): Promise<DoseLog[]> {
+    return DoseLogsService.getForDate(todayLocal(), profileId)
   },
 
   async logDose(log: DoseLogCreateInput): Promise<DoseLog> {

@@ -10,6 +10,7 @@ import { EfficacyService } from '@/shared/services/efficacy'
 import { AIService } from '@/shared/services/ai'
 import type { Vital } from '@/shared/services/vitals'
 import { useAIConsent } from '@/shared/hooks/useAIConsent'
+import { useSubscription } from '@/shared/hooks/useSubscription'
 
 export interface EfficacyInsight {
   medicationId: string
@@ -61,11 +62,12 @@ Reply with a JSON array: [{"medicationId": "...", "summary": "..."}]`
 
 export function useEfficacyInsights(vitals: Vital[]) {
   const { consented } = useAIConsent()
+  const { canUseAi } = useSubscription()
 
   return useQuery({
     queryKey: ['efficacy-insights', vitals.length],
     queryFn: () => buildEfficacyInsights(vitals),
-    enabled: vitals.length >= 5 && consented,
+    enabled: vitals.length >= 5 && consented && canUseAi,
     staleTime: 30 * 60 * 1000, // 30 min
     retry: false,
   })

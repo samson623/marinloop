@@ -3,6 +3,7 @@ import { AppointmentsService } from '@/shared/services/appointments'
 import type { Database } from '@/shared/types/database.types'
 import type { AppointmentCreateInput } from '@/shared/types/contracts'
 import { useAppStore } from '@/shared/stores/app-store'
+import { useAuthStore } from '@/shared/stores/auth-store'
 import { handleMutationError } from '@/shared/lib/errors'
 
 type Appointment = Database['public']['Tables']['appointments']['Row']
@@ -10,15 +11,17 @@ type Appointment = Database['public']['Tables']['appointments']['Row']
 export function useAppointments() {
   const queryClient = useQueryClient()
   const { toast } = useAppStore()
+  const activeProfileId = useAuthStore((s) => s.activeProfileId)
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['appointments'],
-    queryFn: AppointmentsService.getAll,
+    queryKey: ['appointments', activeProfileId],
+    queryFn: () => AppointmentsService.getAll(activeProfileId),
     staleTime: 1000 * 60 * 15,
   })
 
   const createMutation = useMutation({
-    mutationFn: (input: AppointmentCreateInput) => AppointmentsService.create(input),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mutationFn: (input: AppointmentCreateInput) => AppointmentsService.create({ ...input, profile_id: activeProfileId ?? null } as any),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['appointments'] })
       toast('Appointment added', 'ts')

@@ -62,7 +62,7 @@ describe('useNotes', () => {
 
     await waitFor(() => {
       expect(NotesService.create).toHaveBeenCalled()
-      expect(vi.mocked(NotesService.create).mock.calls[0][0]).toEqual({ content: 'felt fine', medication_id: null })
+      expect(vi.mocked(NotesService.create).mock.calls[0][0]).toEqual({ content: 'felt fine', medication_id: null, profile_id: null })
     })
   })
 

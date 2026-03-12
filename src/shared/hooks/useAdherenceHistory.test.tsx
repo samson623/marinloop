@@ -42,7 +42,7 @@ describe('useAdherenceHistory()', () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false))
 
-    expect(DoseLogsService.getAdherenceByDay).toHaveBeenCalledWith(7)
+    expect(DoseLogsService.getAdherenceByDay).toHaveBeenCalledWith(7, null)
   })
 
   it('passes the 30-day window parameter to the service', async () => {
@@ -50,7 +50,7 @@ describe('useAdherenceHistory()', () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false))
 
-    expect(DoseLogsService.getAdherenceByDay).toHaveBeenCalledWith(30)
+    expect(DoseLogsService.getAdherenceByDay).toHaveBeenCalledWith(30, null)
   })
 
   it('returns the adherence record keyed by date string with t and d counts', async () => {

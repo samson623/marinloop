@@ -59,8 +59,8 @@ export function LoginScreen() {
       if (isSignUp) {
         const res = await signUp(email, pass, name, betaCode)
         if (res.error) throw res.error
-        toast('Account created. Please sign in.', 'ts')
-        setIsSignUp(false)
+        toast('Account created! Choose your plan to get started.', 'ts')
+        navigate('/subscription?onboarding=1')
         return
       }
 

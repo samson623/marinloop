@@ -24,6 +24,7 @@ const TermsView = React.lazy(() => import('@/app/views/TermsView').then((m) => (
 const TrustCenterView = React.lazy(() => import('@/app/views/TrustCenterView').then((m) => ({ default: m.TrustCenterView })))
 const IceCardScreen = React.lazy(() => import('@/app/views/IceCardScreen').then((m) => ({ default: m.IceCardScreen })))
 const AdminView = React.lazy(() => import('@/app/views/AdminView').then((m) => ({ default: m.AdminView })))
+const SubscriptionView = React.lazy(() => import('@/app/views/SubscriptionView').then((m) => ({ default: m.SubscriptionView })))
 
 export function PageLoader() {
   return (
@@ -66,6 +67,7 @@ export function AppInner() {
       <Route path="/ice" element={<React.Suspense fallback={<PageLoader />}><IceCardScreen /></React.Suspense>} />
       <Route element={<PrivateRoute />}>
         <Route path="/admin" element={<React.Suspense fallback={<PageLoader />}><AdminView /></React.Suspense>} />
+        <Route path="/subscription" element={<React.Suspense fallback={<PageLoader />}><SubscriptionView /></React.Suspense>} />
         <Route element={<AppShell />}>
           <Route path="/timeline" element={<TimelineView />} />
           <Route path="/meds" element={<React.Suspense fallback={<PageLoader />}><MedsView /></React.Suspense>} />

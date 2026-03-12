@@ -5,12 +5,22 @@ type Note = Database['public']['Tables']['notes']['Row']
 type NoteInsert = Database['public']['Tables']['notes']['Insert']
 
 export const NotesService = {
-  async getAll(): Promise<Note[]> {
-    const { data, error } = await supabase
+  async getAll(profileId?: string | null): Promise<Note[]> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let query: any = supabase
       .from('notes')
       .select('*')
       .order('created_at', { ascending: false })
 
+    if (profileId === undefined) {
+      // no filter
+    } else if (profileId === null) {
+      query = query.is('profile_id', null)
+    } else {
+      query = query.eq('profile_id', profileId)
+    }
+
+    const { data, error } = await query
     if (error) throw error
     return data
   },

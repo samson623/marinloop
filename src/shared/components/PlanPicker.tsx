@@ -26,8 +26,7 @@ function formatPrice(tier: SubscriptionTier, billingPeriod: 'monthly' | 'yearly'
   const pricing = TIER_CONFIG[tier].pricing
   if (pricing.monthly === 0) return 'Free'
   if (billingPeriod === 'yearly') {
-    const monthly = (pricing.yearly / 12).toFixed(2)
-    return `$${monthly}/mo`
+    return `$${pricing.yearly.toFixed(2)}/yr`
   }
   return `$${pricing.monthly.toFixed(2)}/mo`
 }
@@ -118,10 +117,6 @@ function PlanCard({
   const isCurrent = currentTier === tier
   const cta = getPlanCta(tier, currentTier, isTrialing, trialDaysRemaining)
   const priceDisplay = formatPrice(tier, billingPeriod)
-  const yearlyBilled =
-    billingPeriod === 'yearly' && info.pricing.yearly > 0
-      ? `$${info.pricing.yearly.toFixed(2)} billed yearly`
-      : null
 
   return (
     <div
@@ -159,11 +154,6 @@ function PlanCard({
           >
             {priceDisplay}
           </span>
-          {yearlyBilled && (
-            <span style={{ fontSize: 'var(--text-caption)', color: 'var(--color-text-tertiary)' }}>
-              {yearlyBilled}
-            </span>
-          )}
         </div>
         {isCurrent && (
           <span

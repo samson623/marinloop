@@ -59,23 +59,13 @@ interface AuthState {
 let authSubscription: AuthSubscription | null = null
 
 async function fetchProfile(userId: string): Promise<{ profile: Profile; subscription: Subscription | null } | null> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*, subscriptions(*)')
-    .eq('id', userId)
-    .single()
+  const [profileResult, subscription] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', userId).single(),
+    fetchSubscription(userId),
+  ])
 
-  if (error) return null
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const row = data as any
-  // Extract the joined subscription (Supabase returns it as an object or null)
-  const subscription: Subscription | null = row.subscriptions ?? null
-
-  // Strip the joined key so Profile stays clean
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { subscriptions: _joined, ...profileData } = row
-  return { profile: profileData as unknown as Profile, subscription }
+  if (profileResult.error) return null
+  return { profile: profileResult.data as unknown as Profile, subscription }
 }
 
 async function fetchManagedProfiles(userId: string): Promise<ManagedProfile[]> {

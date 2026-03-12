@@ -104,7 +104,8 @@ function setupStoreMocks({ consented }: { consented: boolean }) {
   const storeState = { toast: mockToast, openAddMedModal: mockOpenAddMedModal, openAddApptModal: mockOpenAddApptModal }
   vi.mocked(useAppStore).getState = vi.fn().mockReturnValue(storeState)
 
-  vi.mocked(useAuthStore).mockImplementation((selector?: (s: unknown) => unknown) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  vi.mocked(useAuthStore).mockImplementation(((selector?: (s: any) => unknown) => {
     const state = {
       session: { user: { id: 'user-1' } },
       getEffectiveTier: () => 'basic' as const,
@@ -113,7 +114,7 @@ function setupStoreMocks({ consented }: { consented: boolean }) {
     }
     if (typeof selector === 'function') return selector(state as never)
     return state
-  })
+  }) as never)
 
   vi.mocked(useTimeline).mockReturnValue({ timeline: [] } as unknown as ReturnType<typeof useTimeline>)
   vi.mocked(useMedications).mockReturnValue({ meds: [] } as unknown as ReturnType<typeof useMedications>)

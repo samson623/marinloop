@@ -25,7 +25,8 @@ export function useManagedProfiles() {
 
   const addMutation = useMutation({
     mutationFn: async (input: { name: string; relationship?: string; avatar_url?: string }): Promise<ManagedProfile> => {
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .from('managed_profiles')
         .insert(input)
         .select('*')
@@ -43,7 +44,8 @@ export function useManagedProfiles() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Pick<ManagedProfile, 'name' | 'relationship' | 'avatar_url'>> }): Promise<ManagedProfile> => {
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .from('managed_profiles')
         .update(updates)
         .eq('id', id)

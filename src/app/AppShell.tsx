@@ -271,12 +271,12 @@ export function AppShell() {
           >
             <BellIcon size={19} strokeWidth={2} />
           </IconButton>
-          <IconButton size="md" aria-label="Toggle theme" onClick={toggleTheme}>
+          <IconButton size="md" aria-label="Toggle theme" onClick={toggleTheme} className="hidden sm:flex">
             {resolvedTheme === 'dark'
               ? <SunIcon  size={20} strokeWidth={1.8} />
               : <MoonIcon size={20} strokeWidth={1.8} />}
           </IconButton>
-          <IconButton size="md" aria-label="Send feedback" title="Send feedback" onClick={() => setFeedbackOpen(true)}>
+          <IconButton size="md" aria-label="Send feedback" title="Send feedback" onClick={() => setFeedbackOpen(true)} className="hidden sm:flex">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>

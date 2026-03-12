@@ -67,41 +67,42 @@ export function SubscriptionView() {
   return (
     <div
       data-testid="subscription-view"
-      className="flex min-h-screen flex-col"
+      className="flex min-h-screen flex-col w-full"
       style={{ background: 'var(--color-bg-primary)' }}
     >
       {/* Header */}
       <header
-        className="sticky top-0 z-10 border-b px-4 py-3"
+        className="sticky top-0 z-10 border-b px-4 py-3 w-full"
         style={{
           background: 'var(--color-bg-primary)',
           borderColor: 'var(--color-border-primary)',
         }}
       >
-      <div className="max-w-2xl mx-auto w-full flex items-center gap-3">
-        {isOnboarding ? (
-          <span
-            className="font-bold"
-            style={{ fontSize: 'var(--text-subtitle)', color: 'var(--color-accent)' }}
-          >
-            MarinLoop
-          </span>
-        ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-auto"
-            onClick={() => navigate(-1)}
-            aria-label="Go back"
-          >
-            ← Back
-          </Button>
-        )}
-      </div>
+        <div className="max-w-2xl mx-auto w-full flex items-center gap-3">
+          {isOnboarding ? (
+            <span
+              className="font-bold"
+              style={{ fontSize: 'var(--text-subtitle)', color: 'var(--color-accent)' }}
+            >
+              MarinLoop
+            </span>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-auto"
+              onClick={() => navigate(-1)}
+              aria-label="Go back"
+            >
+              ← Back
+            </Button>
+          )}
+        </div>
       </header>
 
       {/* Content */}
-      <main className="flex-1 px-4 py-6 w-full max-w-2xl mx-auto flex flex-col gap-6">
+      <div className="flex-1 flex justify-center px-4 py-6">
+      <main className="w-full max-w-2xl flex flex-col gap-6">
         {/* Heading */}
         <div className="flex flex-col gap-1.5 text-center">
           <h1
@@ -168,6 +169,7 @@ export function SubscriptionView() {
           Prices shown in USD. Cancel anytime.
         </p>
       </main>
+      </div>
     </div>
   )
 }

@@ -72,12 +72,13 @@ export function SubscriptionView() {
     >
       {/* Header */}
       <header
-        className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 border-b"
+        className="sticky top-0 z-10 border-b px-4 py-3"
         style={{
           background: 'var(--color-bg-primary)',
           borderColor: 'var(--color-border-primary)',
         }}
       >
+      <div className="max-w-2xl mx-auto w-full flex items-center gap-3">
         {isOnboarding ? (
           <span
             className="font-bold"
@@ -96,10 +97,11 @@ export function SubscriptionView() {
             ← Back
           </Button>
         )}
+      </div>
       </header>
 
       {/* Content */}
-      <main className="flex-1 px-4 py-6 w-full max-w-[480px] mx-auto flex flex-col gap-6">
+      <main className="flex-1 px-4 py-6 w-full max-w-2xl mx-auto flex flex-col gap-6">
         {/* Heading */}
         <div className="flex flex-col gap-1.5 text-center">
           <h1

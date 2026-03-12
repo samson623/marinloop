@@ -140,34 +140,34 @@ function PlanCard({
       }}
     >
       {/* Header */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex flex-col gap-0.5">
+      <div className="flex flex-col gap-0.5">
+        <div className="flex items-center gap-2 flex-wrap">
           <span
             className="font-bold"
             style={{ fontSize: 'var(--text-subtitle)', color: 'var(--color-text-primary)' }}
           >
             {info.name}
           </span>
-          <span
-            className="font-semibold tabular-nums"
-            style={{ fontSize: 'var(--text-title)', color: 'var(--color-accent)' }}
-          >
-            {priceDisplay}
-          </span>
+          {isCurrent && (
+            <span
+              className="rounded-full px-2.5 py-0.5 font-semibold"
+              style={{
+                background: 'var(--color-accent-bg)',
+                color: 'var(--color-accent)',
+                border: '1px solid var(--color-accent)',
+                fontSize: 'var(--text-caption)',
+              }}
+            >
+              Current
+            </span>
+          )}
         </div>
-        {isCurrent && (
-          <span
-            className="rounded-full px-2.5 py-0.5 font-semibold shrink-0"
-            style={{
-              background: 'var(--color-accent-bg)',
-              color: 'var(--color-accent)',
-              border: '1px solid var(--color-accent)',
-              fontSize: 'var(--text-caption)',
-            }}
-          >
-            Current
-          </span>
-        )}
+        <span
+          className="font-semibold tabular-nums"
+          style={{ fontSize: 'var(--text-title)', color: 'var(--color-accent)' }}
+        >
+          {priceDisplay}
+        </span>
       </div>
 
       {/* Feature list */}

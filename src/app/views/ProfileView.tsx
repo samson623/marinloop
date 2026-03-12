@@ -13,6 +13,7 @@ import { Button, Input, Card } from '@/shared/components/ui'
 import { getPlatformLabel, isStandalone } from '@/shared/lib/device'
 import { env } from '@/shared/lib/env'
 import { AccountDeletionModal } from '@/shared/components/AccountDeletionModal'
+import { FeedbackModal } from '@/shared/components/FeedbackModal'
 import { useAIConsent } from '@/shared/hooks/useAIConsent'
 
 export function ProfileView() {
@@ -28,6 +29,7 @@ export function ProfileView() {
   const [code, setCode] = useState('')
   const [mfaLoading, setMfaLoading] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
 
   const effectiveTier = getEffectiveTier()
 
@@ -382,12 +384,16 @@ export function ProfileView() {
       </Card>
 
       <div className="flex flex-col gap-2">
+        <Button type="button" variant="secondary" size="md" onClick={() => setFeedbackOpen(true)}>
+          Send Feedback
+        </Button>
         <Button type="button" variant="danger" size="md" onClick={() => { void signOut() }}>
           Sign Out
         </Button>
       </div>
 
       <AccountDeletionModal open={showDeleteModal} onOpenChange={setShowDeleteModal} />
+      <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
 
       <p className="mt-6 text-[var(--color-text-tertiary)] leading-relaxed text-center [font-size:var(--text-caption)]">
         Not medical advice. Always follow your healthcare provider&apos;s instructions.

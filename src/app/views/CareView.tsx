@@ -620,14 +620,14 @@ function EmergencyTab() {
 
   return (
     <section aria-label="Emergency contacts">
-      <div className="mb-4 flex items-start gap-3 p-3.5 rounded-xl bg-[color-mix(in_srgb,var(--color-red)_8%,transparent)] border border-[color-mix(in_srgb,var(--color-red)_20%,transparent)]">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-red)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0 mt-0.5">
+      <div className="mb-4 flex items-start gap-3 p-4 rounded-xl bg-[color-mix(in_srgb,var(--color-red)_8%,transparent)] border border-[color-mix(in_srgb,var(--color-red)_20%,transparent)]">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-red)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0 mt-0.5">
           <circle cx="12" cy="12" r="10" />
           <line x1="12" y1="8" x2="12" y2="12" />
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
-        <p className="text-[var(--color-red)] [font-size:var(--text-label)] font-semibold leading-snug">
-          These contacts are for your personal reference only. In an emergency always call 911.
+        <p className="text-[var(--color-red)] [font-size:var(--text-body)] font-bold leading-relaxed">
+          These contacts are for your personal reference only. In an emergency, always call 911.
         </p>
       </div>
 
@@ -779,7 +779,7 @@ export function CareView() {
               aria-controls={`care-panel-${t.id}`}
               onClick={() => setActiveTab(t.id)}
               className={cn(
-                'flex-1 py-2 px-2 rounded-xl text-center font-semibold [font-size:var(--text-label)] transition-all outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] cursor-pointer border-none',
+                'flex-1 py-3 px-3 rounded-xl text-center font-semibold [font-size:var(--text-body)] transition-all outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] cursor-pointer border-none',
                 isActive
                   ? 'bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm'
                   : 'bg-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)]'

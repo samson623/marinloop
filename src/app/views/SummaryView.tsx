@@ -182,17 +182,17 @@ export function SummaryView() {
       </h2>
 
       {/* Sub-tab switcher */}
-      <div className="flex gap-1 p-1 mb-6 rounded-xl bg-[var(--color-bg-secondary)]" role="tablist">
+      <div className="flex gap-1 p-1.5 mb-6 rounded-2xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)]" role="tablist">
         {(['adherence', 'vitals', 'journal'] as HealthTab[]).map((tab) => (
           <button
             key={tab}
             role="tab"
             aria-selected={activeHealthTab === tab}
             onClick={() => setActiveHealthTab(tab)}
-            className={`flex-1 py-2.5 px-3 rounded-lg font-semibold capitalize transition-all [font-size:var(--text-caption)] ${
+            className={`flex-1 py-3 px-4 rounded-xl font-semibold capitalize transition-all [font-size:var(--text-body)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] cursor-pointer border-none ${
               activeHealthTab === tab
-                ? 'bg-[var(--color-bg-primary)] text-[var(--color-accent)] shadow-sm'
-                : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
+                ? 'bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm'
+                : 'bg-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)]'
             }`}
           >
             {tab === 'adherence' ? 'Adherence' : tab === 'vitals' ? 'Vitals' : 'Journal'}

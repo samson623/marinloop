@@ -416,29 +416,32 @@ export function SummaryView() {
                 <SkeletonNoteRow />
               </div>
             ) : notes.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 gap-3 text-center">
-                <svg
-                  width="48"
-                  height="48"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="var(--color-accent)"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <div
+                  className="w-16 h-16 rounded-full flex items-center justify-center mb-5"
+                  style={{ background: 'var(--color-accent-bg)' }}
                 >
-                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-                  <line x1="9" y1="12" x2="15" y2="12" />
-                  <line x1="9" y1="16" x2="13" y2="16" />
-                </svg>
-                <div>
-                  <p className="text-[var(--color-text-primary)] font-semibold text-lg leading-snug">No notes yet</p>
-                  <p className="text-[var(--color-text-secondary)] text-sm mt-1 max-w-xs">
-                    Capture observations, questions for your doctor, or anything that matters.
-                  </p>
+                  <svg
+                    width="28"
+                    height="28"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="var(--color-accent)"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                    <line x1="9" y1="12" x2="15" y2="12" />
+                    <line x1="9" y1="16" x2="13" y2="16" />
+                  </svg>
                 </div>
+                <p className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-label)] leading-snug">No notes yet</p>
+                <p className="text-[var(--color-text-secondary)] [font-size:var(--text-caption)] mt-1.5 max-w-[260px] leading-snug">
+                  Capture observations, questions for your doctor, or anything that matters.
+                </p>
               </div>
             ) : (
               notes.slice(0, 8).map((n) => (
@@ -602,40 +605,53 @@ export function SummaryView() {
           <Button
             variant="primary"
             size="md"
-            className="w-full mb-6"
+            className="w-full mb-8"
             onClick={() => setShowVitalModal(true)}
           >
             + Log Vitals
           </Button>
 
           {vitalsLoading ? (
-            <div role="status" aria-live="polite" aria-label="Loading vitals" className="flex flex-col gap-3">
+            <div role="status" aria-live="polite" aria-label="Loading vitals" className="flex flex-col gap-4">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="h-24 rounded-2xl bg-[var(--color-bg-secondary)] animate-pulse" />
               ))}
             </div>
           ) : vitals.length === 0 ? (
-            <div className="py-16 text-center flex flex-col items-center">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="mb-4">
-                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-              </svg>
-              <p className="font-semibold text-[var(--color-text-primary)] text-lg">No vitals logged yet</p>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-1 max-w-xs">Track blood pressure, heart rate, glucose, and more.</p>
-            </div>
+            <Card className="py-12 flex flex-col items-center text-center">
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center mb-5"
+                style={{ background: 'var(--color-accent-bg)' }}
+              >
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                </svg>
+              </div>
+              <p className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-label)]">No vitals logged yet</p>
+              <p className="text-[var(--color-text-secondary)] [font-size:var(--text-caption)] mt-1.5 max-w-[260px] leading-snug">
+                Track blood pressure, heart rate, glucose, and more.
+              </p>
+            </Card>
           ) : (
             <>
               {vitals.length >= 2 && <VitalsTrendChart vitals={vitals} />}
 
               {/* Medication efficacy insights */}
               {efficacyInsights.length > 0 && (
-                <div className="mb-6 space-y-3">
-                  <h3 className="font-bold uppercase tracking-[0.06em] [font-size:var(--text-caption)] text-[var(--color-text-tertiary)] mb-3">Medication Efficacy</h3>
+                <div className="mb-8 space-y-3">
+                  <h3 className="section-label">Medication Efficacy</h3>
                   {efficacyInsights.map((ins) => (
                     <Card key={ins.medicationId}>
                       <div className="flex items-start gap-3">
-                        <span className="text-xl leading-none mt-0.5 shrink-0" aria-hidden>
-                          {ins.delta < 0 ? '📉' : '📈'}
-                        </span>
+                        <div
+                          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
+                          style={{ background: ins.delta < 0 ? 'var(--color-green-bg)' : 'var(--color-red-bg)' }}
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={ins.delta < 0 ? 'var(--color-green)' : 'var(--color-red)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <polyline points={ins.delta < 0 ? '23 18 13.5 8.5 8.5 13.5 1 6' : '23 6 13.5 15.5 8.5 10.5 1 18'} />
+                            <polyline points={ins.delta < 0 ? '17 18 23 18 23 12' : '17 6 23 6 23 12'} />
+                          </svg>
+                        </div>
                         <div className="min-w-0 flex-1">
                           <div className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-body)]">
                             {ins.medicationName}
@@ -672,14 +688,18 @@ export function SummaryView() {
       {/* ------------------------------------------------------------------ */}
       {activeHealthTab === 'journal' && (
         <div>
+          <Button variant="primary" size="md" className="w-full mb-8" onClick={() => setShowJournalModal(true)}>
+            + New Entry
+          </Button>
+
           {/* Mood filter */}
-          <div className="flex gap-2.5 mb-8 overflow-x-auto pb-1" role="group" aria-label="Filter by mood">
+          <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-1 -mx-1 px-1" role="group" aria-label="Filter by mood">
             <button
               type="button"
               onClick={() => setMoodFilter(null)}
               aria-label="Show all mood entries"
               aria-pressed={moodFilter === null}
-              className={`shrink-0 px-4 py-2 rounded-full text-sm font-semibold border transition-colors min-h-[40px] ${moodFilter === null ? 'bg-[var(--color-accent)] text-white border-[var(--color-accent)]' : 'bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border-primary)]'}`}
+              className={`shrink-0 h-10 px-4 rounded-full [font-size:var(--text-caption)] font-semibold border transition-all cursor-pointer ${moodFilter === null ? 'bg-[var(--color-accent)] text-white border-[var(--color-accent)] shadow-[var(--shadow-tab-active)]' : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] border-[var(--color-border-secondary)] hover:border-[var(--color-border-primary)]'}`}
             >
               All
             </button>
@@ -693,7 +713,7 @@ export function SummaryView() {
                   onClick={() => setMoodFilter(moodFilter === m ? null : m)}
                   aria-label={`Filter by mood: ${moodLabel}`}
                   aria-pressed={moodFilter === m}
-                  className={`shrink-0 px-4 py-2 rounded-full text-sm font-semibold border transition-colors min-h-[40px] ${moodFilter === m ? 'bg-[var(--color-accent)] text-white border-[var(--color-accent)]' : 'bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border-primary)]'}`}
+                  className={`shrink-0 w-10 h-10 rounded-full text-lg flex items-center justify-center border transition-all cursor-pointer ${moodFilter === m ? 'bg-[var(--color-accent)] border-[var(--color-accent)] shadow-[var(--shadow-tab-active)] scale-110' : 'bg-[var(--color-bg-secondary)] border-[var(--color-border-secondary)] hover:border-[var(--color-border-primary)] hover:scale-105'}`}
                 >
                   {emoji}
                 </button>
@@ -701,12 +721,8 @@ export function SummaryView() {
             })}
           </div>
 
-          <Button variant="primary" size="md" className="w-full mb-6" onClick={() => setShowJournalModal(true)}>
-            + New Entry
-          </Button>
-
           {journalLoading ? (
-            <div role="status" aria-live="polite" aria-label="Loading journal entries" className="flex flex-col gap-3">
+            <div role="status" aria-live="polite" aria-label="Loading journal entries" className="flex flex-col gap-4">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="h-28 rounded-2xl bg-[var(--color-bg-secondary)] animate-pulse" />
               ))}
@@ -715,20 +731,25 @@ export function SummaryView() {
             (() => {
               const filtered = moodFilter ? entries.filter((e) => e.mood === moodFilter) : entries
               return filtered.length === 0 ? (
-                <div className="py-16 text-center flex flex-col items-center">
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="mb-4">
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-                    <line x1="8" y1="7" x2="16" y2="7" />
-                    <line x1="8" y1="11" x2="14" y2="11" />
-                  </svg>
-                  <p className="font-semibold text-[var(--color-text-primary)] text-lg">
+                <Card className="py-12 flex flex-col items-center text-center">
+                  <div
+                    className="w-16 h-16 rounded-full flex items-center justify-center mb-5"
+                    style={{ background: 'var(--color-accent-bg)' }}
+                  >
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                      <line x1="8" y1="7" x2="16" y2="7" />
+                      <line x1="8" y1="11" x2="14" y2="11" />
+                    </svg>
+                  </div>
+                  <p className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-label)]">
                     {moodFilter ? 'No entries with this mood' : 'No journal entries yet'}
                   </p>
-                  <p className="text-sm text-[var(--color-text-secondary)] mt-1 max-w-xs">
+                  <p className="text-[var(--color-text-secondary)] [font-size:var(--text-caption)] mt-1.5 max-w-[260px] leading-snug">
                     Track your daily health observations.
                   </p>
-                </div>
+                </Card>
               ) : (
                 <div className="space-y-3">
                   {filtered.slice(0, 20).map((e) => <JournalCard key={e.id} entry={e} />)}
@@ -847,56 +868,83 @@ function VitalCard({ vital }: { vital: Vital }) {
 
   return (
     <Card>
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-2 mb-4">
+        <div
+          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+          style={{ background: 'var(--color-accent-bg)' }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+          </svg>
+        </div>
         <span className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] font-medium">
           {new Date(vital.recorded_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
         </span>
       </div>
-      <div className="flex flex-wrap gap-x-5 gap-y-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3">
         {metrics.map((m) => (
           <div key={m.label}>
-            <div className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] font-semibold">{m.label}</div>
-            <div className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-label)]">
-              {m.value} <span className="font-normal text-[var(--color-text-tertiary)] text-xs">{m.unit}</span>
+            <div className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] font-semibold uppercase tracking-[0.04em]">{m.label}</div>
+            <div className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-label)] mt-0.5">
+              {m.value} <span className="font-normal text-[var(--color-text-tertiary)] [font-size:var(--text-caption)]">{m.unit}</span>
             </div>
           </div>
         ))}
       </div>
       {vital.notes && (
-        <p className="mt-3 text-[var(--color-text-secondary)] [font-size:var(--text-caption)] italic">{vital.notes}</p>
+        <p className="mt-4 pt-3 border-t border-[var(--color-border-secondary)] text-[var(--color-text-secondary)] [font-size:var(--text-caption)] italic leading-snug">{vital.notes}</p>
       )}
     </Card>
   )
 }
 
+const MOOD_CONFIG = [
+  { emoji: '😔', label: 'Very low', color: 'var(--color-red)' },
+  { emoji: '😐', label: 'Low', color: 'var(--color-amber)' },
+  { emoji: '🙂', label: 'Neutral', color: 'var(--color-text-tertiary)' },
+  { emoji: '😊', label: 'Good', color: 'var(--color-green)' },
+  { emoji: '🤩', label: 'Great', color: 'var(--color-accent)' },
+] as const
+
 function JournalCard({ entry }: { entry: JournalEntry }) {
-  const moodEmoji = entry.mood ? ['😔', '😐', '🙂', '😊', '🤩'][entry.mood - 1] : null
+  const mood = entry.mood ? MOOD_CONFIG[entry.mood - 1] : null
   return (
     <Card>
-      <div className="flex items-start justify-between gap-3 mb-2">
+      <div className="flex items-start gap-3">
+        {/* Mood indicator */}
+        {mood && (
+          <div className="shrink-0 flex flex-col items-center gap-1 pt-0.5">
+            <span className="text-2xl leading-none" aria-label={`Mood: ${mood.label}`}>{mood.emoji}</span>
+            <span className="[font-size:11px] font-semibold leading-none" style={{ color: mood.color }}>{mood.label}</span>
+          </div>
+        )}
+
+        {/* Content */}
         <div className="flex-1 min-w-0">
           {entry.title && (
-            <div className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-label)] mb-1">{entry.title}</div>
+            <div className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-label)] mb-1 leading-tight">{entry.title}</div>
           )}
           <div className="text-[var(--color-text-secondary)] [font-size:var(--text-body)] leading-snug line-clamp-3">
             {entry.content}
           </div>
-        </div>
-        {moodEmoji && (
-          <span className="text-2xl shrink-0 mt-0.5" aria-label={`Mood: ${entry.mood}/5`}>{moodEmoji}</span>
-        )}
-      </div>
-      {entry.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mt-2">
-          {entry.tags.map((tag) => (
-            <span key={tag} className="px-2 py-0.5 rounded-full bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] text-xs font-medium">
-              #{tag}
+
+          {/* Tags + date footer */}
+          <div className="flex items-center flex-wrap gap-2 mt-3 pt-3 border-t border-[var(--color-border-secondary)]">
+            <span className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] font-medium">
+              {new Date(entry.entry_date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
             </span>
-          ))}
+            {entry.tags.length > 0 && (
+              <>
+                <span className="w-1 h-1 rounded-full bg-[var(--color-border-primary)] shrink-0" />
+                {entry.tags.map((tag) => (
+                  <span key={tag} className="px-2 py-0.5 rounded-full bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] [font-size:11px] font-medium">
+                    #{tag}
+                  </span>
+                ))}
+              </>
+            )}
+          </div>
         </div>
-      )}
-      <div className="mt-2 text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] font-medium">
-        {new Date(entry.entry_date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
       </div>
     </Card>
   )

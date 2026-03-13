@@ -86,7 +86,7 @@ export function AddReminderModal({ open, onClose }: Props) {
   })()
 
   return (
-    <Modal open={open} onOpenChange={(o) => !o && onClose()} title="New Reminder" variant="bottom">
+    <Modal open={open} onOpenChange={(o) => !o && onClose()} title="New Reminder" variant="center">
       <div className="flex flex-col gap-4 pb-2">
         {/* Title */}
         <div>

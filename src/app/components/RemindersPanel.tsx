@@ -88,14 +88,14 @@ export function RemindersPanel() {
           {/* Push subscription warning */}
           {isSupported && !isSubscribed && (
             <div className="flex items-center justify-between gap-3 mb-4 px-3 py-2.5 rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)]">
-              <p className="text-[14px] text-[var(--color-text-secondary)] leading-snug">
+              <p className="text-[15px] text-[var(--color-text-secondary)] leading-snug">
                 Push off — you may miss reminders when the app is closed.
               </p>
               <button
                 type="button"
                 onClick={subscribe}
                 disabled={isPushLoading}
-                className="shrink-0 text-[14px] font-semibold text-[var(--color-accent)] bg-transparent border-none cursor-pointer p-0 disabled:opacity-50"
+                className="shrink-0 text-[15px] font-semibold text-[var(--color-accent)] bg-transparent border-none cursor-pointer p-0 disabled:opacity-50"
               >
                 Enable
               </button>
@@ -103,7 +103,7 @@ export function RemindersPanel() {
           )}
 
           {isLoading && (
-            <p className="text-[var(--color-text-secondary)] text-[14px] py-2">Loading...</p>
+            <p className="text-[var(--color-text-secondary)] text-[15px] py-2">Loading...</p>
           )}
 
           {/* Overdue section */}
@@ -132,9 +132,9 @@ export function RemindersPanel() {
 
           {/* Empty state */}
           {!isLoading && upcoming.length === 0 && overdue.length === 0 && (
-            <div className="py-8 text-center">
-              <p className="text-[var(--color-text-secondary)] text-[15px] mb-1">No upcoming reminders.</p>
-              <p className="text-[var(--color-text-tertiary)] text-[14px]">Try saying "Remind me in one hour" or tap + above.</p>
+            <div className="py-10 text-center">
+              <p className="text-[var(--color-text-secondary)] text-[16px] font-medium mb-2">No upcoming reminders.</p>
+              <p className="text-[var(--color-text-tertiary)] text-[14px] leading-relaxed">Tap <strong>New Reminder</strong> above, or use the mic button to create one with your voice.</p>
             </div>
           )}
 
@@ -218,16 +218,16 @@ function ReminderCard({
         className={`w-full text-left bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)] rounded-xl px-4 py-3 cursor-pointer hover:bg-[var(--color-bg-primary)] transition-colors ${dimmed ? 'opacity-60' : ''}`}
       >
         <div className="flex items-center justify-between gap-3">
-          <span className="font-semibold text-[var(--color-text-primary)] text-[15px] truncate">{reminder.title}</span>
+          <span className="font-semibold text-[var(--color-text-primary)] text-[16px] truncate">{reminder.title}</span>
           <span
-            className="shrink-0 text-[12px] font-bold px-2 py-0.5 rounded-full"
+            className="shrink-0 text-[13px] font-bold px-2 py-0.5 rounded-full"
             style={{ color: labelColor, background: 'color-mix(in srgb, currentColor 10%, transparent)' }}
           >
             {label}
           </span>
         </div>
         {reminder.body && (
-          <p className="text-[var(--color-text-secondary)] text-[13px] mt-0.5 truncate">{reminder.body}</p>
+          <p className="text-[var(--color-text-secondary)] text-[14px] mt-0.5 truncate">{reminder.body}</p>
         )}
       </button>
     </li>

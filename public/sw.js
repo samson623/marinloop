@@ -30,7 +30,9 @@ function toSameOriginPath(value, origin) {
 // Pre-cache the app shell so the app loads offline immediately.
 self.addEventListener('install', (event) => {
     if (DEBUG) console.log('[MarinLoop SW] Installing — caching app shell')
-    self.skipWaiting()
+    // Do NOT call self.skipWaiting() here — let the new SW wait in the
+    // "waiting" state so the app can show an "Update available" banner.
+    // The user triggers activation via the SKIP_WAITING message handler.
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then((cache) => cache.addAll(APP_SHELL_URLS))

@@ -178,6 +178,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // getSession() triggers the PKCE exchange and strips ?code= from the URL.
       // URL cleanup runs only inside applySession once a valid session is confirmed.
       const { data } = await supabase.auth.getSession()
+
+      // If getSession returned null, attempt to restore from the backup
+      // saved before an app-update reload (SW activation can race localStorage).
+      if (!data.session) {
+        try {
+          const backup = sessionStorage.getItem('marinloop_session_backup')
+          const backupKey = sessionStorage.getItem('marinloop_session_backup_key')
+          if (backup && backupKey) {
+            sessionStorage.removeItem('marinloop_session_backup')
+            sessionStorage.removeItem('marinloop_session_backup_key')
+            localStorage.setItem(backupKey, backup)
+            const { data: retryData } = await supabase.auth.getSession()
+            await applySession(retryData.session)
+            return
+          }
+        } catch { /* sessionStorage unavailable — fall through */ }
+      }
+
       await applySession(data.session)
     } catch (err) {
       console.error('[Auth] init error:', err)

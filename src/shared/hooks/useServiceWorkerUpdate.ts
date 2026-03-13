@@ -43,6 +43,17 @@ export function useServiceWorkerUpdate(): { updateAvailable: boolean; reloadToUp
   }, [])
 
   const reloadToUpdate = () => {
+    // Back up the Supabase session so a reload during SW activation
+    // doesn't lose auth (IndexedDB/localStorage can race).
+    try {
+      const keys = Object.keys(localStorage)
+      const sessionKey = keys.find((k) => k.startsWith('sb-') && k.endsWith('-auth-token'))
+      if (sessionKey) {
+        sessionStorage.setItem('marinloop_session_backup', localStorage.getItem(sessionKey)!)
+        sessionStorage.setItem('marinloop_session_backup_key', sessionKey)
+      }
+    } catch { /* storage unavailable — proceed anyway */ }
+
     if (!('serviceWorker' in navigator)) {
       window.location.reload()
       return

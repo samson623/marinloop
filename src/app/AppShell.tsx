@@ -38,7 +38,7 @@ import { NotificationsPanel } from '@/app/components/NotificationsPanel'
 import { NotificationsService } from '@/shared/services/notifications'
 import {
   LogoIcon, BellAlarmIcon, BellIcon, SunIcon, MoonIcon, MicIcon,
-  ClockIcon, PillIcon, CalendarIcon, BarChartIcon, UsersIcon, UserIcon,
+  ClockIcon, PillIcon, CalendarIcon, BarChartIcon, UsersIcon,
 } from '@/shared/components/icons'
 
 const tabs: { id: Tab; label: string; icon: (active: boolean) => React.ReactNode }[] = [
@@ -47,7 +47,6 @@ const tabs: { id: Tab; label: string; icon: (active: boolean) => React.ReactNode
   { id: 'appts',    label: 'Appts',    icon: (a) => <CalendarIcon size={22} strokeWidth={a ? 2.2 : 1.6} /> },
   { id: 'summary',  label: 'Health',   icon: (a) => <BarChartIcon size={22} strokeWidth={a ? 2.2 : 1.6} /> },
   { id: 'care',     label: 'Care',     icon: (a) => <UsersIcon    size={22} strokeWidth={a ? 2.2 : 1.6} /> },
-  { id: 'profile',  label: 'Profile',  icon: (a) => <UserIcon     size={22} strokeWidth={a ? 2.2 : 1.6} /> },
 ]
 
 function Toasts({ toasts }: { toasts: { id: string; msg: string; cls: string }[] }) {
@@ -276,7 +275,7 @@ export function AppShell() {
               ? <SunIcon  size={20} strokeWidth={1.8} />
               : <MoonIcon size={20} strokeWidth={1.8} />}
           </IconButton>
-          <IconButton size="md" aria-label="Send feedback" title="Send feedback" onClick={() => setFeedbackOpen(true)} className="hidden sm:flex">
+          <IconButton size="md" aria-label="Send feedback" title="Send feedback" onClick={() => setFeedbackOpen(true)} className="flex">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>

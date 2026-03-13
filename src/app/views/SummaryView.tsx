@@ -615,10 +615,12 @@ export function SummaryView() {
               ))}
             </div>
           ) : vitals.length === 0 ? (
-            <div className="py-12 text-center">
-              <div className="text-5xl mb-3">🩺</div>
-              <p className="font-semibold text-[var(--color-text-primary)]">No vitals logged yet</p>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-1">Track blood pressure, heart rate, glucose, and more.</p>
+            <div className="py-16 text-center flex flex-col items-center">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="mb-4">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+              </svg>
+              <p className="font-semibold text-[var(--color-text-primary)] text-lg">No vitals logged yet</p>
+              <p className="text-sm text-[var(--color-text-secondary)] mt-1 max-w-xs">Track blood pressure, heart rate, glucose, and more.</p>
             </div>
           ) : (
             <>
@@ -670,18 +672,14 @@ export function SummaryView() {
       {/* ------------------------------------------------------------------ */}
       {activeHealthTab === 'journal' && (
         <div>
-          <Button variant="primary" size="md" className="w-full mb-6" onClick={() => setShowJournalModal(true)}>
-            + New Entry
-          </Button>
-
           {/* Mood filter */}
-          <div className="flex gap-2 mb-6 overflow-x-auto pb-1" role="group" aria-label="Filter by mood">
+          <div className="flex gap-2.5 mb-8 overflow-x-auto pb-1" role="group" aria-label="Filter by mood">
             <button
               type="button"
               onClick={() => setMoodFilter(null)}
               aria-label="Show all mood entries"
               aria-pressed={moodFilter === null}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-semibold border transition-colors ${moodFilter === null ? 'bg-[var(--color-accent)] text-white border-[var(--color-accent)]' : 'bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border-primary)]'}`}
+              className={`shrink-0 px-4 py-2 rounded-full text-sm font-semibold border transition-colors min-h-[40px] ${moodFilter === null ? 'bg-[var(--color-accent)] text-white border-[var(--color-accent)]' : 'bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border-primary)]'}`}
             >
               All
             </button>
@@ -695,13 +693,17 @@ export function SummaryView() {
                   onClick={() => setMoodFilter(moodFilter === m ? null : m)}
                   aria-label={`Filter by mood: ${moodLabel}`}
                   aria-pressed={moodFilter === m}
-                  className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-semibold border transition-colors ${moodFilter === m ? 'bg-[var(--color-accent)] text-white border-[var(--color-accent)]' : 'bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border-primary)]'}`}
+                  className={`shrink-0 px-4 py-2 rounded-full text-sm font-semibold border transition-colors min-h-[40px] ${moodFilter === m ? 'bg-[var(--color-accent)] text-white border-[var(--color-accent)]' : 'bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border-primary)]'}`}
                 >
                   {emoji}
                 </button>
               )
             })}
           </div>
+
+          <Button variant="primary" size="md" className="w-full mb-6" onClick={() => setShowJournalModal(true)}>
+            + New Entry
+          </Button>
 
           {journalLoading ? (
             <div role="status" aria-live="polite" aria-label="Loading journal entries" className="flex flex-col gap-3">
@@ -713,12 +715,17 @@ export function SummaryView() {
             (() => {
               const filtered = moodFilter ? entries.filter((e) => e.mood === moodFilter) : entries
               return filtered.length === 0 ? (
-                <div className="py-12 text-center">
-                  <div className="text-5xl mb-3">📓</div>
-                  <p className="font-semibold text-[var(--color-text-primary)]">
+                <div className="py-16 text-center flex flex-col items-center">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="mb-4">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                    <line x1="8" y1="7" x2="16" y2="7" />
+                    <line x1="8" y1="11" x2="14" y2="11" />
+                  </svg>
+                  <p className="font-semibold text-[var(--color-text-primary)] text-lg">
                     {moodFilter ? 'No entries with this mood' : 'No journal entries yet'}
                   </p>
-                  <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+                  <p className="text-sm text-[var(--color-text-secondary)] mt-1 max-w-xs">
                     Track your daily health observations.
                   </p>
                 </div>

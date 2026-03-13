@@ -46,11 +46,11 @@ export function ApptsView() {
 
   return (
     <div className="animate-view-in w-full max-w-[480px] mx-auto">
-      <h2 className="font-extrabold tracking-[-0.02em] mb-5 pb-3 border-b-2 border-[var(--color-text-primary)] text-[var(--color-text-primary)] text-xl sm:[font-size:var(--text-title)]">
+      <h2 className="page-header text-xl sm:[font-size:var(--text-title)]">
         Appointments
       </h2>
 
-      <div className="stagger-children" role="list">
+      <div className="stagger-children space-y-3 mb-6" role="list">
         {apptsLoading ? (
           <>
             <SkeletonApptCard />
@@ -58,7 +58,7 @@ export function ApptsView() {
             <SkeletonApptCard />
           </>
         ) : sortedAppts.length === 0 ? (
-          <div className="py-8 px-5 text-center flex flex-col items-center gap-3 border-2 border-dashed border-[var(--color-border-secondary)] rounded-2xl sm:py-6 sm:px-4">
+          <div className="empty-state rounded-2xl border-2 border-dashed border-[var(--color-border-secondary)] py-8 px-5 text-center flex flex-col items-center gap-3 sm:py-6 sm:px-4">
             <svg
               width="48"
               height="48"
@@ -92,36 +92,34 @@ export function ApptsView() {
                 type="button"
                 role="listitem"
                 aria-label={`${a.title} on ${formattedDate}`}
-                className="animate-slide-r card-interactive w-full text-left bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] border-l-4 border-l-[var(--color-text-primary)] rounded-2xl p-4 mb-3 min-h-[56px] cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                className="animate-slide-r card-interactive w-full text-left bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] border-l-4 border-l-[var(--color-text-primary)] rounded-2xl p-5 min-h-[56px] cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
                 style={{ animationDelay: `${i * 0.04}s`, opacity: past ? 0.45 : 1 }}
                 onClick={() => setSelectedAppt(a)}
               >
-                <div className="text-[var(--color-text-tertiary)] mb-1 [font-family:var(--font-mono)] text-sm sm:[font-size:var(--text-caption)]">
+                <div className="text-[var(--color-text-tertiary)] mb-1 [font-family:var(--font-mono)] [font-size:var(--text-caption)]">
                   {formattedDate}
                 </div>
                 <div className="flex items-center gap-2 mb-0.5">
-                  <span className="font-bold text-[var(--color-text-primary)] text-base sm:[font-size:var(--text-body)]">{a.title}</span>
+                  <span className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-body)]">{a.title}</span>
                   {past && (
-                    <Pill variant="neutral" className="py-0.5 px-2 min-h-0 text-xs">Past</Pill>
+                    <Pill variant="neutral" className="rounded-full py-1.5 px-3 min-h-0 font-semibold [font-size:var(--text-caption)]">Past</Pill>
                   )}
                 </div>
-                <div className="text-[var(--color-text-secondary)] text-sm sm:[font-size:var(--text-label)]">{a.loc}</div>
+                <div className="[font-size:var(--text-caption)] text-[var(--color-text-secondary)]">{a.loc}</div>
               </button>
             )
           })
         )}
       </div>
 
-      <Button
+      <button
         type="button"
-        variant="ghost"
-        size="md"
         onClick={() => openAddApptModal(null)}
-        className="mt-4 py-4 text-lg font-bold border-2 border-dashed border-[var(--color-border-primary)] text-[var(--color-text-secondary)] flex items-center justify-center gap-2 min-h-[52px] sm:mt-2.5 sm:py-3.5 sm:text-base sm:font-semibold sm:min-h-0"
+        className="w-full mt-2 py-4 text-lg font-bold border-2 border-dashed border-[var(--color-border-primary)] text-[var(--color-text-secondary)] rounded-2xl flex items-center justify-center gap-2 min-h-[52px] bg-transparent cursor-pointer transition-all hover:brightness-105 active:scale-[0.98]"
       >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 sm:w-[18px] sm:h-[18px]"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
         Add Appointment
-      </Button>
+      </button>
 
       {selectedAppt && (
         <ApptDetailModal
@@ -228,9 +226,9 @@ function ApptDetailModal({
   return (
     <>
       <Modal open onOpenChange={(o) => !o && onClose()} title={appt.title} variant="center" closeLabel="Close">
-        <div className="rounded-2xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)] p-6 sm:p-8 -mt-2 -mx-2 sm:-mx-4">
+        <div className="rounded-2xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)] p-5 -mt-2 -mx-2 sm:-mx-4">
           {past && (
-            <div className="mb-4 py-1.5 px-3 rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] font-semibold inline-block">
+            <div className="mb-4 rounded-full py-1.5 px-3 bg-[var(--color-bg-tertiary)] text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] font-semibold inline-block">
               Past appointment
             </div>
           )}
@@ -378,7 +376,7 @@ function AddApptModal({
 
 function FG({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
   return (
-    <div className="mb-3.5 flex-1">
+    <div className="mb-4 flex-1">
       <label htmlFor={id} className="block font-bold text-[var(--color-text-secondary)] mb-1 uppercase tracking-[0.08em] [font-size:var(--text-label)]">
         {label}
       </label>

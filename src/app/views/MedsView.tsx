@@ -16,7 +16,7 @@ import AddMedModal from './AddMedModal'
 
 function MedCardSkeleton() {
   return (
-    <div className="rounded-2xl border border-[var(--color-border-primary)] p-5 bg-[var(--color-bg-secondary)] animate-pulse mb-4">
+    <div className="rounded-2xl border border-[var(--color-border-secondary)] p-5 bg-[var(--color-bg-secondary)] animate-pulse mb-3">
       <div className="flex items-start gap-4 mb-3">
         <div className="flex-1 min-w-0">
           <div className="h-4 w-1/2 rounded bg-[var(--color-bg-tertiary)] mb-2" />
@@ -104,8 +104,8 @@ export function MedsView() {
 
   return (
     <div className="animate-view-in w-full max-w-[480px] mx-auto">
-      <div className="flex items-baseline justify-between mb-4">
-        <h2 className="font-extrabold tracking-[-0.02em] text-[var(--color-text-primary)] text-xl sm:[font-size:var(--text-title)]">
+      <div className="flex items-baseline justify-between mb-6">
+        <h2 className="page-header text-xl sm:[font-size:var(--text-title)]">
           Medications
         </h2>
         {!medsLoading && limits.maxMeds !== -1 && (
@@ -120,17 +120,15 @@ export function MedsView() {
       </div>
 
       {/* Active / Archived tabs */}
-      <div className="flex gap-1 mb-5 p-1 bg-[var(--color-bg-secondary)] rounded-xl border border-[var(--color-border-primary)]">
+      <div className="tab-bar mb-6" role="tablist">
         {(['active', 'archived'] as MedsTab[]).map((tab) => (
           <button
             key={tab}
             type="button"
+            role="tab"
+            aria-selected={activeTab === tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-colors cursor-pointer border-none ${
-              activeTab === tab
-                ? 'bg-[var(--color-accent)] text-[var(--color-text-inverse)]'
-                : 'bg-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-            }`}
+            className={`tab-item ${activeTab === tab ? 'tab-item-active' : ''}`}
           >
             {tab === 'active' ? 'Active' : `Archived${archivedMeds.length > 0 ? ` (${archivedMeds.length})` : ''}`}
           </button>
@@ -144,19 +142,19 @@ export function MedsView() {
             <MedCardSkeleton /><MedCardSkeleton />
           </div>
         ) : archivedMeds.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+          <div className="empty-state">
             <p className="text-[var(--color-text-primary)] font-semibold text-lg mb-2">No archived medications</p>
             <p className="text-[var(--color-text-secondary)] text-sm max-w-xs leading-relaxed">
               Discontinued medications appear here. History is never deleted.
             </p>
           </div>
         ) : (
-          <div className="stagger-children" role="list">
+          <div className="stagger-children space-y-3" role="list">
             {archivedMeds.map((m, i) => (
               <div
                 key={m.id}
                 role="listitem"
-                className="animate-slide-r bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] rounded-2xl p-5 mb-4 opacity-60"
+                className="animate-slide-r bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] rounded-2xl p-5 opacity-60"
                 style={{ animationDelay: `${i * 0.04}s` }}
               >
                 <div className="flex items-start justify-between gap-4 mb-2">
@@ -192,9 +190,9 @@ export function MedsView() {
           <MedCardSkeleton />
         </div>
       ) : (
-      <div className="stagger-children" role="list">
+      <div className="stagger-children space-y-3" role="list">
         {displayMeds.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+          <div className="empty-state">
             <svg
               width="64" height="64" viewBox="0 0 24 24"
               fill="none" stroke="var(--color-accent)" strokeWidth="1.5"
@@ -226,7 +224,7 @@ export function MedsView() {
               role="listitem"
               tabIndex={0}
               aria-label={`${m.name}${m.dose ? ', ' + m.dose : ''}, ${m.freq}x daily`}
-              className="animate-slide-r card-interactive w-full text-left bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] rounded-2xl p-5 mb-4 min-h-[88px] cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+              className="animate-slide-r card-interactive w-full text-left bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] rounded-2xl p-5 min-h-[88px] cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
               style={{ animationDelay: `${i * 0.04}s` }}
               onClick={() => setSelectedMed(m)}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedMed(m) } }}
@@ -285,7 +283,7 @@ export function MedsView() {
             variant="ghost"
             size="md"
             onClick={() => openAddMedModal(null)}
-            className="mt-4 py-4 text-lg font-bold border-2 border-dashed border-[var(--color-border-primary)] text-[var(--color-text-secondary)] flex items-center justify-center gap-2 min-h-[52px] sm:mt-2.5 sm:py-3.5 sm:text-base sm:font-semibold sm:min-h-0"
+            className="w-full mt-2 py-4 text-lg font-bold border-2 border-dashed border-[var(--color-border-primary)] text-[var(--color-text-secondary)] rounded-2xl flex items-center justify-center gap-2 min-h-[52px]"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 sm:w-[18px] sm:h-[18px]"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
             Add Medication

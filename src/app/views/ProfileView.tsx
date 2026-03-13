@@ -72,7 +72,7 @@ export function ProfileView() {
   return (
     <main aria-label="Profile" className="animate-view-in">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="font-extrabold tracking-[-0.03em] text-[var(--color-text-primary)] [font-size:var(--text-title)]">Profile</h1>
+        <h1 className="page-header text-xl sm:[font-size:var(--text-title)]">Profile</h1>
         <IconButton
           size="md"
           aria-label="Close profile"
@@ -83,7 +83,7 @@ export function ProfileView() {
         </IconButton>
       </div>
 
-      <Card className="p-5 flex flex-col items-center gap-4 mb-5 rounded-2xl">
+      <Card className="rounded-2xl p-5 bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] flex flex-col items-center gap-4 mb-6">
         <div className="w-20 h-20 rounded-full bg-[var(--color-bg-tertiary)] flex items-center justify-center font-bold text-[var(--color-text-secondary)] overflow-hidden [font-size:var(--text-display)]">
           {profile?.avatar_url ? (
             <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
@@ -99,9 +99,9 @@ export function ProfileView() {
         </div>
       </Card>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-        <Card className="p-4 rounded-2xl">
-          <div className="text-[var(--color-text-tertiary)] uppercase tracking-[0.05em] mb-2 [font-size:var(--text-caption)]">Plan</div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+        <Card className="rounded-2xl p-5 bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)]">
+          <div className="font-bold uppercase tracking-[0.06em] [font-size:var(--text-caption)] text-[var(--color-text-tertiary)] mb-3">Plan</div>
           <div className="flex items-center justify-between gap-3">
             <span className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-body)]">
               {effectiveTier.charAt(0).toUpperCase() + effectiveTier.slice(1)}
@@ -116,14 +116,14 @@ export function ProfileView() {
             </Button>
           </div>
         </Card>
-        <Card className="p-4 rounded-2xl">
-          <div className="text-[var(--color-text-tertiary)] uppercase tracking-[0.05em] mb-1 [font-size:var(--text-caption)]">Joined</div>
-          <div className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-body)]">{joined}</div>
+        <Card className="rounded-2xl p-5 bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)]">
+          <div className="font-bold uppercase tracking-[0.06em] [font-size:var(--text-caption)] text-[var(--color-text-tertiary)] mb-3">Joined</div>
+          <div className="font-semibold text-[var(--color-text-primary)] [font-size:var(--text-body)]">{joined}</div>
         </Card>
       </div>
 
-      <Card className="p-4 mb-5 rounded-2xl">
-          <div className="font-bold mb-3 uppercase tracking-[0.08em] text-[var(--color-text-secondary)] [font-size:var(--text-label)]">
+      <Card className="rounded-2xl p-5 bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] mb-6">
+          <div className="font-bold uppercase tracking-[0.06em] [font-size:var(--text-caption)] text-[var(--color-text-tertiary)] mb-3">
             Multi-Factor Authentication
           </div>
           {!qrCode && (
@@ -133,7 +133,7 @@ export function ProfileView() {
               size="md"
               onClick={handleEnrollMfa}
               disabled={mfaLoading}
-              className="py-3"
+              className="py-3 min-h-[44px]"
             >
               {mfaLoading ? 'Enrolling...' : 'Enroll TOTP MFA'}
             </Button>
@@ -142,7 +142,7 @@ export function ProfileView() {
           {qrCode && (
             <>
               <div className="my-3 [&_svg]:max-w-full [&_svg]:h-auto" dangerouslySetInnerHTML={{ __html: qrCode }} />
-              <label htmlFor="mfa-code" className="block font-bold uppercase tracking-[0.08em] text-[var(--color-text-secondary)] mb-1 [font-size:var(--text-label)]">
+              <label htmlFor="mfa-code" className="block [font-size:var(--text-caption)] font-semibold text-[var(--color-text-tertiary)] mb-1">
                 Verification code
               </label>
               <Input
@@ -152,7 +152,7 @@ export function ProfileView() {
                 placeholder="Enter 6-digit code"
                 inputMode="numeric"
                 autoComplete="one-time-code"
-                className="mb-2"
+                className="mb-4"
               />
               <Button
                 type="button"
@@ -160,7 +160,7 @@ export function ProfileView() {
                 size="md"
                 onClick={handleVerifyMfa}
                 disabled={mfaLoading}
-                className="py-3"
+                className="py-3 min-h-[44px]"
               >
                 {mfaLoading ? 'Verifying...' : 'Verify MFA'}
               </Button>
@@ -169,8 +169,8 @@ export function ProfileView() {
         </Card>
 
       {installPrompt.canInstall && (
-        <Card className="p-4 mb-5 rounded-xl">
-          <div className="font-bold uppercase tracking-[0.08em] text-[var(--color-text-secondary)] mb-2 [font-size:var(--text-label)]">
+        <Card className="rounded-2xl p-5 bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] mb-6">
+          <div className="font-bold uppercase tracking-[0.06em] [font-size:var(--text-caption)] text-[var(--color-text-tertiary)] mb-3">
             Add to your phone
           </div>
           <p className="text-[var(--color-text-tertiary)] mb-3 [font-size:var(--text-body)]">
@@ -180,7 +180,7 @@ export function ProfileView() {
             type="button"
             variant="primary"
             size="md"
-            className="py-3"
+            className="py-3 min-h-[44px]"
             onClick={async () => {
               const accepted = await installPrompt.promptInstall()
               if (accepted) toast('MarinLoop added to your phone', 'ts')
@@ -191,11 +191,11 @@ export function ProfileView() {
         </Card>
       )}
 
-      <Card className="p-4 mb-5 rounded-xl">
-          <div className="font-bold uppercase tracking-[0.08em] text-[var(--color-text-secondary)] mb-2 [font-size:var(--text-label)]">
+      <Card className="rounded-2xl p-5 bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] mb-6">
+          <div className="font-bold uppercase tracking-[0.06em] [font-size:var(--text-caption)] text-[var(--color-text-tertiary)] mb-3">
             Push Notifications
           </div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between py-3">
             <div>
               <div className="text-[var(--color-text-tertiary)] mt-0.5 [font-size:var(--text-caption)]">
                 {!push.isSupported
@@ -288,8 +288,8 @@ export function ProfileView() {
         />
       )}
 
-      <Card className="p-4 mb-5 rounded-xl">
-        <div className="font-bold uppercase tracking-[0.08em] text-[var(--color-text-secondary)] mb-2 [font-size:var(--text-label)]">
+      <Card className="rounded-2xl p-5 bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] mb-6">
+        <div className="font-bold uppercase tracking-[0.06em] [font-size:var(--text-caption)] text-[var(--color-text-tertiary)] mb-3">
           Data &amp; Privacy &mdash; Beta
         </div>
         <div className="space-y-2 text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] leading-relaxed">
@@ -309,9 +309,9 @@ export function ProfileView() {
             <a href="mailto:admin@marinloop.com" className="underline text-[var(--color-accent)]">admin@marinloop.com</a>.
           </p>
         </div>
-        <div className="mt-3 pt-3 border-t border-[var(--color-border-secondary)] flex items-center justify-between gap-3">
+        <div className="mt-3 pt-3 border-t border-[var(--color-border-secondary)] flex items-center justify-between py-3">
           <div>
-            <span className="font-semibold text-[var(--color-text-secondary)] [font-size:var(--text-caption)]">AI features</span>
+            <span className="[font-size:var(--text-caption)] font-semibold text-[var(--color-text-tertiary)]">AI features</span>
             <span
               role="status"
               aria-live="polite"
@@ -323,8 +323,9 @@ export function ProfileView() {
           {consented ? (
             <Button
               type="button"
-              variant="secondary"
+              variant="danger"
               size="sm"
+              className="min-h-[44px]"
               onClick={() => {
                 revoke()
                 toast('AI access revoked', 'ts')
@@ -335,8 +336,9 @@ export function ProfileView() {
           ) : (
             <Button
               type="button"
-              variant="secondary"
+              variant="primary"
               size="sm"
+              className="min-h-[44px]"
               onClick={() => {
                 consent()
                 toast('AI features enabled', 'ts')
@@ -349,15 +351,15 @@ export function ProfileView() {
       </Card>
 
       {user?.id === env.adminUserId && (
-        <Card className="p-4 mb-5 rounded-xl border-2 border-[var(--color-amber)]">
-          <div className="font-bold uppercase tracking-[0.08em] text-[var(--color-amber)] mb-3 [font-size:var(--text-label)] text-center">
+        <Card className="rounded-2xl p-5 bg-[var(--color-bg-secondary)] border-2 border-[var(--color-amber)] mb-6">
+          <div className="font-bold uppercase tracking-[0.06em] [font-size:var(--text-caption)] text-[var(--color-amber)] mb-3 text-center">
             Admin Panel
           </div>
           <Button
             type="button"
             variant="secondary"
             size="md"
-            className="w-full border-[var(--color-amber)] text-[var(--color-amber)]"
+            className="w-full min-h-[44px] border-[var(--color-amber)] text-[var(--color-amber)]"
             onClick={() => navigate('/admin')}
           >
             Open Admin Dashboard →
@@ -365,15 +367,15 @@ export function ProfileView() {
         </Card>
       )}
 
-      <Card className="p-4 mb-5 rounded-xl">
-        <div className="font-bold uppercase tracking-[0.08em] text-[var(--color-text-secondary)] mb-3 [font-size:var(--text-label)]">
+      <Card className="rounded-2xl p-5 bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] mb-6">
+        <div className="font-bold uppercase tracking-[0.06em] [font-size:var(--text-caption)] text-[var(--color-text-tertiary)] mb-3">
           Account Actions
         </div>
         <Button
           type="button"
-          variant="secondary"
+          variant="danger"
           size="md"
-          className="w-full mb-2"
+          className="w-full mb-4 min-h-[44px]"
           onClick={() => setShowDeleteModal(true)}
         >
           Delete My Account &amp; Data
@@ -383,11 +385,11 @@ export function ProfileView() {
         </p>
       </Card>
 
-      <div className="flex flex-col gap-2">
-        <Button type="button" variant="secondary" size="md" onClick={() => setFeedbackOpen(true)}>
+      <div className="flex flex-col gap-3">
+        <Button type="button" variant="secondary" size="md" className="min-h-[44px]" onClick={() => setFeedbackOpen(true)}>
           Send Feedback
         </Button>
-        <Button type="button" variant="danger" size="md" onClick={() => { void signOut() }}>
+        <Button type="button" variant="danger" size="md" className="min-h-[44px]" onClick={() => { void signOut() }}>
           Sign Out
         </Button>
       </div>

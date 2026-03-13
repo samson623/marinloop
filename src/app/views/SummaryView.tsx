@@ -177,23 +177,19 @@ export function SummaryView() {
 
   return (
     <div className="animate-view-in w-full max-w-[480px] mx-auto">
-      <h2 className="font-extrabold tracking-[-0.02em] mb-5 pb-3 border-b-2 border-[var(--color-text-primary)] text-[var(--color-text-primary)] text-xl sm:[font-size:var(--text-title)]">
+      <h2 className="page-header text-xl sm:[font-size:var(--text-title)]">
         Health
       </h2>
 
       {/* Sub-tab switcher */}
-      <div className="flex gap-1 p-1.5 mb-6 rounded-2xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)]" role="tablist">
+      <div className="tab-bar mb-6" role="tablist">
         {(['adherence', 'vitals', 'journal'] as HealthTab[]).map((tab) => (
           <button
             key={tab}
             role="tab"
             aria-selected={activeHealthTab === tab}
             onClick={() => setActiveHealthTab(tab)}
-            className={`flex-1 py-3 px-4 rounded-xl font-semibold capitalize transition-all [font-size:var(--text-body)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] cursor-pointer border-none ${
-              activeHealthTab === tab
-                ? 'bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm'
-                : 'bg-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)]'
-            }`}
+            className={`tab-item ${activeHealthTab === tab ? 'tab-item-active' : ''} cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]`}
           >
             {tab === 'adherence' ? 'Adherence' : tab === 'vitals' ? 'Vitals' : 'Journal'}
           </button>
@@ -207,7 +203,7 @@ export function SummaryView() {
         <div>
           {/* Today's stat cards */}
           <div
-            className="grid grid-cols-3 gap-4 mb-6"
+            className="grid grid-cols-3 gap-3 mb-6"
             {...(notesLoading ? { role: 'status' as const, 'aria-live': 'polite' as const, 'aria-label': "Loading today's statistics" } : {})}
           >
             {notesLoading ? (
@@ -227,7 +223,7 @@ export function SummaryView() {
 
           {/* A. Refill Alert Cards */}
           {!refillLoading && alertPredictions.length > 0 && (
-            <div className="mb-5 flex flex-col gap-2">
+            <div className="mb-6 flex flex-col gap-3">
               {alertPredictions.map((p) => {
                 const isCritical = p.severity === 'critical'
                 const borderColor = isCritical ? 'var(--color-red)' : 'var(--color-amber)'
@@ -238,7 +234,7 @@ export function SummaryView() {
                 return (
                   <div
                     key={p.medId}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl border-l-4 text-sm font-semibold"
+                    className="flex items-center gap-3 px-4 py-3 rounded-2xl border-l-4 text-sm font-semibold"
                     style={{ borderLeftColor: borderColor, background: bgColor, color: textColor }}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
@@ -257,9 +253,9 @@ export function SummaryView() {
 
           {/* B. Streak Card */}
           {streakLoading ? (
-            <div role="status" aria-live="polite" aria-label="Loading streak" className="mb-5 h-[88px] rounded-2xl bg-[var(--color-bg-secondary)] animate-pulse" />
+            <div role="status" aria-live="polite" aria-label="Loading streak" className="mb-6 h-[88px] rounded-2xl bg-[var(--color-bg-secondary)] animate-pulse" />
           ) : (
-            <Card className="mb-5">
+            <Card className="mb-6">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex-1 text-center">
                   <div
@@ -299,12 +295,12 @@ export function SummaryView() {
 
           {/* C. AI Adherence Insights */}
           {insightsLoading ? (
-            <div role="status" aria-live="polite" aria-label="Loading health insights" className="mb-5 flex flex-col gap-3">
-              <div className="h-[64px] rounded-xl bg-[var(--color-bg-secondary)] animate-pulse" />
-              <div className="h-[64px] rounded-xl bg-[var(--color-bg-secondary)] animate-pulse" />
+            <div role="status" aria-live="polite" aria-label="Loading health insights" className="mb-6 flex flex-col gap-3">
+              <div className="h-[64px] rounded-2xl bg-[var(--color-bg-secondary)] animate-pulse" />
+              <div className="h-[64px] rounded-2xl bg-[var(--color-bg-secondary)] animate-pulse" />
             </div>
           ) : visibleInsights.length > 0 ? (
-            <div className="mb-5 flex flex-col gap-3">
+            <div className="mb-6 flex flex-col gap-3">
               {visibleInsights.slice(0, 3).map((ins) => (
                 <Card key={ins.id} className="relative pr-10">
                   <div className="flex items-start gap-3">
@@ -336,7 +332,7 @@ export function SummaryView() {
             </div>
           ) : missPatterns.length > 0 ? (
             /* D. Miss Pattern Cards — shown when AI insights unavailable */
-            <div className="mb-5 flex flex-col gap-3">
+            <div className="mb-6 flex flex-col gap-3">
               {missPatterns.slice(0, 2).map((mp) => (
                 <Card key={`${mp.scheduleId}-${mp.dayOfWeek}`}>
                   <div className="flex items-start gap-3">
@@ -364,9 +360,7 @@ export function SummaryView() {
 
           {/* E. 30-Day Adherence Chart (Recharts LineChart) */}
           <Card className="mb-6">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-label)]">30-Day Adherence</h3>
-            </div>
+            <h3 className="font-bold uppercase tracking-[0.06em] [font-size:var(--text-caption)] text-[var(--color-text-tertiary)] mb-3">30-Day Adherence</h3>
             {notesLoading ? (
               <div role="status" aria-live="polite" aria-label="Loading adherence chart" className="flex items-end gap-3 h-[110px] pb-7 relative">
                 {Array.from({ length: 7 }).map((_, i) => <SkeletonChartBar key={i} />)}
@@ -412,7 +406,7 @@ export function SummaryView() {
 
           {/* F. Notes for your doctor */}
           <Card className="relative">
-            <h3 className="font-bold mb-4 text-[var(--color-text-primary)] [font-size:var(--text-label)]">
+            <h3 className="font-bold uppercase tracking-[0.06em] [font-size:var(--text-caption)] text-[var(--color-text-tertiary)] mb-3">
               Notes for your doctor
             </h3>
             {notesLoading ? (
@@ -557,12 +551,12 @@ export function SummaryView() {
             <div
               role="alert"
               aria-live="assertive"
-              className="mb-4 flex flex-col gap-2"
+              className="mb-6 flex flex-col gap-3"
             >
               {criticalAlerts.map((alert) => (
                 <div
                   key={alert.key}
-                  className="flex items-start gap-3 px-4 py-3 rounded-xl border-l-4 font-semibold text-sm"
+                  className="flex items-start gap-3 px-4 py-3 rounded-2xl border-l-4 font-semibold text-sm"
                   style={{
                     borderLeftColor: 'var(--color-red)',
                     background: 'color-mix(in srgb, var(--color-red) 8%, var(--color-bg-secondary))',
@@ -585,11 +579,11 @@ export function SummaryView() {
 
           {/* Warning-level (non-critical) alerts */}
           {!vitalsLoading && vitalAlerts.filter((a) => a.severity === 'warning').length > 0 && (
-            <div className="mb-4 flex flex-col gap-2">
+            <div className="mb-6 flex flex-col gap-3">
               {vitalAlerts.filter((a) => a.severity === 'warning').map((alert) => (
                 <div
                   key={alert.key}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl border-l-4 text-sm font-semibold"
+                  className="flex items-center gap-3 px-4 py-3 rounded-2xl border-l-4 text-sm font-semibold"
                   style={{
                     borderLeftColor: 'var(--color-amber)',
                     background: 'color-mix(in srgb, var(--color-amber) 6%, var(--color-bg-secondary))',
@@ -608,7 +602,7 @@ export function SummaryView() {
           <Button
             variant="primary"
             size="md"
-            className="w-full mb-5"
+            className="w-full mb-6"
             onClick={() => setShowVitalModal(true)}
           >
             + Log Vitals
@@ -632,8 +626,8 @@ export function SummaryView() {
 
               {/* Medication efficacy insights */}
               {efficacyInsights.length > 0 && (
-                <div className="mb-5 flex flex-col gap-3">
-                  <h3 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-label)]">Medication Efficacy</h3>
+                <div className="mb-6 space-y-3">
+                  <h3 className="font-bold uppercase tracking-[0.06em] [font-size:var(--text-caption)] text-[var(--color-text-tertiary)] mb-3">Medication Efficacy</h3>
                   {efficacyInsights.map((ins) => (
                     <Card key={ins.medicationId}>
                       <div className="flex items-start gap-3">
@@ -663,7 +657,7 @@ export function SummaryView() {
                 </div>
               )}
 
-              <div className="flex flex-col gap-3">
+              <div className="space-y-3">
                 {vitals.slice(0, 20).map((v) => <VitalCard key={v.id} vital={v} />)}
               </div>
             </>
@@ -676,12 +670,12 @@ export function SummaryView() {
       {/* ------------------------------------------------------------------ */}
       {activeHealthTab === 'journal' && (
         <div>
-          <Button variant="primary" size="md" className="w-full mb-5" onClick={() => setShowJournalModal(true)}>
+          <Button variant="primary" size="md" className="w-full mb-6" onClick={() => setShowJournalModal(true)}>
             + New Entry
           </Button>
 
           {/* Mood filter */}
-          <div className="flex gap-2 mb-4 overflow-x-auto pb-1" role="group" aria-label="Filter by mood">
+          <div className="flex gap-2 mb-6 overflow-x-auto pb-1" role="group" aria-label="Filter by mood">
             <button
               type="button"
               onClick={() => setMoodFilter(null)}
@@ -729,7 +723,7 @@ export function SummaryView() {
                   </p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-3">
+                <div className="space-y-3">
                   {filtered.slice(0, 20).map((e) => <JournalCard key={e.id} entry={e} />)}
                 </div>
               )
@@ -789,8 +783,8 @@ export function SummaryView() {
 
 function StatCard({ n, label, color }: { n: number; label: string; color: string }) {
   return (
-    <Card className="text-center p-5">
-      <div className="font-extrabold tracking-[-0.03em] [font-size:var(--text-subtitle)]" style={{ color }}>{n}</div>
+    <Card className="text-center rounded-2xl p-5">
+      <div className="font-extrabold tracking-[-0.03em] [font-size:var(--text-title)]" style={{ color }}>{n}</div>
       <div className="font-semibold text-[var(--color-text-secondary)] mt-1.5 [font-size:var(--text-caption)]">{label}</div>
     </Card>
   )
@@ -804,8 +798,8 @@ function VitalsTrendChart({ vitals }: { vitals: Vital[] }) {
   }))
   if (!data.some((d) => d.bp != null || d.hr != null)) return null
   return (
-    <Card className="mb-5">
-      <h3 className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-label)] mb-4">Vitals Trend — Last 10 Readings</h3>
+    <Card className="mb-6">
+      <h3 className="font-bold uppercase tracking-[0.06em] [font-size:var(--text-caption)] text-[var(--color-text-tertiary)] mb-3">Vitals Trend — Last 10 Readings</h3>
       <div role="img" aria-label="Vitals trend chart showing blood pressure and heart rate over recent readings.">
         <ResponsiveContainer width="100%" height={140}>
           <LineChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: -20 }}>

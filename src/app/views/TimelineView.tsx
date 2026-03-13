@@ -44,7 +44,7 @@ function TimelineSkeleton() {
             style={{ background: 'var(--color-skeleton)' }}
           />
           <div
-            className="flex-1 rounded-xl p-4 animate-pulse"
+            className="flex-1 rounded-2xl p-5 animate-pulse"
             style={{
               border: '1px solid var(--color-border-primary)',
               background: 'var(--color-skeleton)',
@@ -70,7 +70,7 @@ function TimelineSkeleton() {
 function EmptyState() {
   const navigate = useNavigate()
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+    <div className="empty-state flex flex-col items-center justify-center py-16 px-6 text-center rounded-2xl border-2 border-dashed border-[var(--color-border-secondary)]">
       <svg
         width="64"
         height="64"
@@ -237,12 +237,12 @@ export function TimelineView() {
   return (
     <div className="animate-view-in w-full max-w-[480px] mx-auto">
       {/* ── Date navigation row ── */}
-      <div className="flex items-center justify-between gap-2 mb-3">
+      <div className="flex items-center justify-between gap-2 mb-6">
         <button
           type="button"
           onClick={() => goToDate(-1)}
           aria-label="Previous day"
-          className="flex items-center justify-center w-9 h-9 rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
+          className="flex items-center justify-center min-h-[44px] min-w-[44px] w-11 h-11 rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="15 18 9 12 15 6" /></svg>
         </button>
@@ -255,7 +255,7 @@ export function TimelineView() {
           <button
             type="button"
             onClick={() => setSearchParams({}, { replace: true })}
-            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--color-accent)] text-[var(--color-text-inverse)] border-none cursor-pointer"
+            className="px-3 py-1.5 min-h-[44px] rounded-xl text-xs font-semibold bg-[var(--color-accent)] text-[var(--color-text-inverse)] border-none cursor-pointer"
           >
             Today
           </button>
@@ -265,7 +265,7 @@ export function TimelineView() {
           onClick={() => goToDate(1)}
           aria-label="Next day"
           disabled={isToday}
-          className="flex items-center justify-center w-9 h-9 rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex items-center justify-center min-h-[44px] min-w-[44px] w-11 h-11 rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="9 18 15 12 9 6" /></svg>
         </button>
@@ -274,7 +274,7 @@ export function TimelineView() {
       {/* ── Header row: date + pills + adherence ring ── */}
       <div className="flex items-stretch justify-between gap-3 mb-6">
         <div className="shrink-0">
-          <div className="font-extrabold tracking-[-0.03em] text-[var(--color-text-primary)] text-lg sm:[font-size:var(--text-title)]">
+          <div className="page-header text-xl sm:[font-size:var(--text-title)] text-[var(--color-text-primary)]">
             {displayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </div>
           <div className="text-[var(--color-text-secondary)] font-medium text-base sm:[font-size:var(--text-label)]">
@@ -334,10 +334,10 @@ export function TimelineView() {
               style={{ transition: 'stroke-dashoffset 1s cubic-bezier(.4,0,.2,1), stroke .3s' }}
             />
           </svg>
-          <div className="font-extrabold tracking-[-0.03em] -mt-[82px] relative z-[1] text-[var(--color-text-primary)] text-xl sm:[font-size:var(--text-subtitle)]">
+          <div className="[font-size:var(--text-title)] font-extrabold -mt-[82px] relative z-[1] text-[var(--color-text-primary)]">
             {pct}%
           </div>
-          <div className="text-[var(--color-text-tertiary)] font-medium mt-0.5 [font-size:var(--text-caption)]">
+          <div className="[font-size:var(--text-caption)] font-semibold text-[var(--color-text-secondary)] mt-0.5">
             Adherence
           </div>
         </div>
@@ -361,7 +361,7 @@ export function TimelineView() {
             className="absolute left-1 top-3 bottom-3 w-[2px] rounded-full bg-gradient-to-b from-[var(--color-border-primary)] to-transparent"
             aria-hidden="true"
           />
-          <div className="stagger-children">
+          <div className="stagger-children space-y-3">
             {sched.map((it) => (
               <TimelineItem
                 key={it.id}
@@ -581,7 +581,7 @@ function TimelineItem({
         type="button"
         ref={setRefs}
         role="article"
-        className="animate-slide-r card-interactive relative mb-3 min-h-[64px] py-5 px-5 w-full text-left rounded-xl cursor-pointer border border-[var(--color-border-secondary)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+        className="animate-slide-r card-interactive relative min-h-[64px] p-5 w-full text-left rounded-2xl cursor-pointer border border-[var(--color-border-secondary)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
         style={{ background: bg, borderLeft, opacity }}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
@@ -735,7 +735,7 @@ function DoseModal({
 
       {/* Catch-up guidance for late/missed doses */}
       {catchUpGuidance && (
-        <div className="mb-4 px-4 py-3 rounded-xl bg-[color-mix(in_srgb,var(--color-amber,#d97706)_8%,transparent)] border border-[color-mix(in_srgb,var(--color-amber,#d97706)_25%,transparent)]" role="note">
+        <div className="mb-4 p-5 rounded-2xl bg-[color-mix(in_srgb,var(--color-amber,#d97706)_8%,transparent)] border border-[color-mix(in_srgb,var(--color-amber,#d97706)_25%,transparent)]" role="note">
           <p className="font-bold text-[#d97706] [font-size:var(--text-label)] mb-0.5">Missed Dose — Seek Guidance</p>
           {catchUpGuidance.source === 'fda' && (
             <p className="text-[var(--color-text-tertiary)] [font-size:var(--text-caption)] mb-1">

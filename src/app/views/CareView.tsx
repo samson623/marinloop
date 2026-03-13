@@ -27,11 +27,11 @@ const SPECIALTY_LABELS: Record<ProviderSpecialty, string> = {
 }
 
 const SPECIALTY_COLORS: Record<ProviderSpecialty, string> = {
-  primary_care: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  cardiologist: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-  pharmacist: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-  neurologist: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
-  specialist: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+  primary_care: 'bg-[color-mix(in_srgb,var(--color-accent)_12%,transparent)] text-[var(--color-accent)]',
+  cardiologist: 'bg-[color-mix(in_srgb,var(--color-red)_12%,transparent)] text-[var(--color-red)]',
+  pharmacist: 'bg-[color-mix(in_srgb,var(--color-green)_12%,transparent)] text-[var(--color-green)]',
+  neurologist: 'bg-[color-mix(in_srgb,var(--color-purple,#7c3aed)_12%,transparent)] text-[var(--color-purple,#7c3aed)]',
+  specialist: 'bg-[color-mix(in_srgb,var(--color-orange,#ea580c)_12%,transparent)] text-[var(--color-orange,#ea580c)]',
   other: 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)]',
 }
 
@@ -113,7 +113,7 @@ function DeleteButton({ onClick, label }: { onClick: () => void; label: string }
 
 function EmptyProviders() {
   return (
-    <div className="py-10 px-5 text-center flex flex-col items-center gap-3 border-2 border-dashed border-[var(--color-border-secondary)] rounded-2xl">
+    <div className="empty-state flex flex-col items-center gap-3">
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
         <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
       </svg>
@@ -129,7 +129,7 @@ function EmptyProviders() {
 
 function EmptyCaregivers() {
   return (
-    <div className="py-10 px-5 text-center flex flex-col items-center gap-3 border-2 border-dashed border-[var(--color-border-secondary)] rounded-2xl">
+    <div className="empty-state flex flex-col items-center gap-3">
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
         <circle cx="9" cy="7" r="4" />
@@ -148,7 +148,7 @@ function EmptyCaregivers() {
 
 function EmptyEmergency() {
   return (
-    <div className="py-10 px-5 text-center flex flex-col items-center gap-3 border-2 border-dashed border-[var(--color-border-secondary)] rounded-2xl">
+    <div className="empty-state flex flex-col items-center gap-3">
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
         <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 14 19.79 19.79 0 0 1 1.61 5.38 2 2 0 0 1 3.58 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 17.92z" />
       </svg>
@@ -200,7 +200,7 @@ function CareTeamTab() {
 
   return (
     <section aria-label="Care Team">
-      <ul className="space-y-3 mb-4" role="list">
+      <ul className="space-y-3 mb-6" role="list">
         {isLoading ? (
           <>
             <li><SkeletonCard lines={3} /></li>
@@ -280,7 +280,7 @@ function CareTeamTab() {
 
       {/* Accordion add form */}
       {showForm ? (
-        <div className="rounded-2xl border-2 border-[var(--color-accent)] bg-[var(--color-bg-secondary)] p-4 mb-3 animate-view-in">
+        <div className="rounded-2xl border-2 border-[var(--color-accent)] bg-[var(--color-bg-secondary)] p-5 mb-3 animate-view-in">
           <p className="font-bold text-[var(--color-text-primary)] mb-4 [font-size:var(--text-body)]">
             Add Provider
           </p>
@@ -361,7 +361,7 @@ function CareTeamTab() {
           variant="ghost"
           size="md"
           onClick={() => setShowForm(true)}
-          className="mt-1 py-4 text-lg font-bold border-2 border-dashed border-[var(--color-border-primary)] text-[var(--color-text-secondary)] flex items-center justify-center gap-2 min-h-[52px]"
+          className="w-full mt-2 py-4 text-lg font-bold border-2 border-dashed border-[var(--color-border-primary)] text-[var(--color-text-secondary)] rounded-2xl flex items-center justify-center gap-2 min-h-[52px]"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
             <line x1="12" y1="5" x2="12" y2="19" />
@@ -407,7 +407,7 @@ function CaregiversTab() {
 
   return (
     <section aria-label="Caregivers">
-      <ul className="space-y-3 mb-4" role="list">
+      <ul className="space-y-3 mb-6" role="list">
         {isLoading ? (
           <>
             <li><SkeletonCard lines={3} /></li>
@@ -513,7 +513,7 @@ function CaregiversTab() {
       {!canUseCaregiverMode ? (
         <UpgradePrompt feature="Caregiver mode" requiredTier="pro" className="mt-1" />
       ) : showForm ? (
-        <div className="rounded-2xl border-2 border-[var(--color-accent)] bg-[var(--color-bg-secondary)] p-4 mb-3 animate-view-in">
+        <div className="rounded-2xl border-2 border-[var(--color-accent)] bg-[var(--color-bg-secondary)] p-5 mb-3 animate-view-in">
           <p className="font-bold text-[var(--color-text-primary)] mb-4 [font-size:var(--text-body)]">
             Invite Caregiver
           </p>
@@ -577,7 +577,7 @@ function CaregiversTab() {
           variant="ghost"
           size="md"
           onClick={() => setShowForm(true)}
-          className="mt-1 py-4 text-lg font-bold border-2 border-dashed border-[var(--color-border-primary)] text-[var(--color-text-secondary)] flex items-center justify-center gap-2 min-h-[52px]"
+          className="w-full mt-2 py-4 text-lg font-bold border-2 border-dashed border-[var(--color-border-primary)] text-[var(--color-text-secondary)] rounded-2xl flex items-center justify-center gap-2 min-h-[52px]"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
             <line x1="12" y1="5" x2="12" y2="19" />
@@ -620,18 +620,18 @@ function EmergencyTab() {
 
   return (
     <section aria-label="Emergency contacts">
-      <div className="mb-4 flex items-start gap-3 p-4 rounded-xl bg-[color-mix(in_srgb,var(--color-red)_8%,transparent)] border border-[color-mix(in_srgb,var(--color-red)_20%,transparent)]">
+      <div className="mb-6 flex items-start gap-3 rounded-2xl p-4 bg-[color-mix(in_srgb,var(--color-red)_8%,transparent)] border border-[color-mix(in_srgb,var(--color-red)_20%,transparent)]">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-red)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0 mt-0.5">
           <circle cx="12" cy="12" r="10" />
           <line x1="12" y1="8" x2="12" y2="12" />
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
-        <p className="text-[var(--color-red)] [font-size:var(--text-body)] font-bold leading-relaxed">
+        <p className="text-[var(--color-red)] [font-size:var(--text-body)] font-bold leading-relaxed" role="alert">
           These contacts are for your personal reference only. In an emergency, always call 911.
         </p>
       </div>
 
-      <ul className="space-y-3 mb-4" role="list">
+      <ul className="space-y-3 mb-6" role="list">
         {isLoading ? (
           <>
             <li><SkeletonCard lines={2} /></li>
@@ -681,7 +681,7 @@ function EmergencyTab() {
 
       {/* Accordion add form */}
       {showForm ? (
-        <div className="rounded-2xl border-2 border-[var(--color-accent)] bg-[var(--color-bg-secondary)] p-4 mb-3 animate-view-in">
+        <div className="rounded-2xl border-2 border-[var(--color-accent)] bg-[var(--color-bg-secondary)] p-5 mb-3 animate-view-in">
           <p className="font-bold text-[var(--color-text-primary)] mb-4 [font-size:var(--text-body)]">
             Add Emergency Contact
           </p>
@@ -730,7 +730,7 @@ function EmergencyTab() {
           variant="ghost"
           size="md"
           onClick={() => setShowForm(true)}
-          className="mt-1 py-4 text-lg font-bold border-2 border-dashed border-[var(--color-border-primary)] text-[var(--color-text-secondary)] flex items-center justify-center gap-2 min-h-[52px]"
+          className="w-full mt-2 py-4 text-lg font-bold border-2 border-dashed border-[var(--color-border-primary)] text-[var(--color-text-secondary)] rounded-2xl flex items-center justify-center gap-2 min-h-[52px]"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
             <line x1="12" y1="5" x2="12" y2="19" />
@@ -758,7 +758,7 @@ export function CareView() {
 
   return (
     <div className="animate-view-in w-full max-w-[480px] mx-auto">
-      <h2 className="font-extrabold tracking-[-0.02em] mb-5 pb-3 border-b-2 border-[var(--color-text-primary)] text-[var(--color-text-primary)] text-xl sm:[font-size:var(--text-title)]">
+      <h2 className="page-header text-xl sm:[font-size:var(--text-title)]">
         Care Coordination
       </h2>
 
@@ -766,7 +766,7 @@ export function CareView() {
       <div
         role="tablist"
         aria-label="Care coordination sections"
-        className="sticky top-[calc(var(--header-height,80px)+1rem)] z-10 flex gap-1 p-1 rounded-2xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-secondary)] mb-6 backdrop-blur-sm"
+        className="sticky top-[calc(var(--header-height,80px)+1rem)] z-10 tab-bar mb-6 backdrop-blur-sm"
       >
         {CARE_TABS.map((t) => {
           const isActive = activeTab === t.id
@@ -779,10 +779,8 @@ export function CareView() {
               aria-controls={`care-panel-${t.id}`}
               onClick={() => setActiveTab(t.id)}
               className={cn(
-                'flex-1 py-3 px-3 rounded-xl text-center font-semibold [font-size:var(--text-body)] transition-all outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] cursor-pointer border-none',
-                isActive
-                  ? 'bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm'
-                  : 'bg-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)]'
+                'tab-item outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]',
+                isActive && 'tab-item-active'
               )}
             >
               {t.label}

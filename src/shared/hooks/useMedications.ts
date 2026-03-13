@@ -31,7 +31,6 @@ export function useMedications() {
   })
 
   const createBundleMutation = useMutation({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mutationFn: (input: MedicationBundleCreateInput) => MedsService.createBundle(input, activeProfileId ?? null),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['medications'] })

@@ -90,7 +90,7 @@ export function AddReminderModal({ open, onClose }: Props) {
       <div className="flex flex-col gap-4 pb-2">
         {/* Title */}
         <div>
-          <label htmlFor="reminder-title" className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)] mb-1.5">
+          <label htmlFor="reminder-title" className="block [font-size:var(--text-caption)] font-bold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)] mb-1.5">
             What
           </label>
           <Input
@@ -106,7 +106,7 @@ export function AddReminderModal({ open, onClose }: Props) {
 
         {/* Optional details */}
         <div>
-          <label htmlFor="reminder-body" className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)] mb-1.5">
+          <label htmlFor="reminder-body" className="block [font-size:var(--text-caption)] font-bold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)] mb-1.5">
             Details (optional)
           </label>
           <textarea
@@ -115,21 +115,21 @@ export function AddReminderModal({ open, onClose }: Props) {
             onChange={(e) => setBody(e.target.value)}
             placeholder="Extra notes..."
             rows={2}
-            className="w-full rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] px-3 py-2.5 text-[13px] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] resize-none outline-none focus:border-[var(--color-accent)] transition-colors"
+            className="w-full rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] px-3 py-2.5 [font-size:var(--text-body)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] resize-none outline-none focus:border-[var(--color-accent)] transition-colors"
           />
         </div>
 
         {/* When */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">When</span>
+            <span className="[font-size:var(--text-caption)] font-bold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">When</span>
             <div className="flex rounded-lg overflow-hidden border border-[var(--color-border-primary)]">
               {(['quick', 'custom'] as const).map((m) => (
                 <button
                   key={m}
                   type="button"
                   onClick={() => setMode(m)}
-                  className={`px-3 py-1 text-[11px] font-semibold border-none cursor-pointer transition-colors ${mode === m ? 'bg-[var(--color-accent)] text-[var(--color-text-inverse)]' : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)]'}`}
+                  className={`px-3 py-1 [font-size:var(--text-caption)] font-semibold border-none cursor-pointer transition-colors ${mode === m ? 'bg-[var(--color-accent)] text-[var(--color-text-inverse)]' : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)]'}`}
                 >
                   {m === 'quick' ? 'Quick' : 'Custom'}
                 </button>
@@ -144,7 +144,7 @@ export function AddReminderModal({ open, onClose }: Props) {
                   key={minutes}
                   type="button"
                   onClick={() => setSelectedPreset(minutes)}
-                  className={`px-3.5 py-2 rounded-full text-[12px] font-semibold border cursor-pointer transition-colors ${
+                  className={`px-3.5 py-2 rounded-full [font-size:var(--text-caption)] font-semibold border cursor-pointer transition-colors ${
                     selectedPreset === minutes
                       ? 'bg-[var(--color-accent)] text-[var(--color-text-inverse)] border-[var(--color-accent)]'
                       : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border-[var(--color-border-primary)]'
@@ -160,7 +160,7 @@ export function AddReminderModal({ open, onClose }: Props) {
               value={customDatetime}
               min={nowStr}
               onChange={(e) => setCustomDatetime(e.target.value)}
-              className="w-full rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] px-3 py-2.5 text-[13px] text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)] transition-colors"
+              className="w-full rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] px-3 py-2.5 [font-size:var(--text-body)] text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)] transition-colors"
             />
           )}
         </div>

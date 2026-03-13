@@ -100,7 +100,7 @@ export function ReminderDetailModal({ reminder, onClose, startEditing = false }:
   if (confirmDelete) {
     return (
       <Modal open onOpenChange={(o) => !o && setConfirmDelete(false)} title="Delete Reminder" variant="center">
-        <p className="text-[13px] text-[var(--color-text-primary)] mb-4">
+        <p className="[font-size:var(--text-body)] text-[var(--color-text-primary)] mb-4">
           Delete <strong>{reminder.title}</strong>? This cannot be undone.
         </p>
         <div className="flex gap-2">
@@ -122,10 +122,10 @@ export function ReminderDetailModal({ reminder, onClose, startEditing = false }:
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
     })()
     return (
-      <Modal open onOpenChange={(o) => { if (!o) { setEditing(false); onClose() } }} title="Edit Reminder" variant="bottom">
+      <Modal open onOpenChange={(o) => { if (!o) { setEditing(false); onClose() } }} title="Edit Reminder" variant="center">
         <div className="flex flex-col gap-4 pb-2">
           <div>
-            <label htmlFor="edit-reminder-title" className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)] mb-1.5">
+            <label htmlFor="edit-reminder-title" className="block [font-size:var(--text-caption)] font-bold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)] mb-1.5">
               What
             </label>
             <Input
@@ -138,7 +138,7 @@ export function ReminderDetailModal({ reminder, onClose, startEditing = false }:
             />
           </div>
           <div>
-            <label htmlFor="edit-reminder-body" className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)] mb-1.5">
+            <label htmlFor="edit-reminder-body" className="block [font-size:var(--text-caption)] font-bold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)] mb-1.5">
               Details (optional)
             </label>
             <textarea
@@ -146,11 +146,11 @@ export function ReminderDetailModal({ reminder, onClose, startEditing = false }:
               value={editBody}
               onChange={(e) => setEditBody(e.target.value)}
               rows={2}
-              className="w-full rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] px-3 py-2.5 text-[13px] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] resize-none outline-none focus:border-[var(--color-accent)] transition-colors"
+              className="w-full rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] px-3 py-2.5 [font-size:var(--text-body)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] resize-none outline-none focus:border-[var(--color-accent)] transition-colors"
             />
           </div>
           <div>
-            <label htmlFor="edit-reminder-time" className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)] mb-1.5">
+            <label htmlFor="edit-reminder-time" className="block [font-size:var(--text-caption)] font-bold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)] mb-1.5">
               When
             </label>
             <input
@@ -159,7 +159,7 @@ export function ReminderDetailModal({ reminder, onClose, startEditing = false }:
               value={editDatetime}
               min={nowStr}
               onChange={(e) => setEditDatetime(e.target.value)}
-              className="w-full rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] px-3 py-2.5 text-[13px] text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)] transition-colors"
+              className="w-full rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] px-3 py-2.5 [font-size:var(--text-body)] text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)] transition-colors"
             />
           </div>
           <div className="flex gap-2">
@@ -176,24 +176,24 @@ export function ReminderDetailModal({ reminder, onClose, startEditing = false }:
   }
 
   return (
-    <Modal open onOpenChange={(o) => !o && onClose()} title={isFired ? 'Past Reminder' : 'Reminder'} variant="bottom">
+    <Modal open onOpenChange={(o) => !o && onClose()} title={isFired ? 'Past Reminder' : 'Reminder'} variant="center">
       <div className="flex flex-col gap-4 pb-2">
         {/* Content */}
         <div>
-          <p className="font-semibold text-[var(--color-text-primary)] text-[15px]">{reminder.title}</p>
+          <p className="font-semibold text-[var(--color-text-primary)] [font-size:var(--text-body)]">{reminder.title}</p>
           {reminder.body && (
-            <p className="text-[var(--color-text-secondary)] text-[13px] mt-1">{reminder.body}</p>
+            <p className="text-[var(--color-text-secondary)] [font-size:var(--text-label)] mt-1">{reminder.body}</p>
           )}
         </div>
 
         {/* Time info */}
         <div className="bg-[var(--color-bg-secondary)] rounded-xl px-4 py-3">
           {isFired ? (
-            <p className="text-[13px] text-[var(--color-text-secondary)]">
+            <p className="[font-size:var(--text-label)] text-[var(--color-text-secondary)]">
               Fired at <strong className="text-[var(--color-text-primary)]">{reminder.fired_at ? formatFiredAt(reminder.fired_at) : '—'}</strong>
             </p>
           ) : (
-            <p className="text-[13px] text-[var(--color-text-secondary)]">
+            <p className="[font-size:var(--text-label)] text-[var(--color-text-secondary)]">
               Scheduled for <strong className="text-[var(--color-text-primary)]">{formatFireAt(reminder.fire_at)}</strong>
             </p>
           )}

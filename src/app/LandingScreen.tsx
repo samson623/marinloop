@@ -4,9 +4,10 @@ import { useAuthStore } from '@/shared/stores/auth-store'
 import { IconButton } from '@/shared/components/IconButton'
 import { Button } from '@/shared/components/ui'
 import {
-  LogoIcon, SunIcon, MoonIcon, XIcon, CalendarIcon, CheckIcon,
+  LogoIcon, SunIcon, MoonIcon, XIcon, CheckIcon,
   ClockIcon, BellIcon, PillIcon, BarChartIcon, UsersIcon, MicIcon,
 } from '@/shared/components/icons'
+import { PhoneDemo } from '@/shared/components/PhoneDemo'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import '@/styles/landing.css'
 
@@ -112,198 +113,7 @@ const STEPS = [
   { num: 3, title: 'Track Adherence', desc: 'Mark doses done, late, or missed. View daily rings and weekly trends at a glance.' },
 ] as const
 
-// ---------------------------------------------------------------------------
-// Product Preview — phone mockup data
-// ---------------------------------------------------------------------------
-const MOCK_TABS = [
-  { id: 'timeline', label: 'Timeline', icon: ClockIcon },
-  { id: 'meds', label: 'Meds', icon: PillIcon },
-  { id: 'appts', label: 'Appts', icon: CalendarIcon },
-  { id: 'health', label: 'Health', icon: BarChartIcon },
-  { id: 'care', label: 'Care', icon: UsersIcon },
-] as const
-
-const MOCK_MEDS = [
-  { name: 'Metformin 500mg', time: '8:00 AM', status: 'Done', color: 'var(--color-green)', bgClass: '', opacity: 0.55 },
-  { name: 'Lisinopril 10mg', time: '12:00 PM', status: 'Late', color: 'var(--color-amber)', bgClass: '', opacity: 0.6 },
-  { name: 'Vitamin D3', time: '6:00 PM', status: 'Next', color: 'var(--color-amber)', bgClass: 'bg-[var(--color-amber-bg)]', opacity: 1 },
-  { name: 'Aspirin 81mg', time: '9:00 PM', status: 'Pending', color: 'var(--color-text-tertiary)', bgClass: '', opacity: 1 },
-  { name: 'Probiotic', time: '7:00 AM', status: 'Missed', color: 'var(--color-red)', bgClass: 'bg-[var(--color-red-bg)]', opacity: 1 },
-] as const
-
-// Adherence ring math: 75% of circumference for r=46
-const RING_CIRC = 2 * Math.PI * 46
-const RING_OFFSET = RING_CIRC * (1 - 0.75)
-
-// ---------------------------------------------------------------------------
-// ProductPreview — inline, unexported
-// ---------------------------------------------------------------------------
-function ProductPreview() {
-  const [activeTab, setActiveTab] = useState('timeline')
-
-  return (
-    <section
-      id="preview"
-      className="landing-section"
-      aria-labelledby="preview-heading"
-    >
-      <h2 id="preview-heading" className="landing-section__heading">See It in Action</h2>
-      <div className="landing-preview-wrapper">
-        <div
-          className="landing-phone-frame"
-          role="img"
-          aria-label="MarinLoop app preview showing a daily medication timeline with adherence tracking, five sample medications in various statuses, and bottom navigation tabs"
-        >
-          {/* Phone header */}
-          <div className="landing-phone-header">
-            <div className="landing-phone-header__logo">
-              <LogoIcon size={16} strokeWidth={2.5} aria-hidden="true" />
-            </div>
-            <span className="landing-phone-header__text">MarinLoop</span>
-            <span className="landing-phone-header__badge">BETA</span>
-          </div>
-
-          {/* Phone content */}
-          <div className="landing-phone-content">
-            {/* Date header */}
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <div style={{ fontSize: 'var(--text-label)', fontWeight: 700, color: 'var(--color-text-primary)' }}>
-                  Today
-                </div>
-                <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>
-                  Wednesday
-                </div>
-              </div>
-
-              {/* Adherence ring */}
-              <div className="text-center shrink-0">
-                <svg
-                  width="80"
-                  height="80"
-                  viewBox="0 0 100 100"
-                  role="img"
-                  aria-label="Adherence: 75%"
-                >
-                  <title>75% adherence today</title>
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="46"
-                    className="landing-ring-track"
-                  />
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="46"
-                    className="landing-ring-progress"
-                    strokeDasharray={RING_CIRC}
-                    strokeDashoffset={RING_OFFSET}
-                  />
-                </svg>
-                <div style={{
-                  fontSize: 'var(--text-subtitle)',
-                  fontWeight: 800,
-                  marginTop: -58,
-                  position: 'relative',
-                  zIndex: 1,
-                  color: 'var(--color-text-primary)',
-                }}>
-                  75%
-                </div>
-                <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--color-text-secondary)', marginTop: 2 }}>
-                  Adherence
-                </div>
-              </div>
-            </div>
-
-            {/* Status pills */}
-            <div className="flex gap-2 mb-3 flex-wrap">
-              <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style={{ fontSize: '10px', fontWeight: 600, background: 'var(--color-green-bg)', color: 'var(--color-green)' }}>
-                <span className="w-2 h-2 rounded-full" style={{ background: 'var(--color-green)' }} aria-hidden="true" />
-                3 Done
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style={{ fontSize: '10px', fontWeight: 600, background: 'var(--color-amber-bg)', color: 'var(--color-amber)' }}>
-                <span className="w-2 h-2 rounded-full" style={{ background: 'var(--color-amber)' }} aria-hidden="true" />
-                1 Late
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style={{ fontSize: '10px', fontWeight: 600, background: 'var(--color-red-bg)', color: 'var(--color-red)' }}>
-                <span className="w-2 h-2 rounded-full" style={{ background: 'var(--color-red)' }} aria-hidden="true" />
-                1 Missed
-              </span>
-            </div>
-
-            {/* Timeline */}
-            <div className="relative" style={{ paddingLeft: 0 }}>
-              {/* Gradient line */}
-              <div className="landing-tl-line" aria-hidden="true" />
-
-              {MOCK_MEDS.map((med, i) => (
-                <div key={med.name} className="relative" style={{ opacity: med.opacity }}>
-                  {/* Dot */}
-                  <div
-                    className="landing-tl-dot"
-                    style={{ background: med.color, top: 16 + i * 0 }}
-                    aria-hidden="true"
-                  />
-                  {/* Card */}
-                  <div
-                    className={`landing-tl-card ${med.bgClass}`}
-                    style={{ borderLeftColor: med.color }}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-primary)' }}>
-                        {med.name}
-                      </span>
-                      <span style={{
-                        fontSize: '10px',
-                        fontWeight: 700,
-                        color: med.color,
-                        padding: '1px 6px',
-                        borderRadius: 'var(--radius-full)',
-                        background: med.status === 'Next' ? 'var(--color-amber-bg)' : med.status === 'Missed' ? 'var(--color-red-bg)' : 'transparent',
-                      }}>
-                        {med.status}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--color-text-tertiary)', marginTop: 2 }}>
-                      {med.time}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Voice FAB mock */}
-          <div className="landing-fab-mock" aria-hidden="true" style={{ position: 'absolute', bottom: 52, right: 12 }}>
-            <MicIcon size={20} strokeWidth={2.5} aria-hidden="true" />
-          </div>
-
-          {/* Bottom tabs */}
-          <div className="landing-phone-tabs">
-            {MOCK_TABS.map((tab) => {
-              const active = activeTab === tab.id
-              const Icon = tab.icon
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  className={`landing-phone-tab${active ? ' landing-phone-tab--active' : ''}`}
-                  onClick={() => setActiveTab(tab.id)}
-                >
-                  {active && <span className="landing-phone-tab__indicator" aria-hidden="true" />}
-                  <Icon size={16} strokeWidth={active ? 2.2 : 1.6} aria-hidden="true" />
-                  <span>{tab.label}</span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-    </section>
-  )
-}
+// ProductPreview replaced by PhoneDemo component (src/shared/components/PhoneDemo.tsx)
 
 // ---------------------------------------------------------------------------
 // FeaturesSection — inline, unexported
@@ -612,8 +422,8 @@ export function LandingScreen() {
           </div>
         </section>
 
-        {/* ---- PRODUCT PREVIEW ---- */}
-        <ProductPreview />
+        {/* ---- PRODUCT PREVIEW (auto-demo phone mockup) ---- */}
+        <PhoneDemo />
 
         {/* ---- FEATURES ---- */}
         <FeaturesSection />

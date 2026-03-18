@@ -133,14 +133,14 @@ describe('PhoneDemo — Rendering', () => {
     expect(fab!.getAttribute('aria-hidden')).toBe('true')
   })
 
-  it('shows status badge text', () => {
+  it('status badge is hidden when idle', () => {
     renderDemo()
-    expect(document.querySelector('[data-testid="demo-status"]')).not.toBeNull()
+    expect(document.querySelector('[data-testid="demo-status"]')).toBeNull()
   })
 
-  it('renders subtitle "Watch it work — or tap to take over"', () => {
+  it('renders subtitle about playing demo', () => {
     renderDemo()
-    expect(screen.getByText(/Watch it work/)).toBeInTheDocument()
+    expect(screen.getByText(/Click play/)).toBeInTheDocument()
   })
 })
 
@@ -371,19 +371,28 @@ describe('PhoneDemo — Content Fidelity', () => {
 // Suite 5: Demo Sequencer (Phase 2)
 // ===========================================================================
 describe('PhoneDemo — Demo Sequencer', () => {
+  it('shows play overlay button when idle (demo not started)', () => {
+    renderDemo()
+    const playBtn = screen.getByTestId('demo-play-btn')
+    expect(playBtn).toBeInTheDocument()
+    expect(playBtn).toHaveAttribute('aria-label', 'Play demo')
+  })
+
+  it('phone is dimmed when idle', () => {
+    renderDemo()
+    const phone = document.querySelector('.demo-phone')!
+    expect(phone.classList.contains('demo-phone--idle')).toBe(true)
+  })
+
   it('replay button is not shown when demo has not been started', () => {
     renderDemo()
-    // Demo hasn't started (IO not triggered), so no replay button
     expect(screen.queryByRole('button', { name: /Replay demo/i })).not.toBeInTheDocument()
   })
 
   it('pointer interaction on phone does not crash when demo is not running', () => {
     renderDemo()
     const phone = document.querySelector('.demo-phone')!
-    // Should not throw even when demo isn't running
     expect(() => fireEvent.pointerDown(phone)).not.toThrow()
-    const status = document.querySelector('[data-testid="demo-status"]')
-    expect(status).toBeInTheDocument()
   })
 
   it('ghost cursor is hidden by default (demo not running)', () => {

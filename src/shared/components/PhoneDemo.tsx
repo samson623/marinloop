@@ -301,6 +301,8 @@ function useDemoSequencer(phoneRef: React.RefObject<HTMLDivElement | null>) {
     return () => clearTimeout(t)
   }, [toast])
 
+  const [hasFinished, setHasFinished] = useState(false)
+
   const runDemo = useCallback(async () => {
     // Abort any previous run
     abortRef.current?.abort()
@@ -309,6 +311,7 @@ function useDemoSequencer(phoneRef: React.RefObject<HTMLDivElement | null>) {
 
     setIsRunning(true)
     setIsPaused(false)
+    setHasFinished(false)
     pauseRef.current = false
 
     const ctx: DemoContext = {
@@ -325,17 +328,19 @@ function useDemoSequencer(phoneRef: React.RefObject<HTMLDivElement | null>) {
     }
 
     try {
-      for (;;) {
+      for (const step of DEMO_STEPS) {
+        if (ac.signal.aborted) break
+        await waitWhilePaused(ctx)
         if (ac.signal.aborted) break
 
-        for (const step of DEMO_STEPS) {
-          if (ac.signal.aborted) break
-          await waitWhilePaused(ctx)
-          if (ac.signal.aborted) break
-
-          setCaption(step.caption)
-          await step.run(ctx)
-        }
+        setCaption(step.caption)
+        await step.run(ctx)
+      }
+      // Single playthrough complete
+      if (!ac.signal.aborted) {
+        setCursor(prev => ({ ...prev, visible: false }))
+        setCaption('')
+        setHasFinished(true)
       }
     } catch {
       // AbortError is expected on cleanup/pause — swallow it
@@ -356,6 +361,7 @@ function useDemoSequencer(phoneRef: React.RefObject<HTMLDivElement | null>) {
     abortRef.current = null
     setIsRunning(false)
     setIsPaused(false)
+    setHasFinished(false)
     pauseRef.current = false
     setCursor({ x: 0, y: 0, visible: false, clicking: false })
     setCaption('')
@@ -389,7 +395,7 @@ function useDemoSequencer(phoneRef: React.RefObject<HTMLDivElement | null>) {
     toast,
     expandedCard, setExpandedCard,
     detailMed, setDetailMed,
-    isPaused, isRunning,
+    isPaused, isRunning, hasFinished,
     pause, resume, stop, restart, runDemo,
   }
 }
@@ -858,7 +864,9 @@ export function PhoneDemo() {
   const [userTookOver, setUserTookOver] = useState(false)
 
   const demo = useDemoSequencer(phoneRef)
-  const reducedMotion = prefersReducedMotion()
+
+  // Idle = not running, not paused, not finished (initial state or after replay-reset)
+  const isIdle = !demo.isRunning && !demo.isPaused && !demo.hasFinished && !userTookOver
 
   // Manual tab change — pause demo if running
   const handleTabChange = useCallback((tab: TabId) => {
@@ -879,24 +887,6 @@ export function PhoneDemo() {
     }
   }, [demo])
 
-  // IntersectionObserver: auto-start demo when phone enters viewport
-  useEffect(() => {
-    if (reducedMotion) return // respect reduced motion — no auto-demo
-    const el = phoneRef.current
-    if (!el) return
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !demo.isRunning && !userTookOver) {
-          demo.runDemo()
-        }
-      },
-      { threshold: 0.3 },
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [reducedMotion, demo, userTookOver])
-
   // Scroll content to top on tab switch
   useEffect(() => {
     if (contentRef.current) {
@@ -904,20 +894,20 @@ export function PhoneDemo() {
     }
   }, [demo.activeTab])
 
+  // Play button handler — starts demo from scratch
+  const handlePlay = useCallback(() => {
+    setUserTookOver(false)
+    demo.restart()
+  }, [demo])
+
   // Replay button handler
   const handleReplay = useCallback(() => {
     setUserTookOver(false)
     demo.restart()
   }, [demo])
 
-  // Status badge text
-  const statusText = demo.isRunning && !demo.isPaused
-    ? 'Auto-demo playing'
-    : demo.isPaused
-    ? 'Paused — you\'re in control'
-    : 'Interactive preview'
-
-  const statusClass = demo.isPaused ? 'demo-status demo-status--paused' : 'demo-status'
+  // Phone frame class — dim when idle
+  const phoneClass = `demo-phone${isIdle ? ' demo-phone--idle' : ''}`
 
   return (
     <section
@@ -926,55 +916,90 @@ export function PhoneDemo() {
       aria-labelledby="preview-heading"
     >
       <h2 id="preview-heading" className="landing-section__heading">See It in Action</h2>
-      <p className="demo-subtitle">Watch it work — or tap to take over</p>
+      <p className="demo-subtitle">Click play to watch a guided tour of the app</p>
 
       <div className="demo-wrapper">
-        <div className="demo-controls">
-          <div className={statusClass} data-testid="demo-status">
-            {statusText}
+        {/* Controls — shown when running or after interaction */}
+        {!isIdle && (
+          <div className="demo-controls">
+            {demo.isRunning && !demo.isPaused && (
+              <div className="demo-status" data-testid="demo-status">
+                Playing demo
+              </div>
+            )}
+            {demo.isPaused && (
+              <div className="demo-status demo-status--paused" data-testid="demo-status">
+                Paused — you're in control
+              </div>
+            )}
+            {demo.hasFinished && !demo.isRunning && (
+              <div className="demo-status" data-testid="demo-status">
+                Demo complete
+              </div>
+            )}
+            {(demo.isPaused || demo.hasFinished || (!demo.isRunning && userTookOver)) && (
+              <button
+                type="button"
+                className="demo-replay-btn"
+                onClick={handleReplay}
+                aria-label="Replay demo"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="1 4 1 10 7 10" />
+                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                </svg>
+                Replay
+              </button>
+            )}
           </div>
-          {(demo.isPaused || (!demo.isRunning && userTookOver)) && (
+        )}
+
+        <div className="demo-phone-container">
+          <div
+            ref={phoneRef}
+            className={phoneClass}
+            role="img"
+            aria-label="MarinLoop app preview showing a daily medication timeline with adherence tracking, five sample medications in various statuses, and bottom navigation tabs"
+            onPointerDown={handlePhonePointerDown}
+          >
+            <GhostCursor state={demo.cursor} />
+            <ClickRipple state={demo.cursor} />
+            <ToastNotification message={demo.toast} />
+            <PhoneHeader />
+
+            <div className="demo-phone__content" ref={contentRef}>
+              {demo.activeTab === 'timeline' && <TimelineScreen meds={demo.meds} expandedCard={demo.expandedCard} onExpandCard={demo.setExpandedCard} />}
+              {demo.activeTab === 'meds' && <MedsScreen meds={demo.meds} detailMed={demo.detailMed} onOpenDetail={demo.setDetailMed} onCloseDetail={() => demo.setDetailMed(null)} />}
+              {demo.activeTab === 'health' && <HealthScreen />}
+              {demo.activeTab === 'appts' && <ApptsScreen />}
+              {demo.activeTab === 'care' && <CareScreen />}
+            </div>
+
+            {/* Voice FAB mock */}
+            <div className="demo-fab" aria-hidden="true">
+              <MicIcon size={20} strokeWidth={2.5} aria-hidden="true" />
+            </div>
+
+            <PhoneTabBar activeTab={demo.activeTab} onTabChange={handleTabChange} />
+          </div>
+
+          {/* Play overlay — shown when idle */}
+          {isIdle && (
             <button
               type="button"
-              className="demo-replay-btn"
-              onClick={handleReplay}
-              aria-label="Replay demo"
+              className="demo-play-overlay"
+              onClick={handlePlay}
+              aria-label="Play demo"
+              data-testid="demo-play-btn"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <polyline points="1 4 1 10 7 10" />
-                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-              </svg>
-              Replay
+              <div className="demo-play-overlay__circle">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <polygon points="6,3 20,12 6,21" />
+                </svg>
+              </div>
+              <span className="demo-play-overlay__label">See It in Action</span>
             </button>
           )}
-        </div>
-
-        <div
-          ref={phoneRef}
-          className="demo-phone"
-          role="img"
-          aria-label="MarinLoop app preview showing a daily medication timeline with adherence tracking, five sample medications in various statuses, and bottom navigation tabs"
-          onPointerDown={handlePhonePointerDown}
-        >
-          <GhostCursor state={demo.cursor} />
-          <ClickRipple state={demo.cursor} />
-          <ToastNotification message={demo.toast} />
-          <PhoneHeader />
-
-          <div className="demo-phone__content" ref={contentRef}>
-            {demo.activeTab === 'timeline' && <TimelineScreen meds={demo.meds} expandedCard={demo.expandedCard} onExpandCard={demo.setExpandedCard} />}
-            {demo.activeTab === 'meds' && <MedsScreen meds={demo.meds} detailMed={demo.detailMed} onOpenDetail={demo.setDetailMed} onCloseDetail={() => demo.setDetailMed(null)} />}
-            {demo.activeTab === 'health' && <HealthScreen />}
-            {demo.activeTab === 'appts' && <ApptsScreen />}
-            {demo.activeTab === 'care' && <CareScreen />}
-          </div>
-
-          {/* Voice FAB mock */}
-          <div className="demo-fab" aria-hidden="true">
-            <MicIcon size={20} strokeWidth={2.5} aria-hidden="true" />
-          </div>
-
-          <PhoneTabBar activeTab={demo.activeTab} onTabChange={handleTabChange} />
         </div>
 
         <DemoCaption text={demo.caption} />

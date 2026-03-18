@@ -942,6 +942,99 @@
   z-index: 10;
 }
 
+/* ---------- Phone Container (holds phone + play overlay) ---------- */
+.demo-phone-container {
+  position: relative;
+  width: 100%;
+  max-width: 375px;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---------- Phone Idle State ---------- */
+.demo-phone--idle {
+  opacity: 0.55;
+  filter: brightness(0.85);
+  transition: opacity 0.4s ease, filter 0.4s ease;
+}
+
+.demo-phone--idle:hover {
+  opacity: 0.7;
+}
+
+/* ---------- Play Overlay ---------- */
+.demo-play-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  z-index: 20;
+  border-radius: 40px;
+  transition: transform var(--transition-fast);
+}
+
+.demo-play-overlay:hover {
+  transform: scale(1.02);
+}
+
+.demo-play-overlay:hover .demo-play-overlay__circle {
+  transform: scale(1.1);
+  box-shadow: 0 8px 32px -4px rgba(27, 122, 74, 0.5);
+}
+
+.demo-play-overlay:active .demo-play-overlay__circle {
+  transform: scale(0.95);
+}
+
+.demo-play-overlay__circle {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+  color: var(--color-text-inverse);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px -4px rgba(27, 122, 74, 0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  padding-left: 4px; /* optical centering for play triangle */
+}
+
+.demo-play-overlay__label {
+  font-family: var(--font-sans);
+  font-size: var(--text-label);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.3);
+  background: var(--color-bg-secondary);
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-elevated);
+}
+
+@media (max-width: 479px) {
+  .demo-play-overlay {
+    border-radius: var(--radius-2xl);
+  }
+  .demo-play-overlay__circle {
+    width: 60px;
+    height: 60px;
+  }
+  .demo-play-overlay__circle svg {
+    width: 22px;
+    height: 22px;
+  }
+  .demo-play-overlay__label {
+    font-size: var(--text-caption);
+  }
+}
+
 /* ---------- Ghost Cursor (Phase 2) ---------- */
 .demo-cursor {
   position: absolute;
@@ -1105,5 +1198,11 @@
   }
   .demo-med-card__pulse {
     animation: none;
+  }
+  .demo-phone--idle {
+    transition: none;
+  }
+  .demo-play-overlay__circle {
+    transition: none;
   }
 }

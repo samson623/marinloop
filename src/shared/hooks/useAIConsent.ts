@@ -4,6 +4,20 @@ import { supabase } from '@/shared/lib/supabase'
 const AI_CONSENT_KEY = 'marinloop_ai_consent_given'
 const AI_CONSENT_DECLINED_KEY = 'marinloop_ai_consent_declined'
 
+/**
+ * Persist consent to Supabase via SECURITY DEFINER RPC (migration 047).
+ * Retries once on failure. Returns true if the DB was updated successfully.
+ */
+async function persistConsent(action: 'grant' | 'revoke'): Promise<boolean> {
+  const rpcName = action === 'grant' ? 'grant_ai_consent' : 'revoke_ai_consent'
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const { error } = await supabase.rpc(rpcName)
+    if (!error) return true
+    if (attempt === 0) await new Promise((r) => setTimeout(r, 500))
+  }
+  return false
+}
+
 export function useAIConsent() {
   const [consented, setConsented] = useState<boolean>(() => {
     try { return localStorage.getItem(AI_CONSENT_KEY) === '1' } catch { return false }
@@ -22,34 +36,23 @@ export function useAIConsent() {
     try { localStorage.removeItem(AI_CONSENT_DECLINED_KEY) } catch { /* ignore */ }
     setConsented(true)
     setDeclinedState(false)
-    // Persist to Supabase (fire-and-forget; localStorage is the cache)
+    // Persist to Supabase via RPC — awaited with retry, not fire-and-forget
     void (async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-        const now = new Date().toISOString()
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- columns added in migration 040, ahead of generated types
-        const db = supabase as any
-        await db.from('profiles').update({ ai_consent_granted: true, ai_consent_granted_at: now }).eq('id', user.id)
-        await db.from('ai_consent_audit').insert({ user_id: user.id, action: 'granted', created_at: now })
-      } catch { /* ignore — localStorage is source of truth for UI */ }
+      const ok = await persistConsent('grant')
+      if (!ok) {
+        console.error('[useAIConsent] Failed to persist consent grant to database after 2 attempts')
+      }
     })()
   }
 
   const revoke = () => {
     try { localStorage.removeItem(AI_CONSENT_KEY) } catch { /* ignore */ }
     setConsented(false)
-    // Persist revocation to Supabase (fire-and-forget)
     void (async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-        const now = new Date().toISOString()
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- columns added in migration 040, ahead of generated types
-        const db = supabase as any
-        await db.from('profiles').update({ ai_consent_granted: false }).eq('id', user.id)
-        await db.from('ai_consent_audit').insert({ user_id: user.id, action: 'revoked', created_at: now })
-      } catch { /* ignore */ }
+      const ok = await persistConsent('revoke')
+      if (!ok) {
+        console.error('[useAIConsent] Failed to persist consent revocation to database after 2 attempts')
+      }
     })()
   }
 

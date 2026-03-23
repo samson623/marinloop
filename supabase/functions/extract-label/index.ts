@@ -32,9 +32,15 @@ function getSecondsUntilMidnightUtc(): number {
   return Math.floor((tomorrow.getTime() - now.getTime()) / 1000)
 }
 
+const DEFAULT_ORIGINS = [
+  'https://marinloop.com',
+  'https://www.marinloop.com',
+  'https://medflow-care.vercel.app',
+]
+
 function getAllowedOrigins(): string[] {
   const raw = Deno.env.get('ALLOWED_ORIGINS')
-  if (!raw?.trim()) return []
+  if (!raw?.trim()) return DEFAULT_ORIGINS
   return raw.split(',').map((o) => o.trim()).filter(Boolean)
 }
 

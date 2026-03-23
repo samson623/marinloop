@@ -54,11 +54,24 @@ async function compressImage(file: File): Promise<string> {
 }
 
 function mapApiError(msg: string): string {
-  if (msg.toLowerCase().includes('daily limit') || msg.includes('tomorrow') || msg.includes('429')) {
+  const lower = msg.toLowerCase()
+  if (lower.includes('daily limit') || lower.includes('tomorrow') || msg.includes('429')) {
     return 'Daily limit reached. Try again tomorrow.'
   }
-  if (msg.toLowerCase().includes('too large') || msg.toLowerCase().includes('smaller') || msg.includes('6mb') || msg.includes('18mb')) {
+  if (lower.includes('too large') || lower.includes('smaller') || msg.includes('6mb') || msg.includes('18mb')) {
     return 'Photos too large. Try smaller images.'
+  }
+  if (lower.includes('consent required') || lower.includes('enable ai')) {
+    return 'AI features need to be enabled. Please go to Settings and enable AI consent.'
+  }
+  if (lower.includes('requires basic') || lower.includes('requires pro') || lower.includes('upgrade')) {
+    return 'This feature requires a paid plan. Please upgrade to Basic or Pro.'
+  }
+  if (lower.includes('cors') || lower.includes('not allowed')) {
+    return 'Connection error. Please try again or contact support.'
+  }
+  if (lower.includes('unauthorized') || lower.includes('authorization')) {
+    return 'Session expired. Please sign out and sign back in.'
   }
   return msg || "Couldn't read the label. Please enter manually."
 }

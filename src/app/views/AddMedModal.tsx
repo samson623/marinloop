@@ -307,7 +307,9 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
     const modeLabel = photoMode === 'pill' ? 'Identifying pill...' : (labelPhotos.length > 1 ? `Reading ${labelPhotos.length} label photos...` : 'Reading label...')
     toast(modeLabel, 'ts')
     try {
-      const result = await extractFromImages(labelPhotos, photoMode, consented)
+      // Pass undefined for consent — let the server be the authority via the DB check.
+      // The client-side localStorage consent may be stale or the DB update may have failed.
+      const result = await extractFromImages(labelPhotos, photoMode, consented || undefined)
       const conf = result.confidence ?? 0.5
       const hasUsefulData = Boolean(
         result.name?.trim() || result.dosage?.trim() || result.instructions?.trim() || result.warnings?.trim()

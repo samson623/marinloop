@@ -88,23 +88,33 @@ export async function extractFromImages(files: File[], mode?: 'label' | 'pill', 
     setTimeout(() => reject(new Error('Request timed out. Please try again or enter details manually.')), EXTRACT_TIMEOUT_MS)
   })
 
-  const { data, error } = await Promise.race([invokePromise, timeoutPromise])
+  const { data, error, response: errResponse } = await Promise.race([invokePromise, timeoutPromise]) as
+    { data: LabelExtractResult | null; error: Error | null; response?: Response }
 
   if (error) {
     let msg = ''
     if (error.name === 'FunctionsHttpError') {
-      try {
-        const errObj = error as Record<string, unknown>
-        if (typeof errObj.context === 'object' && errObj.context !== null) {
-          const ctx = errObj.context as Record<string, unknown>
-          if (typeof ctx.json === 'function') {
-            const errBody = (await ctx.json()) as { error?: string } | null
-            msg = errBody?.error ?? ''
+      // Try to extract the JSON error body from the Response object
+      // error.context is the raw Response; errResponse is also available
+      const resp = (error as Record<string, unknown>).context ?? errResponse
+      if (resp && typeof resp === 'object' && typeof (resp as Response).json === 'function') {
+        try {
+          const errBody = (await (resp as Response).json()) as { error?: string } | null
+          msg = errBody?.error ?? ''
+        } catch {
+          // Body may have been consumed or CORS-blocked; try .text() as fallback
+          try {
+            if (typeof (resp as Response).text === 'function') {
+              const text = await (resp as Response).text()
+              msg = text || ''
+            }
+          } catch {
+            // Response body inaccessible
           }
         }
-      } catch {
-        msg = ''
       }
+      const status = resp && typeof (resp as Response).status === 'number' ? (resp as Response).status : '?'
+      console.error(`[label-extract] Edge Function returned ${status}: ${msg || '(no body)'}`)
     } else if (error.name === 'FunctionsRelayError') {
       msg = 'Network error. Please check your connection and try again.'
     } else if (error.name === 'FunctionsFetchError') {

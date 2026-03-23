@@ -357,12 +357,13 @@ serve(async (req) => {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userContent },
         ],
-        max_tokens: 1024,
+        max_completion_tokens: 1024,
       }),
     })
 
     if (!response.ok) {
-      await response.text()
+      const errorBody = await response.text()
+      console.error(`[extract-label] OpenAI error ${response.status}: ${errorBody.slice(0, 500)}`)
       const safeMessage = response.status === 429
         ? 'Too many requests; try again later'
         : 'Request failed'
@@ -389,9 +390,17 @@ serve(async (req) => {
 
     let parsed: unknown
     try {
-      const cleaned = rawContent.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim()
+      // Strip markdown fences and any text before/after JSON
+      let cleaned = rawContent.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim()
+      // If response has text before JSON, extract the JSON object
+      const jsonStart = cleaned.indexOf('{')
+      const jsonEnd = cleaned.lastIndexOf('}')
+      if (jsonStart >= 0 && jsonEnd > jsonStart) {
+        cleaned = cleaned.slice(jsonStart, jsonEnd + 1)
+      }
       parsed = JSON.parse(cleaned)
     } catch {
+      console.error(`[extract-label] Failed to parse: ${rawContent.slice(0, 500)}`)
       return {
         ok: false,
         response: new Response(

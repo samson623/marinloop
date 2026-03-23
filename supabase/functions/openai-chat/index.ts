@@ -276,7 +276,7 @@ serve(async (req) => {
           body: JSON.stringify({
             model: ALLOWED_MODEL,
             messages: validatedMessages.map((m) => ({ role: m.role, content: m.content })),
-            max_tokens: 1024,
+            max_completion_tokens: 1024,
           }),
         })
 

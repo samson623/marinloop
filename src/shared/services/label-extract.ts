@@ -96,7 +96,7 @@ export async function extractFromImages(files: File[], mode?: 'label' | 'pill', 
     if (error.name === 'FunctionsHttpError') {
       // Try to extract the JSON error body from the Response object
       // error.context is the raw Response; errResponse is also available
-      const resp = (error as Record<string, unknown>).context ?? errResponse
+      const resp = (error as unknown as Record<string, unknown>).context ?? errResponse
       if (resp && typeof resp === 'object' && typeof (resp as Response).json === 'function') {
         try {
           const errBody = (await (resp as Response).json()) as { error?: string } | null

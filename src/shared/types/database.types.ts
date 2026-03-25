@@ -635,6 +635,14 @@ export interface Database {
         Args: Record<string, never>
         Returns: void
       }
+      grant_ai_consent: {
+        Args: Record<string, never>
+        Returns: undefined
+      }
+      revoke_ai_consent: {
+        Args: Record<string, never>
+        Returns: undefined
+      }
     }
     CompositeTypes: Record<string, never>
   }

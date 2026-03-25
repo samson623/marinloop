@@ -84,7 +84,7 @@ describe('extractFromImages', () => {
 
       // The consent check happens before the empty-list check, so even a
       // non-empty file list should throw about consent first.
-      await expect(extractFromImages([file], undefined, false))
+      await expect(extractFromImages([file], false))
         .rejects.toThrow('AI consent required')
     })
 
@@ -98,7 +98,7 @@ describe('extractFromImages', () => {
       const { extractFromImages } = await import('@/shared/services/label-extract')
       const file = makeFile()
 
-      await expect(extractFromImages([file], undefined, false)).rejects.toThrow()
+      await expect(extractFromImages([file], false)).rejects.toThrow()
       expect(invokeFn).not.toHaveBeenCalled()
     })
 
@@ -117,7 +117,7 @@ describe('extractFromImages', () => {
         const { extractFromImages } = await import('@/shared/services/label-extract')
         const file = makeFile()
 
-        const result = await extractFromImages([file], undefined, true)
+        const result = await extractFromImages([file], true)
 
         expect(invokeFn).toHaveBeenCalledOnce()
         expect(invokeFn).toHaveBeenCalledWith('extract-label', expect.objectContaining({ body: expect.anything() }))
@@ -142,7 +142,7 @@ describe('extractFromImages', () => {
         const { extractFromImages } = await import('@/shared/services/label-extract')
         const file = makeFile()
 
-        const result = await extractFromImages([file], undefined, undefined)
+        const result = await extractFromImages([file], undefined)
 
         expect(invokeFn).toHaveBeenCalledOnce()
         expect(result.name).toBe('Lisinopril')
@@ -156,7 +156,7 @@ describe('extractFromImages', () => {
       const { extractFromImages } = await import('@/shared/services/label-extract')
 
       // Empty file list + isConsented: false → consent error takes priority
-      await expect(extractFromImages([], undefined, false))
+      await expect(extractFromImages([], false))
         .rejects.toThrow('AI consent required')
     })
   })

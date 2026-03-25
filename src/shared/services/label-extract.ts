@@ -79,9 +79,8 @@ function mapApiError(msg: string): string {
 /**
  * Extract medication info from one or more prescription label photos.
  * Images are compressed client-side before sending to the Edge Function.
- * Pass mode='pill' to identify a pill by visual characteristics instead of reading a label.
  */
-export async function extractFromImages(files: File[], mode?: 'label' | 'pill', isConsented?: boolean): Promise<LabelExtractResult> {
+export async function extractFromImages(files: File[], isConsented?: boolean): Promise<LabelExtractResult> {
   if (isConsented === false) {
     throw new Error('AI consent required')
   }
@@ -94,7 +93,7 @@ export async function extractFromImages(files: File[], mode?: 'label' | 'pill', 
 
   // Race between the actual call and a timeout
   const invokePromise = supabase.functions.invoke<LabelExtractResult>('extract-label', {
-    body: mode ? { images, mode } : { images },
+    body: { images },
   })
 
   const timeoutPromise = new Promise<never>((_, reject) => {
@@ -145,6 +144,6 @@ export async function extractFromImages(files: File[], mode?: 'label' | 'pill', 
 }
 
 /** Single-file convenience wrapper (backwards compatible). */
-export async function extractFromImage(file: File, mode?: 'label' | 'pill', isConsented?: boolean): Promise<LabelExtractResult> {
-  return extractFromImages([file], mode, isConsented)
+export async function extractFromImage(file: File, isConsented?: boolean): Promise<LabelExtractResult> {
+  return extractFromImages([file], isConsented)
 }

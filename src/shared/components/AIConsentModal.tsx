@@ -37,7 +37,7 @@ export function AIConsentModal({ onAccept, onDecline }: { onAccept: () => void; 
               <li><strong>Revoke anytime:</strong> You can withdraw consent at any time in Profile &rarr; Data &amp; Privacy.</li>
             </ul>
             <p className="text-[var(--color-text-tertiary)]" style={{ fontSize: 'var(--text-caption)' }}>
-              This consent applies to adherence insights, medication label extraction, pill identification, and AI-powered voice commands.
+              This consent applies to adherence insights, medication label extraction, and AI-powered voice commands.
             </p>
           </div>
 

@@ -64,13 +64,9 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
     instructions?: string
     warnings?: string
     confidence?: number
-    imprint?: string
-    color?: string
-    shape?: string
   } | null>(null)
   const [labelPhotos, setLabelPhotos] = useState<File[]>([])
   const [photoThumbs, setPhotoThumbs] = useState<string[]>([])
-  const [photoMode, setPhotoMode] = useState<'label' | 'pill'>('label')
   const [rxcui, setRxcui] = useState<string | null>(null)
   const [isLookingUpRxcui, setIsLookingUpRxcui] = useState(false)
   const [foodNote, setFoodNote] = useState<string | null>(null)
@@ -304,18 +300,15 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
       return
     }
     setIsLooking(true)
-    const modeLabel = photoMode === 'pill' ? 'Identifying pill...' : (labelPhotos.length > 1 ? `Reading ${labelPhotos.length} label photos...` : 'Reading label...')
-    toast(modeLabel, 'ts')
+    toast(labelPhotos.length > 1 ? `Reading ${labelPhotos.length} label photos...` : 'Reading label...', 'ts')
     try {
-      // Pass undefined for consent — let the server be the authority via the DB check.
-      // The client-side localStorage consent may be stale or the DB update may have failed.
-      const result = await extractFromImages(labelPhotos, photoMode, consented || undefined)
+      const result = await extractFromImages(labelPhotos, consented)
       const conf = result.confidence ?? 0.5
       const hasUsefulData = Boolean(
         result.name?.trim() || result.dosage?.trim() || result.instructions?.trim() || result.warnings?.trim()
       )
       if (!hasUsefulData) {
-        toast(photoMode === 'pill' ? "Couldn't identify the pill. Please enter manually." : "Couldn't read enough from the label. Please enter manually.", 'tw')
+        toast("Couldn't read enough from the label. Please enter manually.", 'tw')
         return
       }
       if (conf < 0.6) {
@@ -323,14 +316,14 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
         setShowVerifyModal(true)
       } else {
         applyExtractToForm(result)
-        toast(photoMode === 'pill' ? 'Pill identified. Please verify before saving.' : 'Label info loaded. Please verify before saving.', 'ts')
+        toast('Label info loaded. Please verify before saving.', 'ts')
       }
       // Clear photos after successful processing
       photoThumbs.forEach((url) => URL.revokeObjectURL(url))
       setLabelPhotos([])
       setPhotoThumbs([])
     } catch (e) {
-      handleMutationError(e, 'label-extract', photoMode === 'pill' ? "Couldn't identify the pill. Please enter manually." : "Couldn't read the label. Please enter manually.", toast)
+      handleMutationError(e, 'label-extract', "Couldn't read the label. Please enter manually.", toast)
     } finally {
       setIsLooking(false)
     }
@@ -547,7 +540,6 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
                     {labelPhotos.length} photo{labelPhotos.length !== 1 ? 's' : ''} added
-                    {photoMode === 'pill' && <span className="ml-1 text-[var(--color-text-tertiary)]">(pill mode)</span>}
                   </span>
                   <span className="text-xs text-[var(--color-text-tertiary)]">
                     (up to 5 — add multiple sides of the bottle)
@@ -587,72 +579,49 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
                   {isLooking ? (
                     <>
                       <div className="w-5 h-5 border-2 border-white/30 border-t-2 border-t-white rounded-full spin-loading shrink-0" />
-                      <span>{photoMode === 'pill' ? 'Identifying pill...' : `Reading ${labelPhotos.length > 1 ? `${labelPhotos.length} photos` : 'label'}...`}</span>
+                      <span>{`Reading ${labelPhotos.length > 1 ? `${labelPhotos.length} photos` : 'label'}...`}</span>
                     </>
                   ) : (
                     <>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-                      <span>{photoMode === 'pill' ? 'Identify pill' : `Process ${labelPhotos.length > 1 ? `${labelPhotos.length} photos` : 'photo'}`}</span>
+                      <span>{`Process ${labelPhotos.length > 1 ? `${labelPhotos.length} photos` : 'photo'}`}</span>
                     </>
                   )}
                 </button>
               </div>
             )}
 
-            {/* Photo mode split buttons — shown when no photos loaded yet */}
+            {/* Label photo button — shown when no photos loaded yet */}
             {labelPhotos.length === 0 && (
               canUseOcr ? (
-                <div className="flex gap-2 mb-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPhotoMode('label')
-                      labelPhotoInputRef.current?.click()
-                    }}
-                    disabled={isLooking}
-                    aria-label="Take or upload photos of prescription label or pill bottle"
-                    aria-busy={isLooking}
-                    aria-live="polite"
-                    className="flex-1 py-3 px-4 rounded-2xl font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border-primary)] hover:bg-[var(--color-bg-secondary)] cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 [font-size:var(--text-body)]"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden>
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                      <circle cx="8.5" cy="8.5" r="1.5" />
-                      <polyline points="21 15 16 10 5 21" />
-                    </svg>
-                    <span>📸 Label photo</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPhotoMode('pill')
-                      labelPhotoInputRef.current?.click()
-                    }}
-                    disabled={isLooking}
-                    aria-label="Take or upload a photo of the pill to identify it"
-                    aria-busy={isLooking}
-                    className="flex-1 py-3 px-4 rounded-2xl font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border-primary)] hover:bg-[var(--color-bg-secondary)] cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 [font-size:var(--text-body)]"
-                  >
-                    <span>💊 Identify pill</span>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => labelPhotoInputRef.current?.click()}
+                  disabled={isLooking}
+                  aria-label="Take or upload photos of prescription label"
+                  aria-busy={isLooking}
+                  aria-live="polite"
+                  className="w-full py-3 px-4 mb-3 rounded-2xl font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border-primary)] hover:bg-[var(--color-bg-secondary)] cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 [font-size:var(--text-body)]"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden>
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21 15 16 10 5 21" />
+                  </svg>
+                  <span>Label photo</span>
+                </button>
               ) : (
-                <div className="flex gap-2 mb-3">
-                  {(['📸 Label photo', '💊 Identify pill'] as const).map((label) => (
-                    <button
-                      key={label}
-                      type="button"
-                      onClick={() => navigate('/subscription')}
-                      className="flex-1 py-3 px-4 rounded-2xl font-semibold text-[var(--color-text-tertiary)] border border-dashed border-[var(--color-border-primary)] cursor-pointer opacity-60 hover:opacity-80 transition-opacity flex items-center justify-center gap-2 [font-size:var(--text-body)]"
-                      aria-label={`${label} — requires Basic — tap to upgrade`}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden>
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                      </svg>
-                      <span>{label}</span>
-                    </button>
-                  ))}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/subscription')}
+                  className="w-full py-3 px-4 mb-3 rounded-2xl font-semibold text-[var(--color-text-tertiary)] border border-dashed border-[var(--color-border-primary)] cursor-pointer opacity-60 hover:opacity-80 transition-opacity flex items-center justify-center gap-2 [font-size:var(--text-body)]"
+                  aria-label="Label photo — requires Basic — tap to upgrade"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden>
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                  <span>Label photo — requires Basic</span>
+                </button>
               )
             )}
             <p className="text-[var(--color-text-tertiary)] text-xs mb-4 -mt-1 px-1">
@@ -867,10 +836,6 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
             {pendingExtract.quantity != null && <p><strong>Quantity:</strong> {pendingExtract.quantity}</p>}
             {pendingExtract.instructions && <p><strong>Instructions:</strong> {pendingExtract.instructions}</p>}
             {pendingExtract.warnings && <p><strong>Warnings:</strong> {pendingExtract.warnings}</p>}
-            {/* Pill identification extra fields */}
-            {pendingExtract.color && <p><strong>Color:</strong> {pendingExtract.color}</p>}
-            {pendingExtract.shape && <p><strong>Shape:</strong> {pendingExtract.shape}</p>}
-            {pendingExtract.imprint && <p><strong>Imprint:</strong> {pendingExtract.imprint}</p>}
           </div>
           <div className="flex gap-2">
             <Button variant="primary" size="md" onClick={handleVerifyConfirm}>

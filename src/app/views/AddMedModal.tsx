@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/shared/stores/app-store'
 import { isMobile } from '@/shared/lib/device'
@@ -73,11 +73,15 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
   const [foodNote, setFoodNote] = useState<string | null>(null)
   const [allergyWarning, setAllergyWarning] = useState<string | null>(null)
   const [showPhotoMenu, setShowPhotoMenu] = useState(false)
+  const [showCameraModal, setShowCameraModal] = useState(false)
   const scannerInputRef = useRef<HTMLInputElement>(null)
   const labelPhotoInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const barcodeInputRef = useRef<HTMLInputElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
   const scannerRapidTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Drug interaction check (background, non-blocking)
@@ -104,8 +108,46 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
       if (scannerRapidTimeoutRef.current) {
         clearTimeout(scannerRapidTimeoutRef.current)
       }
+      // Stop any active camera stream when the modal unmounts
+      streamRef.current?.getTracks().forEach((t) => t.stop())
     }
   }, [])
+
+  const openCameraModal = useCallback(async () => {
+    setShowPhotoMenu(false)
+    setShowCameraModal(true)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      streamRef.current = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+      }
+    } catch {
+      toast('Camera access denied or unavailable.', 'te')
+      setShowCameraModal(false)
+    }
+  }, [toast])
+
+  const closeCameraModal = useCallback(() => {
+    streamRef.current?.getTracks().forEach((t) => t.stop())
+    streamRef.current = null
+    setShowCameraModal(false)
+  }, [])
+
+  const capturePhoto = useCallback(() => {
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    if (!video || !canvas) return
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    canvas.getContext('2d')?.drawImage(video, 0, 0)
+    canvas.toBlob((blob) => {
+      if (!blob) return
+      const file = new File([blob], `photo-${Date.now()}.jpg`, { type: 'image/jpeg' })
+      addLabelPhoto(file)
+      closeCameraModal()
+    }, 'image/jpeg', 0.92)
+  }, [closeCameraModal])
 
   const flushScannerInput = (el: HTMLInputElement | null) => {
     if (!el) return
@@ -664,22 +706,25 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
                           </svg>
                           Photo Library
                         </button>
-                        {isMobile() && (
-                          <>
-                            <div className="h-px bg-[var(--color-border-primary)]" />
-                            <button
-                              type="button"
-                              className="w-full flex items-center gap-3 px-5 py-4 text-left font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] [font-size:var(--text-body)] cursor-pointer border-none bg-transparent"
-                              onClick={() => { setShowPhotoMenu(false); cameraInputRef.current?.click() }}
-                            >
-                              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0" aria-hidden>
-                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                                <circle cx="12" cy="13" r="4" />
-                              </svg>
-                              Take Photo
-                            </button>
-                          </>
-                        )}
+                        <div className="h-px bg-[var(--color-border-primary)]" />
+                        <button
+                          type="button"
+                          className="w-full flex items-center gap-3 px-5 py-4 text-left font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] [font-size:var(--text-body)] cursor-pointer border-none bg-transparent"
+                          onClick={() => {
+                            if (isMobile()) {
+                              setShowPhotoMenu(false)
+                              cameraInputRef.current?.click()
+                            } else {
+                              void openCameraModal()
+                            }
+                          }}
+                        >
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0" aria-hidden>
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                            <circle cx="12" cy="13" r="4" />
+                          </svg>
+                          Take Photo
+                        </button>
                         <div className="h-px bg-[var(--color-border-primary)]" />
                         <button
                           type="button"
@@ -715,6 +760,36 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
                 : 'Photo label scanning requires Basic or Pro.'}
             </p>
           </>
+
+        {/* Desktop camera capture modal */}
+        {showCameraModal && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4">
+            <div className="w-full max-w-lg bg-[var(--color-bg-primary)] rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border-primary)]">
+                <span className="font-bold text-[var(--color-text-primary)] [font-size:var(--text-body)]">Take Photo</span>
+                <button type="button" onClick={closeCameraModal} aria-label="Close camera" className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] cursor-pointer border-none bg-transparent text-xl">×</button>
+              </div>
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full aspect-video bg-black object-cover"
+              />
+              <canvas ref={canvasRef} className="hidden" />
+              <div className="p-4 flex justify-center">
+                <button
+                  type="button"
+                  onClick={capturePhoto}
+                  className="w-16 h-16 rounded-full bg-white border-4 border-[var(--color-accent)] flex items-center justify-center cursor-pointer shadow-lg hover:scale-105 transition-transform"
+                  aria-label="Capture photo"
+                >
+                  <div className="w-10 h-10 rounded-full bg-[var(--color-accent)]" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="flex items-center gap-3 mb-4">
           <div className="flex-1 h-px bg-[var(--color-border-primary)]" />

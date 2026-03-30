@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/shared/stores/app-store'
+import { isMobile } from '@/shared/lib/device'
 import { BarcodeScanner } from '@/shared/components/BarcodeScanner'
 import { Modal } from '@/shared/components/Modal'
 import { lookupByBarcode } from '@/shared/services/openfda'
@@ -663,18 +664,22 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
                           </svg>
                           Photo Library
                         </button>
-                        <div className="h-px bg-[var(--color-border-primary)]" />
-                        <button
-                          type="button"
-                          className="w-full flex items-center gap-3 px-5 py-4 text-left font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] [font-size:var(--text-body)] cursor-pointer border-none bg-transparent"
-                          onClick={() => { setShowPhotoMenu(false); cameraInputRef.current?.click() }}
-                        >
-                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0" aria-hidden>
-                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                            <circle cx="12" cy="13" r="4" />
-                          </svg>
-                          Take Photo
-                        </button>
+                        {isMobile() && (
+                          <>
+                            <div className="h-px bg-[var(--color-border-primary)]" />
+                            <button
+                              type="button"
+                              className="w-full flex items-center gap-3 px-5 py-4 text-left font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] [font-size:var(--text-body)] cursor-pointer border-none bg-transparent"
+                              onClick={() => { setShowPhotoMenu(false); cameraInputRef.current?.click() }}
+                            >
+                              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0" aria-hidden>
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                                <circle cx="12" cy="13" r="4" />
+                              </svg>
+                              Take Photo
+                            </button>
+                          </>
+                        )}
                         <div className="h-px bg-[var(--color-border-primary)]" />
                         <button
                           type="button"

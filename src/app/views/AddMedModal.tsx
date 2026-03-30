@@ -571,7 +571,7 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
               accept="image/*"
               multiple
               aria-label="Choose photos from library"
-              className="absolute opacity-0 w-0 h-0 -left-[9999px] pointer-events-none"
+              className="absolute opacity-0 w-0 h-0 -left-[9999px]"
               onChange={(e) => {
                 const files = e.target.files
                 if (files) {
@@ -587,7 +587,7 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
               accept="image/*"
               capture="environment"
               aria-label="Take a photo with camera"
-              className="absolute opacity-0 w-0 h-0 -left-[9999px] pointer-events-none"
+              className="absolute opacity-0 w-0 h-0 -left-[9999px]"
               onChange={(e) => {
                 const files = e.target.files
                 if (files) {
@@ -603,7 +603,7 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
               accept="image/*"
               multiple
               aria-label="Choose files"
-              className="absolute opacity-0 w-0 h-0 -left-[9999px] pointer-events-none"
+              className="absolute opacity-0 w-0 h-0 -left-[9999px]"
               onChange={(e) => {
                 const files = e.target.files
                 if (files) {
@@ -692,8 +692,8 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
                   </button>
                   {showPhotoMenu && (
                     <>
-                      <div className="fixed inset-0 z-40" onClick={() => setShowPhotoMenu(false)} aria-hidden />
-                      <div className="absolute left-0 right-0 z-50 mt-1 rounded-2xl overflow-hidden shadow-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)]">
+                      <div className="fixed inset-0 z-[9998]" onClick={() => setShowPhotoMenu(false)} aria-hidden />
+                      <div className="fixed left-4 right-4 bottom-8 z-[9999] rounded-2xl overflow-hidden shadow-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)] max-w-lg mx-auto">
                         <button
                           type="button"
                           className="w-full flex items-center gap-3 px-5 py-4 text-left font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] [font-size:var(--text-body)] cursor-pointer border-none bg-transparent"

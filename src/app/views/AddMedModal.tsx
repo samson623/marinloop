@@ -573,7 +573,7 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
               accept="image/*"
               multiple
               aria-label="Choose photos from library"
-              className="fixed opacity-0 w-px h-px -top-[200px] -left-[200px] overflow-hidden"
+              className="fixed top-0 left-0 opacity-0 w-px h-px"
               onChange={(e) => {
                 const files = e.target.files
                 if (files) {
@@ -589,7 +589,7 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
               accept="image/*"
               capture="environment"
               aria-label="Take a photo with camera"
-              className="fixed opacity-0 w-px h-px -top-[200px] -left-[200px] overflow-hidden"
+              className="fixed top-0 left-0 opacity-0 w-px h-px"
               onChange={(e) => {
                 const files = e.target.files
                 if (files) {
@@ -605,7 +605,7 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
               accept="image/*"
               multiple
               aria-label="Choose files"
-              className="fixed opacity-0 w-px h-px -top-[200px] -left-[200px] overflow-hidden"
+              className="fixed top-0 left-0 opacity-0 w-px h-px"
               onChange={(e) => {
                 const files = e.target.files
                 if (files) {

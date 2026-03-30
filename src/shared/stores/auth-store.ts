@@ -46,7 +46,7 @@ interface AuthState {
   initialize: () => Promise<void>
   signInWithGoogle: () => Promise<AuthResult>
   signInWithEmail: (email: string, pass: string) => Promise<AuthResult>
-  signUp: (email: string, pass: string, name: string, betaCode: string) => Promise<AuthResult>
+  signUp: (email: string, pass: string, name: string) => Promise<AuthResult>
   signOut: () => Promise<AuthResult>
   enrollMfa: () => Promise<{ data: MfaEnrollResult; error: Error | null }>
   verifyMfa: (factorId: string, code: string) => Promise<AuthResult>
@@ -225,26 +225,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     return { error: error ? new Error(error.message) : null }
   },
 
-  signUp: async (email, pass, name, betaCode) => {
-    // Step 1: pre-check the code exists and is not yet redeemed.
-    // This avoids creating an orphan auth account when the code is bad.
-    const normalizedCode = betaCode.trim().toUpperCase()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: codeRow, error: codeCheckError } = await (supabase as any)
-      .from('beta_invite_codes')
-      .select('id, redeemed_at')
-      .eq('code', normalizedCode)
-      .single() as { data: { id: string; redeemed_at: string | null } | null; error: unknown }
-
-    if (codeCheckError || !codeRow) {
-      return { error: new Error('Invalid invite code.') }
-    }
-    if (codeRow.redeemed_at) {
-      return { error: new Error('This invite code has already been used.') }
-    }
-
-    // Step 2: create the auth account.
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+  signUp: async (email, pass, name) => {
+    const { error: signUpError } = await supabase.auth.signUp({
       email,
       password: pass,
       options: {
@@ -254,16 +236,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     if (signUpError) {
       return { error: new Error(signUpError.message) }
-    }
-
-    // Step 3: atomically redeem the code. The SECURITY DEFINER function
-    // prevents a race condition where two users claim the same code.
-    if (signUpData.user?.id) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).rpc('redeem_beta_code', {
-        p_code: normalizedCode,
-        p_user_id: signUpData.user.id,
-      })
     }
 
     return { error: null }

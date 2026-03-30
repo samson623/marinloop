@@ -32,8 +32,6 @@ function mockDeps({
   signOutError = null as Error | null,
   signInError = null as Error | null,
   signUpError = null as Error | null,
-  betaCodeRow = { id: 'code-1', redeemed_at: null } as { id: string; redeemed_at: string | null } | null,
-  betaCodeError = null as unknown,
   windowHref = 'http://localhost:5173/',
 } = {}) {
   // Stub window.location
@@ -80,13 +78,6 @@ function mockDeps({
 
   const mockRpc = vi.fn().mockResolvedValue({ data: null, error: null })
 
-  const betaCodeChain = {
-    select: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-    single: vi.fn().mockResolvedValue({ data: betaCodeRow, error: betaCodeError }),
-  }
-
-  // Override from for beta_invite_codes table
   const managedProfilesChain = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
@@ -94,7 +85,6 @@ function mockDeps({
   }
 
   mockFrom.mockImplementation((table: string) => {
-    if (table === 'beta_invite_codes') return betaCodeChain
     if (table === 'managed_profiles') return managedProfilesChain
     return selectChain
   })
@@ -111,7 +101,7 @@ function mockDeps({
     env: { oauthRedirectUrl: null, adminUserId: undefined },
   }))
 
-  return { mockAuth, mockFrom, onAuthStateChangeCb, selectChain, mockRpc, betaCodeChain }
+  return { mockAuth, mockFrom, onAuthStateChangeCb, selectChain, mockRpc }
 }
 
 describe('useAuthStore', () => {
@@ -232,46 +222,22 @@ describe('useAuthStore', () => {
   })
 
   describe('signUp()', () => {
-    it('returns error for an invalid invite code', async () => {
-      mockDeps({ session: null, betaCodeRow: null, betaCodeError: new Error('not found') })
+    it('returns no error on successful sign-up', async () => {
+      mockDeps({ session: null })
 
       const { useAuthStore } = await import('@/shared/stores/auth-store')
-      const result = await useAuthStore.getState().signUp('a@b.com', 'pass1234', 'Alice', 'MLOOP-BADCODE')
-
-      expect(result.error?.message).toBe('Invalid invite code.')
-    })
-
-    it('returns error when invite code has already been redeemed', async () => {
-      mockDeps({
-        session: null,
-        betaCodeRow: { id: 'code-1', redeemed_at: '2026-01-01T00:00:00Z' },
-      })
-
-      const { useAuthStore } = await import('@/shared/stores/auth-store')
-      const result = await useAuthStore.getState().signUp('a@b.com', 'pass1234', 'Alice', 'MLOOP-USED01')
-
-      expect(result.error?.message).toBe('This invite code has already been used.')
-    })
-
-    it('returns no error and redeems code on successful sign-up', async () => {
-      const { mockRpc } = mockDeps({ session: null })
-
-      const { useAuthStore } = await import('@/shared/stores/auth-store')
-      const result = await useAuthStore.getState().signUp('new@test.com', 'StrongPass1!', 'Bob', 'MLOOP-VALID1')
+      const result = await useAuthStore.getState().signUp('new@test.com', 'StrongPass1!', 'Bob')
 
       expect(result.error).toBeNull()
-      expect(mockRpc).toHaveBeenCalledWith('redeem_beta_code', expect.objectContaining({
-        p_code: 'MLOOP-VALID1',
-      }))
     })
 
-    it('normalizes invite code to uppercase before checking', async () => {
-      const { betaCodeChain } = mockDeps({ session: null })
+    it('returns error when Supabase signUp fails', async () => {
+      mockDeps({ session: null, signUpError: new Error('Email already registered') })
 
       const { useAuthStore } = await import('@/shared/stores/auth-store')
-      await useAuthStore.getState().signUp('a@b.com', 'pass1234', 'Alice', 'mloop-valid1')
+      const result = await useAuthStore.getState().signUp('dup@test.com', 'pass1234', 'Alice')
 
-      expect(betaCodeChain.eq).toHaveBeenCalledWith('code', 'MLOOP-VALID1')
+      expect(result.error?.message).toBe('Email already registered')
     })
   })
 })

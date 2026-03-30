@@ -21,7 +21,6 @@ function passwordStrength(pass: string): { label: string; bars: 1 | 2 | 3; color
 export function LoginScreen() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [name, setName] = useState('')
-  const [betaCode, setBetaCode] = useState('')
   const [email, setEmail] = useState('')
   const [pass, setPass] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -57,7 +56,7 @@ export function LoginScreen() {
 
     try {
       if (isSignUp) {
-        const res = await signUp(email, pass, name, betaCode)
+        const res = await signUp(email, pass, name)
         if (res.error) throw res.error
         toast('Account created! Choose your plan to get started.', 'ts')
         navigate('/subscription?onboarding=1')
@@ -165,27 +164,6 @@ export function LoginScreen() {
             </div>
           )}
 
-          {isSignUp && (
-            <div>
-              <label htmlFor="login-beta-code" className="block font-semibold text-[var(--color-text-secondary)] mb-1.5 sm:mb-2 [font-size:var(--text-label)]">
-                Invite Code
-              </label>
-              <Input
-                id="login-beta-code"
-                type="text"
-                value={betaCode}
-                onChange={(e) => setBetaCode(e.target.value.toUpperCase())}
-                placeholder="MLOOP-XXXXX"
-                required
-                autoComplete="off"
-                className="min-h-[44px] font-mono tracking-widest"
-              />
-              <p className="mt-1.5 text-[var(--color-text-tertiary)] [font-size:var(--text-caption)]">
-                MarinLoop is invite-only during beta and not offered for covered-entity workflows requiring HIPAA BAAs.
-              </p>
-            </div>
-          )}
-
           <div>
             <label htmlFor="login-email" className="block font-semibold text-[var(--color-text-secondary)] mb-1.5 sm:mb-2 [font-size:var(--text-label)]">
               Email
@@ -263,7 +241,7 @@ export function LoginScreen() {
           <div className="text-center mt-3 sm:mt-4">
             <button
               type="button"
-              onClick={() => { setIsSignUp(!isSignUp); setBetaCode('') }}
+              onClick={() => setIsSignUp(!isSignUp)}
               className="border-none bg-transparent cursor-pointer [font-size:var(--text-body)] text-[var(--color-accent)] font-semibold outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] rounded min-h-[44px] min-w-[44px] inline-flex items-center justify-center"
             >
               {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}

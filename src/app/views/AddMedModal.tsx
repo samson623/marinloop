@@ -693,7 +693,7 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
                   {showPhotoMenu && (
                     <>
                       <div className="fixed inset-0 z-[9998]" onClick={() => setShowPhotoMenu(false)} aria-hidden />
-                      <div className="fixed left-4 right-4 bottom-8 z-[9999] rounded-2xl overflow-hidden shadow-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)] max-w-lg mx-auto">
+                      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] rounded-2xl overflow-hidden shadow-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)] w-[min(360px,calc(100vw-2rem))]">
                         <button
                           type="button"
                           className="w-full flex items-center gap-3 px-5 py-4 text-left font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] [font-size:var(--text-body)] cursor-pointer border-none bg-transparent"

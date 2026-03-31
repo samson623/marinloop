@@ -1,5 +1,4 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/shared/stores/app-store'
 import { isMobile } from '@/shared/lib/device'
@@ -453,7 +452,7 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
                       >
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
                       </button>
-                      {showPhotoMenu && createPortal(
+                      {showPhotoMenu && (
                         <>
                           <div className="fixed inset-0 z-[9998]" onClick={() => setShowPhotoMenu(false)} aria-hidden />
                           <div className="fixed z-[9999] rounded-2xl overflow-hidden shadow-2xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)]" style={menuPos ? { top: menuPos.top, left: menuPos.left, minWidth: menuPos.width } : { minWidth: 240 }}>
@@ -497,8 +496,7 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
                               Choose Files
                             </button>
                           </div>
-                        </>,
-                        document.body
+                        </>
                       )}
                     </div>
                   )}
@@ -565,8 +563,8 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
                   </button>
                 )}
 
-                {/* Photo source dropdown menu — portal-rendered to escape modal transform context */}
-                {showPhotoMenu && createPortal(
+                {/* Photo source dropdown menu */}
+                {showPhotoMenu && (
                   <>
                     <div className="fixed inset-0 z-[9998]" onClick={() => setShowPhotoMenu(false)} aria-hidden />
                     <div className="fixed z-[9999] rounded-2xl overflow-hidden shadow-2xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)]" style={menuPos ? { top: menuPos.top, left: menuPos.left, width: menuPos.width } : {}}>
@@ -610,8 +608,7 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
                         Choose Files
                       </button>
                     </div>
-                  </>,
-                  document.body
+                  </>
                 )}
               </div>
             )}

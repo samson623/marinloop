@@ -157,13 +157,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     }
 
-    // Safety net: clear loading after 5s max.
+    // Safety net: clear loading after 10s max. Mobile PKCE exchanges can be
+    // slow — 5s was too aggressive and caused the callback screen to bail early.
     setTimeout(() => {
       if (useAuthStore.getState().isLoading) {
         console.warn('[Auth] initialization timed out, forcing loading false')
         set({ isLoading: false })
       }
-    }, 5000)
+    }, 10_000)
 
     // Register exactly once to avoid duplicate listeners on repeated init calls.
     if (!authSubscription) {

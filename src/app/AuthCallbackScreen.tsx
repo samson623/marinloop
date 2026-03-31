@@ -6,65 +6,63 @@ import { supabase } from '@/shared/lib/supabase'
 /**
  * Handles the OAuth redirect from Google (and other providers).
  *
- * The Supabase JS client's auto-detection (`detectSessionInUrl`) can race with
- * the auth store's `initialize()` — it strips the ?code= from the URL before
- * initialize can see it, causing the PKCE exchange to silently fail on slower
- * connections (especially mobile). To fix this, we explicitly extract the code
- * and call `exchangeCodeForSession` ourselves as a belt-and-suspenders measure.
+ * Race condition: Supabase's `detectSessionInUrl` auto-exchanges the ?code=
+ * during client init (module load), stripping it from the URL. By the time
+ * React mounts and initialize() runs, the code is gone. If the async exchange
+ * hasn't finished, getSession() returns null, isLoading goes false, and the
+ * old callback screen would redirect to /login?error=callback.
+ *
+ * Fix: don't depend on isLoading at all. Just poll for the session to appear
+ * (from either auto-detection or explicit exchange) and give it plenty of time.
+ * Try an explicit exchange if the code is still in the URL, but NEVER redirect
+ * on exchange failure — the auto-detection path may still complete.
  */
 export function AuthCallbackScreen() {
   const navigate = useNavigate()
-  const { session } = useAuthStore()
-  const exchangeAttempted = useRef(false)
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const session = useAuthStore((s) => s.session)
+  const started = useRef(false)
 
   useEffect(() => {
+    // Session arrived — done.
     if (session) {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current)
       navigate('/timeline', { replace: true })
       return
     }
 
-    // Explicitly exchange the PKCE code — don't rely solely on auto-detection
-    // which can race with initialize() and lose the code.
-    if (!exchangeAttempted.current) {
-      exchangeAttempted.current = true
+    if (!started.current) {
+      started.current = true
 
-      const url = new URL(window.location.href)
-      const code = url.searchParams.get('code')
-
-      if (code) {
-        supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-          if (error) {
-            console.warn('[AuthCallback] Code exchange failed:', error.message)
-            navigate('/login?error=callback', { replace: true })
-          }
-          // On success, onAuthStateChange fires → auth store sets session →
-          // this effect re-runs with session truthy → navigate to /timeline
-        }).catch(() => {
-          navigate('/login?error=callback', { replace: true })
-        })
-      } else {
-        // No code in URL — auto-detection may have already consumed it.
-        // Give initialize() up to 8s to finish the exchange it started.
-        timeoutRef.current = setTimeout(() => {
-          if (!useAuthStore.getState().session) {
-            navigate('/login?error=callback', { replace: true })
-          }
-        }, 8_000)
-      }
+      // If the code is still in the URL (auto-detection hasn't consumed it yet),
+      // try an explicit exchange. Fire-and-forget — if it fails (code already
+      // used by auto-detection), the session will still appear via that path.
+      try {
+        const code = new URL(window.location.href).searchParams.get('code')
+        if (code) {
+          supabase.auth.exchangeCodeForSession(code).catch(() => {
+            // Swallow — auto-detection may have already exchanged it.
+          })
+        }
+      } catch { /* URL parse failure — ignore */ }
     }
 
-    // Safety: absolute max wait of 15s
-    const safetyTimeout = setTimeout(() => {
+    // Poll the store for a session every 300ms. Covers both auto-detection
+    // and explicit exchange paths without depending on isLoading.
+    const poll = setInterval(() => {
+      if (useAuthStore.getState().session) {
+        navigate('/timeline', { replace: true })
+      }
+    }, 300)
+
+    // Give up after 12 seconds — something is genuinely wrong.
+    const timeout = setTimeout(() => {
       if (!useAuthStore.getState().session) {
         navigate('/login?error=timeout', { replace: true })
       }
-    }, 15_000)
+    }, 12_000)
 
     return () => {
-      clearTimeout(safetyTimeout)
-      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+      clearInterval(poll)
+      clearTimeout(timeout)
     }
   }, [session, navigate])
 

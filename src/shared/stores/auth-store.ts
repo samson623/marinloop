@@ -204,11 +204,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signInWithGoogle: async () => {
-    // Use a dedicated callback URL so Supabase always redirects to the same path.
-    // Add this exact URL to Supabase Dashboard → Authentication → URL Configuration → Redirect URLs.
-    const redirectTo =
-      env.oauthRedirectUrl?.trim() ||
-      `${window.location.origin}/auth/callback`
+    // Always derive the callback URL from the current origin so it works on
+    // any domain (localhost, Vercel preview, marinloop.com) without relying
+    // on a build-time env var that can go stale when the domain changes.
+    const redirectTo = `${window.location.origin}/auth/callback`
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',

@@ -356,56 +356,60 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
 
   return (
     <>
+      {/* File inputs portalled to body — must be outside Modal's CSS transform context
+         so that programmatic .click() reliably opens the file picker across all browsers */}
+      {createPortal(
+        <>
+          <input
+            ref={labelPhotoInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            aria-label="Choose photos from library"
+            style={{ position: 'fixed', top: 0, left: 0, opacity: 0, width: 1, height: 1, pointerEvents: 'none' }}
+            onChange={(e) => {
+              const files = e.target.files
+              if (files) {
+                Array.from(files).forEach((f) => addLabelPhoto(f))
+                e.target.value = ''
+              }
+            }}
+          />
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            aria-label="Take a photo with camera"
+            style={{ position: 'fixed', top: 0, left: 0, opacity: 0, width: 1, height: 1, pointerEvents: 'none' }}
+            onChange={(e) => {
+              const files = e.target.files
+              if (files) {
+                Array.from(files).forEach((f) => addLabelPhoto(f))
+                e.target.value = ''
+              }
+            }}
+          />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            aria-label="Choose files"
+            style={{ position: 'fixed', top: 0, left: 0, opacity: 0, width: 1, height: 1, pointerEvents: 'none' }}
+            onChange={(e) => {
+              const files = e.target.files
+              if (files) {
+                Array.from(files).forEach((f) => addLabelPhoto(f))
+                e.target.value = ''
+              }
+            }}
+          />
+        </>,
+        document.body
+      )}
       <Modal open onOpenChange={(o) => !o && onClose()} title="Add Medication" variant="responsive" onInteractOutside={(e) => { if (showPhotoMenu) e.preventDefault() }}>
         <>
-            {/* Photo Library input */}
-            <input
-              ref={labelPhotoInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              aria-label="Choose photos from library"
-              className="fixed top-0 left-0 opacity-0 w-px h-px"
-              onChange={(e) => {
-                const files = e.target.files
-                if (files) {
-                  Array.from(files).forEach((f) => addLabelPhoto(f))
-                  e.target.value = ''
-                }
-              }}
-            />
-            {/* Camera input */}
-            <input
-              ref={cameraInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              aria-label="Take a photo with camera"
-              className="fixed top-0 left-0 opacity-0 w-px h-px"
-              onChange={(e) => {
-                const files = e.target.files
-                if (files) {
-                  Array.from(files).forEach((f) => addLabelPhoto(f))
-                  e.target.value = ''
-                }
-              }}
-            />
-            {/* Choose Files input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              aria-label="Choose files"
-              className="fixed top-0 left-0 opacity-0 w-px h-px"
-              onChange={(e) => {
-                const files = e.target.files
-                if (files) {
-                  Array.from(files).forEach((f) => addLabelPhoto(f))
-                  e.target.value = ''
-                }
-              }}
-            />
 
             {/* Shared photo source menu — portalled to body to escape modal's CSS transform stacking context */}
             {showPhotoMenu && menuRect && createPortal(

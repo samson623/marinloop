@@ -609,12 +609,14 @@ export interface Database {
           medication_freq: number
           medication_color: string
           medication_icon: string | null
+          medication_rxcui: string | null
           schedule_times: string[]
           schedule_days: number[]
           refill_current_quantity: number
           refill_total_quantity: number
           refill_date: string | null
           refill_pharmacy: string | null
+          medication_profile_id: string | null
         }
         Returns: string
       }

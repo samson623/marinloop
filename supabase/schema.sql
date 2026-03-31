@@ -352,12 +352,14 @@ create or replace function public.create_medication_bundle(
   medication_freq integer,
   medication_color text,
   medication_icon text,
+  medication_rxcui text,
   schedule_times text[],
   schedule_days integer[],
   refill_current_quantity integer,
   refill_total_quantity integer,
   refill_date date,
-  refill_pharmacy text
+  refill_pharmacy text,
+  medication_profile_id uuid default null
 )
 returns uuid
 language plpgsql
@@ -373,24 +375,26 @@ begin
   end if;
 
   insert into public.medications (
-    user_id, name, dosage, instructions, warnings, freq, color, icon
+    user_id, name, dosage, instructions, warnings, freq, color, icon, rxcui, profile_id
   ) values (
     auth_user_id, medication_name, medication_dosage, medication_instructions,
-    medication_warnings, medication_freq, medication_color, medication_icon
+    medication_warnings, medication_freq, medication_color, medication_icon,
+    medication_rxcui, medication_profile_id
   ) returning id into med_id;
 
   foreach t in array schedule_times loop
     insert into public.schedules (
-      medication_id, user_id, time, days, food_context_minutes, active
+      medication_id, user_id, time, days, food_context_minutes, active, profile_id
     ) values (
-      med_id, auth_user_id, t, schedule_days, 0, true
+      med_id, auth_user_id, t, schedule_days, 0, true, medication_profile_id
     );
   end loop;
 
   insert into public.refills (
-    medication_id, user_id, current_quantity, total_quantity, refill_date, pharmacy
+    medication_id, user_id, current_quantity, total_quantity, refill_date, pharmacy, profile_id
   ) values (
-    med_id, auth_user_id, refill_current_quantity, refill_total_quantity, refill_date, refill_pharmacy
+    med_id, auth_user_id, refill_current_quantity, refill_total_quantity,
+    refill_date, refill_pharmacy, medication_profile_id
   )
   on conflict (medication_id, user_id)
   do update set

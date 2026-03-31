@@ -46,7 +46,6 @@ export interface ApptDraft {
 }
 
 export interface AddMedModalOptions {
-    openScanner?: boolean
     openPhoto?: boolean
 }
 

@@ -327,7 +327,6 @@ export function MedsView() {
           createBundleAsync={addMedBundleAsync}
           isSaving={isAdding}
           initialDraft={draftMed}
-          openScanner={addMedModalOptions?.openScanner}
           openPhoto={addMedModalOptions?.openPhoto}
           allMeds={realMeds.map((m) => ({ id: m.id, name: m.name, rxcui: m.rxcui }))}
           upcomingAppts={appts.map((a) => ({ title: a.title, start_time: a.start_time, commute_minutes: a.commute_minutes }))}

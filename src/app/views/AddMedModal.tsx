@@ -2,9 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/shared/stores/app-store'
 import { isMobile } from '@/shared/lib/device'
-import { BarcodeScanner } from '@/shared/components/BarcodeScanner'
 import { Modal } from '@/shared/components/Modal'
-import { lookupByBarcode } from '@/shared/services/openfda'
 import { extractFromImages } from '@/shared/services/label-extract'
 import { useAIConsent } from '@/shared/hooks/useAIConsent'
 import { lookupRxCUI, getOpenFDALabel, getIngredients } from '@/shared/services/rxnorm'
@@ -27,7 +25,6 @@ type AddMedModalProps = {
     instructions?: string
     warnings?: string
   } | null
-  openScanner?: boolean
   openPhoto?: boolean
   allMeds?: Array<{ id: string; name: string; rxcui?: string | null }>
   upcomingAppts?: Array<{ title: string; start_time: string; commute_minutes: number | null | undefined }>
@@ -39,11 +36,11 @@ type AddMedModalProps = {
   }) => Promise<string>
 }
 
-export default function AddMedModal({ onClose, createBundleAsync, isSaving, initialDraft, openScanner: openScannerProp, openPhoto: openPhotoProp, allMeds = [], upcomingAppts = [], userAllergies = [] }: AddMedModalProps) {
+export default function AddMedModal({ onClose, createBundleAsync, isSaving, initialDraft, openPhoto: openPhotoProp, allMeds = [], upcomingAppts = [], userAllergies = [] }: AddMedModalProps) {
   const navigate = useNavigate()
   const { toast } = useAppStore()
   const { consented } = useAIConsent()
-  const { canUseBarcode, canUseOcr } = useSubscription()
+  const { canUseOcr } = useSubscription()
   const [name, setName] = useState('')
   const [dose, setDose] = useState('')
   const [freq, setFreq] = useState('1')
@@ -51,9 +48,6 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
   const [sup, setSup] = useState('30')
   const [inst, setInst] = useState('')
   const [warn, setWarn] = useState('')
-  const [showScanner, setShowScanner] = useState(false)
-  const [showBarcodeInput, setShowBarcodeInput] = useState(false)
-  const [barcodeInputValue, setBarcodeInputValue] = useState('')
   const [isLooking, setIsLooking] = useState(false)
   const [showVerifyModal, setShowVerifyModal] = useState(false)
   const [pendingExtract, setPendingExtract] = useState<{
@@ -75,41 +69,19 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
   const [showPhotoMenu, setShowPhotoMenu] = useState(false)
   const [menuRect, setMenuRect] = useState<DOMRect | null>(null)
   const [showCameraModal, setShowCameraModal] = useState(false)
-  const scannerInputRef = useRef<HTMLInputElement>(null)
   const labelPhotoInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const barcodeInputRef = useRef<HTMLInputElement>(null)
   const photoMenuBtnRef = useRef<HTMLButtonElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
-  const scannerRapidTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Drug interaction check (background, non-blocking)
   const { interactions } = useInteractions(allMeds, name)
 
-  const canLookupCode = (value: string) => {
-    const trimmed = value.trim()
-    const digits = trimmed.replace(/\D/g, '')
-    const hyphenatedNdc = /^\d{4,5}-\d{3,4}-\d{1,2}$/.test(trimmed.replace(/\s/g, ''))
-    return digits.length >= 10 || hyphenatedNdc
-  }
-
-  useEffect(() => {
-    if (showScanner) return
-    if (showBarcodeInput) {
-      barcodeInputRef.current?.focus()
-    } else {
-      scannerInputRef.current?.focus()
-    }
-  }, [showScanner, showBarcodeInput])
-
   useEffect(() => {
     return () => {
-      if (scannerRapidTimeoutRef.current) {
-        clearTimeout(scannerRapidTimeoutRef.current)
-      }
       // Stop any active camera stream when the modal unmounts
       streamRef.current?.getTracks().forEach((t) => t.stop())
     }
@@ -149,45 +121,8 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
       addLabelPhoto(file)
       closeCameraModal()
     }, 'image/jpeg', 0.92)
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- addLabelPhoto uses only stable setters; omitting it avoids recreating capturePhoto on every render
   }, [closeCameraModal])
-
-  const flushScannerInput = (el: HTMLInputElement | null) => {
-    if (!el) return
-    const raw = el.value?.trim() || ''
-    if (canLookupCode(raw)) {
-      el.value = ''
-      void handleScan(raw)
-    }
-  }
-
-  const handleScannerInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      const el = e.currentTarget as HTMLInputElement
-      const raw = el.value?.trim() || ''
-      if (canLookupCode(raw)) {
-        e.preventDefault()
-        el.value = ''
-        void handleScan(raw)
-      }
-      if (scannerRapidTimeoutRef.current) {
-        clearTimeout(scannerRapidTimeoutRef.current)
-        scannerRapidTimeoutRef.current = null
-      }
-      return
-    }
-  }
-
-  const handleScannerInput = (e: React.FormEvent<HTMLInputElement>) => {
-    const el = e.currentTarget
-    if (scannerRapidTimeoutRef.current) clearTimeout(scannerRapidTimeoutRef.current)
-    const raw = el.value?.trim() || ''
-    if (canLookupCode(raw)) {
-      scannerRapidTimeoutRef.current = setTimeout(() => {
-        scannerRapidTimeoutRef.current = null
-        flushScannerInput(el)
-      }, 150)
-    }
-  }
 
   const handleFreqChange = (newFreq: string) => {
     const n = Number.parseInt(newFreq, 10) || 1
@@ -223,10 +158,6 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
     if (initialDraft.instructions) setInst(initialDraft.instructions)
     if (initialDraft.warnings) setWarn(initialDraft.warnings)
   }, [initialDraft])
-
-  useEffect(() => {
-    if (openScannerProp && canUseBarcode) setShowScanner(true)
-  }, [openScannerProp, canUseBarcode])
 
   useEffect(() => {
     if (openPhotoProp && canUseOcr) {
@@ -289,17 +220,6 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
           apptTime: apptTimeStr,
           medTime: t,
         })
-      }
-    }
-  }
-
-  const handleBarcodeLookup = async () => {
-    const code = barcodeInputValue.trim()
-    if (canLookupCode(code)) {
-      const ok = await handleScan(code)
-      if (ok) {
-        setShowBarcodeInput(false)
-        setBarcodeInputValue('')
       }
     }
   }
@@ -392,42 +312,6 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
     toast("Please enter details manually below.", 'tw')
   }
 
-  const handleScan = async (code: string): Promise<boolean> => {
-    const normalizedCode = code.trim()
-    if (!canLookupCode(normalizedCode)) {
-      toast('Barcode must include at least 10 digits.', 'tw')
-      return false
-    }
-
-    setIsLooking(true)
-    toast('Barcode detected! Looking up medication...', 'ts')
-
-    try {
-      const result = await lookupByBarcode(normalizedCode)
-      const hasUsefulData = Boolean(
-        result &&
-        (result.name?.trim() || result.dosage?.trim() || result.instructions?.trim() || result.warnings?.trim())
-      )
-      if (hasUsefulData && result) {
-        if (result.name?.trim()) setName(result.name)
-        if (result.dosage?.trim()) setDose(result.dosage)
-        if (result.instructions?.trim()) setInst(result.instructions)
-        if (result.warnings?.trim()) setWarn(result.warnings)
-        setShowScanner(false)
-        toast('Medication info loaded', 'ts')
-        return true
-      } else {
-        toast("We couldn't find that in our database. Type the medication name below.", 'tw')
-        return false
-      }
-    } catch {
-      toast('Could not look up medication. Please enter details manually.', 'te')
-      return false
-    } finally {
-      setIsLooking(false)
-    }
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const f = Number.parseInt(freq, 10) || 1
@@ -472,99 +356,6 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
   return (
     <>
       <Modal open onOpenChange={(o) => !o && onClose()} title="Add Medication" variant="responsive">
-        {/* Hidden input for USB barcode scanners (keyboard wedge mode) */}
-        <input
-          ref={scannerInputRef}
-          type="text"
-          inputMode="numeric"
-          autoComplete="off"
-          aria-label="Barcode scanner input"
-          className="absolute opacity-0 w-0 h-0 -left-[9999px] pointer-events-none"
-          tabIndex={0}
-          onKeyDown={handleScannerInputKeyDown}
-          onInput={handleScannerInput}
-        />
-        {canUseBarcode ? (
-          <>
-            <button
-              type="button"
-              onClick={() => setShowScanner(true)}
-              disabled={isLooking}
-              className="tap-spring w-full max-w-full py-4 px-6 mb-3 bg-[var(--color-accent-bg)] border-2 border-[var(--color-green-border)] rounded-2xl font-bold text-[var(--color-accent)] cursor-pointer flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-wait outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] min-h-[52px] [font-size:var(--text-body)]"
-            >
-              {isLooking ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-[var(--color-green-border)] border-t-2 border-t-[var(--color-accent)] rounded-full spin-loading shrink-0" />
-                  <span>Looking up medication...</span>
-                </>
-              ) : (
-                <>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden>
-                    <path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" />
-                    <line x1="7" y1="12" x2="17" y2="12" /><line x1="7" y1="8" x2="13" y2="8" /><line x1="7" y1="16" x2="15" y2="16" />
-                  </svg>
-                  <span>Scan Barcode</span>
-                </>
-              )}
-            </button>
-
-            {!showBarcodeInput ? (
-              <button
-                type="button"
-                onClick={() => setShowBarcodeInput(true)}
-                disabled={isLooking}
-                className="w-full py-3 px-6 mb-2 rounded-2xl font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border-primary)] hover:bg-[var(--color-bg-secondary)] cursor-pointer disabled:opacity-60 [font-size:var(--text-body)]"
-              >
-                I have the barcode number
-              </button>
-            ) : (
-              <div className="mb-5 flex gap-2">
-                <Input
-                  ref={barcodeInputRef}
-                  type="text"
-                  inputMode="text"
-                  autoComplete="off"
-                  value={barcodeInputValue}
-                  onChange={(e) => setBarcodeInputValue(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      void handleBarcodeLookup()
-                    }
-                    if (e.key === 'Escape') setShowBarcodeInput(false)
-                  }}
-                  placeholder="e.g. B580-142436-1431"
-                  className="flex-1 font-mono"
-                />
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="md"
-                  onClick={() => { void handleBarcodeLookup() }}
-                  disabled={!canLookupCode(barcodeInputValue)}
-                >
-                  Look up
-                </Button>
-                <Button type="button" variant="ghost" size="md" onClick={() => { setShowBarcodeInput(false); setBarcodeInputValue('') }}>
-                  Cancel
-                </Button>
-              </div>
-            )}
-          </>
-        ) : (
-          <button
-            type="button"
-            onClick={() => navigate('/subscription')}
-            className="w-full max-w-full py-4 px-6 mb-3 border-2 border-dashed border-[var(--color-border-primary)] rounded-2xl font-bold text-[var(--color-text-tertiary)] cursor-pointer flex items-center justify-center gap-3 min-h-[52px] [font-size:var(--text-body)] opacity-60 hover:opacity-80 transition-opacity"
-            aria-label="Barcode scanning requires Basic or Pro — tap to upgrade"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" aria-hidden>
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-            <span>Scan Barcode — requires Basic</span>
-          </button>
-        )}
-
         <>
             {/* Photo Library input */}
             <input
@@ -990,13 +781,6 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
           </Button>
         </form>
       </Modal>
-
-      {showScanner && (
-        <BarcodeScanner
-          onScan={handleScan}
-          onClose={() => setShowScanner(false)}
-        />
-      )}
 
       {showVerifyModal && pendingExtract && (
         <Modal open onOpenChange={(o) => !o && handleVerifyEdit()} title="Verify extracted details" variant="center">

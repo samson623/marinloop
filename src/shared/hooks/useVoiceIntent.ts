@@ -206,11 +206,9 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
       case 'open_add_med': {
         const entryMethod = intent.entities.medication?.entry_method
         const options =
-          entryMethod === 'scan'
-            ? { openScanner: true, openPhoto: false }
-            : entryMethod === 'photo'
-              ? { openScanner: false, openPhoto: true }
-              : null
+          entryMethod === 'scan' || entryMethod === 'photo'
+            ? { openPhoto: true }
+            : null
         navigate('/meds')
         openAddMedModal(
           {

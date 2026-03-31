@@ -6,7 +6,7 @@ const DEBUG = self.location && self.location.hostname === 'localhost'
 
 // ─── Offline cache ────────────────────────────────────────────────────────────
 // Bump CACHE_NAME whenever the app shell changes (forces old cache eviction).
-const CACHE_NAME = 'marinloop-v1'
+const CACHE_NAME = 'marinloop-v2'
 const APP_SHELL_URLS = ['/', '/index.html', '/manifest.json']
 
 // ─── Security helper ─────────────────────────────────────────────────────────

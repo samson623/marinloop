@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/shared/stores/app-store'
 import { isMobile } from '@/shared/lib/device'
@@ -406,62 +407,65 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
               }}
             />
 
-            {/* Shared photo source menu — rendered once, anchored to whichever button opened it */}
-            {showPhotoMenu && menuRect && (() => {
-              const minW = 240
-              const vw = window.innerWidth
-              const w = Math.max(menuRect.width, minW)
-              const left = Math.min(menuRect.left, vw - w - 8)
-              return (
-                <>
-                  <div className="fixed inset-0 z-[9998]" onClick={() => setShowPhotoMenu(false)} aria-hidden />
-                  <div
-                    className="fixed z-[9999] rounded-2xl overflow-hidden shadow-2xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)]"
-                    style={{ top: menuRect.bottom + 6, left, width: w }}
-                  >
-                    <button
-                      type="button"
-                      className="w-full flex items-center gap-3 px-5 py-4 text-left font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] [font-size:var(--text-body)] cursor-pointer border-none bg-transparent"
-                      onClick={() => { setShowPhotoMenu(false); labelPhotoInputRef.current?.click() }}
+            {/* Shared photo source menu — portalled to body to escape modal's CSS transform stacking context */}
+            {showPhotoMenu && menuRect && createPortal(
+              (() => {
+                const minW = 240
+                const vw = window.innerWidth
+                const w = Math.max(menuRect.width, minW)
+                const left = Math.min(menuRect.left, vw - w - 8)
+                return (
+                  <>
+                    <div className="fixed inset-0 z-[9998]" onClick={() => setShowPhotoMenu(false)} aria-hidden />
+                    <div
+                      className="fixed z-[9999] rounded-2xl overflow-hidden shadow-2xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)]"
+                      style={{ top: menuRect.bottom + 6, left, width: w }}
                     >
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0" aria-hidden>
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
-                      </svg>
-                      Photo Library
-                    </button>
-                    <div className="h-px bg-[var(--color-border-primary)]" />
-                    <button
-                      type="button"
-                      className="w-full flex items-center gap-3 px-5 py-4 text-left font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] [font-size:var(--text-body)] cursor-pointer border-none bg-transparent"
-                      onClick={() => {
-                        if (isMobile()) {
-                          setShowPhotoMenu(false)
-                          cameraInputRef.current?.click()
-                        } else {
-                          void openCameraModal()
-                        }
-                      }}
-                    >
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0" aria-hidden>
-                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" />
-                      </svg>
-                      Take Photo
-                    </button>
-                    <div className="h-px bg-[var(--color-border-primary)]" />
-                    <button
-                      type="button"
-                      className="w-full flex items-center gap-3 px-5 py-4 text-left font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] [font-size:var(--text-body)] cursor-pointer border-none bg-transparent"
-                      onClick={() => { setShowPhotoMenu(false); fileInputRef.current?.click() }}
-                    >
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0" aria-hidden>
-                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                      </svg>
-                      Choose Files
-                    </button>
-                  </div>
-                </>
-              )
-            })()}
+                      <button
+                        type="button"
+                        className="w-full flex items-center gap-3 px-5 py-4 text-left font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] [font-size:var(--text-body)] cursor-pointer border-none bg-transparent"
+                        onClick={() => { setShowPhotoMenu(false); labelPhotoInputRef.current?.click() }}
+                      >
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0" aria-hidden>
+                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
+                        </svg>
+                        Photo Library
+                      </button>
+                      <div className="h-px bg-[var(--color-border-primary)]" />
+                      <button
+                        type="button"
+                        className="w-full flex items-center gap-3 px-5 py-4 text-left font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] [font-size:var(--text-body)] cursor-pointer border-none bg-transparent"
+                        onClick={() => {
+                          if (isMobile()) {
+                            setShowPhotoMenu(false)
+                            cameraInputRef.current?.click()
+                          } else {
+                            void openCameraModal()
+                          }
+                        }}
+                      >
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0" aria-hidden>
+                          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" />
+                        </svg>
+                        Take Photo
+                      </button>
+                      <div className="h-px bg-[var(--color-border-primary)]" />
+                      <button
+                        type="button"
+                        className="w-full flex items-center gap-3 px-5 py-4 text-left font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] [font-size:var(--text-body)] cursor-pointer border-none bg-transparent"
+                        onClick={() => { setShowPhotoMenu(false); fileInputRef.current?.click() }}
+                      >
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0" aria-hidden>
+                          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                        </svg>
+                        Choose Files
+                      </button>
+                    </div>
+                  </>
+                )
+              })(),
+              document.body
+            )}
 
             {/* Photo thumbnails */}
             {photoThumbs.length > 0 && (

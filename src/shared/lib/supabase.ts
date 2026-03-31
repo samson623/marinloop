@@ -18,7 +18,10 @@ export const supabase = createClient<Database>(
   {
     auth: {
       flowType: 'pkce',
-      detectSessionInUrl: true,
+      // Disabled: auto-detection races with initialize() and silently consumes
+      // the ?code= param. If the async exchange fails, the code is gone and
+      // nothing can retry. AuthCallbackScreen handles the exchange explicitly.
+      detectSessionInUrl: false,
     },
   },
 )

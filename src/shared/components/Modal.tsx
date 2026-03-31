@@ -17,6 +17,8 @@ type ModalProps = {
   triggerRef?: React.RefObject<HTMLElement | null>
   /** Optional custom close button; if not provided, a default icon close is rendered. */
   closeLabel?: string
+  /** Called when an interaction occurs outside the dialog; call e.preventDefault() to suppress close. */
+  onInteractOutside?: (e: Event) => void
 }
 
 export function Modal({
@@ -28,6 +30,7 @@ export function Modal({
   children,
   triggerRef,
   closeLabel = 'Close',
+  onInteractOutside,
 }: ModalProps) {
   const id = useId()
   const titleId = `modal-title-${id.replace(/:/g, '')}`
@@ -114,6 +117,7 @@ export function Modal({
           aria-describedby={descId || undefined}
           onCloseAutoFocus={handleCloseAutoFocus}
           onEscapeKeyDown={() => onOpenChange(false)}
+          onInteractOutside={onInteractOutside}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}

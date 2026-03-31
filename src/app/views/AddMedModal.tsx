@@ -356,7 +356,7 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
 
   return (
     <>
-      <Modal open onOpenChange={(o) => !o && onClose()} title="Add Medication" variant="responsive">
+      <Modal open onOpenChange={(o) => !o && onClose()} title="Add Medication" variant="responsive" onInteractOutside={(e) => { if (showPhotoMenu) e.preventDefault() }}>
         <>
             {/* Photo Library input */}
             <input

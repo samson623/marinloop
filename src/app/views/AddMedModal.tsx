@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useId } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/shared/stores/app-store'
@@ -39,6 +39,7 @@ type AddMedModalProps = {
 
 export default function AddMedModal({ onClose, createBundleAsync, isSaving, initialDraft, openPhoto: openPhotoProp, allMeds = [], upcomingAppts = [], userAllergies = [] }: AddMedModalProps) {
   const navigate = useNavigate()
+  const inputIdBase = useId().replace(/:/g, '')
   const { toast } = useAppStore()
   const { consented } = useAIConsent()
   const { canUseOcr } = useSubscription()
@@ -77,6 +78,9 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const labelPhotoInputId = `label-photo-input-${inputIdBase}`
+  const cameraInputId = `camera-input-${inputIdBase}`
+  const fileInputId = `file-input-${inputIdBase}`
 
   // Drug interaction check (background, non-blocking)
   const { interactions } = useInteractions(allMeds, name)
@@ -141,6 +145,19 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
     setTimes((prev) => prev.map((v, i) => (i === index ? value : v)))
   }
 
+  const openHiddenFileInput = (input: HTMLInputElement | null) => {
+    if (!input) return
+    try {
+      if (typeof input.showPicker === 'function') {
+        input.showPicker()
+        return
+      }
+    } catch {
+      // Fall back to click for browsers that gate or lack showPicker.
+    }
+    input.click()
+  }
+
   useEffect(() => {
     if (!initialDraft) return
     if (initialDraft.name) setName(initialDraft.name)
@@ -162,7 +179,7 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
 
   useEffect(() => {
     if (openPhotoProp && canUseOcr) {
-      const timer = setTimeout(() => labelPhotoInputRef.current?.click(), 150)
+      const timer = setTimeout(() => openHiddenFileInput(labelPhotoInputRef.current), 150)
       return () => clearTimeout(timer)
     }
   }, [openPhotoProp, canUseOcr])
@@ -255,6 +272,22 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
     setLabelPhotos((prev) => [...prev, file])
     const url = URL.createObjectURL(file)
     setPhotoThumbs((prev) => [...prev, url])
+  }
+
+  const handlePhotoInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (files) {
+      Array.from(files).forEach((f) => addLabelPhoto(f))
+      setShowPhotoMenu(false)
+      e.target.value = ''
+    }
+  }
+
+  const handlePhotoMenuLabelKeyDown = (e: React.KeyboardEvent<HTMLElement>, inputRef: React.RefObject<HTMLInputElement | null>) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return
+    e.preventDefault()
+    setShowPhotoMenu(false)
+    openHiddenFileInput(inputRef.current)
   }
 
   const removeLabelPhoto = (index: number) => {
@@ -361,49 +394,34 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
       {createPortal(
         <>
           <input
+            id={labelPhotoInputId}
             ref={labelPhotoInputRef}
             type="file"
             accept="image/*"
             multiple
             aria-label="Choose photos from library"
-            style={{ position: 'fixed', top: 0, left: 0, opacity: 0, width: 1, height: 1, pointerEvents: 'none' }}
-            onChange={(e) => {
-              const files = e.target.files
-              if (files) {
-                Array.from(files).forEach((f) => addLabelPhoto(f))
-                e.target.value = ''
-              }
-            }}
+            style={{ position: 'fixed', top: 0, left: 0, opacity: 0, width: 1, height: 1 }}
+            onChange={handlePhotoInputChange}
           />
           <input
+            id={cameraInputId}
             ref={cameraInputRef}
             type="file"
             accept="image/*"
             capture="environment"
             aria-label="Take a photo with camera"
-            style={{ position: 'fixed', top: 0, left: 0, opacity: 0, width: 1, height: 1, pointerEvents: 'none' }}
-            onChange={(e) => {
-              const files = e.target.files
-              if (files) {
-                Array.from(files).forEach((f) => addLabelPhoto(f))
-                e.target.value = ''
-              }
-            }}
+            style={{ position: 'fixed', top: 0, left: 0, opacity: 0, width: 1, height: 1 }}
+            onChange={handlePhotoInputChange}
           />
           <input
+            id={fileInputId}
             ref={fileInputRef}
             type="file"
             accept="image/*"
             multiple
             aria-label="Choose files"
-            style={{ position: 'fixed', top: 0, left: 0, opacity: 0, width: 1, height: 1, pointerEvents: 'none' }}
-            onChange={(e) => {
-              const files = e.target.files
-              if (files) {
-                Array.from(files).forEach((f) => addLabelPhoto(f))
-                e.target.value = ''
-              }
-            }}
+            style={{ position: 'fixed', top: 0, left: 0, opacity: 0, width: 1, height: 1 }}
+            onChange={handlePhotoInputChange}
           />
         </>,
         document.body
@@ -425,45 +443,59 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
                       className="fixed z-[9999] rounded-2xl overflow-hidden shadow-2xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)]"
                       style={{ top: menuRect.bottom + 6, left, width: w }}
                     >
-                      <button
-                        type="button"
+                      <label
+                        htmlFor={labelPhotoInputId}
+                        role="button"
+                        tabIndex={0}
                         className="w-full flex items-center gap-3 px-5 py-4 text-left font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] [font-size:var(--text-body)] cursor-pointer border-none bg-transparent"
-                        onClick={() => { setShowPhotoMenu(false); labelPhotoInputRef.current?.click() }}
+                        onKeyDown={(e) => handlePhotoMenuLabelKeyDown(e, labelPhotoInputRef)}
                       >
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0" aria-hidden>
                           <rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
                         </svg>
                         Photo Library
-                      </button>
+                      </label>
                       <div className="h-px bg-[var(--color-border-primary)]" />
-                      <button
-                        type="button"
-                        className="w-full flex items-center gap-3 px-5 py-4 text-left font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] [font-size:var(--text-body)] cursor-pointer border-none bg-transparent"
-                        onClick={() => {
-                          if (isMobile()) {
-                            setShowPhotoMenu(false)
-                            cameraInputRef.current?.click()
-                          } else {
+                      {isMobile() ? (
+                        <label
+                          htmlFor={cameraInputId}
+                          role="button"
+                          tabIndex={0}
+                          className="w-full flex items-center gap-3 px-5 py-4 text-left font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] [font-size:var(--text-body)] cursor-pointer border-none bg-transparent"
+                          onKeyDown={(e) => handlePhotoMenuLabelKeyDown(e, cameraInputRef)}
+                        >
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0" aria-hidden>
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" />
+                          </svg>
+                          Take Photo
+                        </label>
+                      ) : (
+                        <button
+                          type="button"
+                          className="w-full flex items-center gap-3 px-5 py-4 text-left font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] [font-size:var(--text-body)] cursor-pointer border-none bg-transparent"
+                          onClick={() => {
                             void openCameraModal()
-                          }
-                        }}
-                      >
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0" aria-hidden>
-                          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" />
-                        </svg>
-                        Take Photo
-                      </button>
+                          }}
+                        >
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0" aria-hidden>
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" />
+                          </svg>
+                          Take Photo
+                        </button>
+                      )}
                       <div className="h-px bg-[var(--color-border-primary)]" />
-                      <button
-                        type="button"
+                      <label
+                        htmlFor={fileInputId}
+                        role="button"
+                        tabIndex={0}
                         className="w-full flex items-center gap-3 px-5 py-4 text-left font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] [font-size:var(--text-body)] cursor-pointer border-none bg-transparent"
-                        onClick={() => { setShowPhotoMenu(false); fileInputRef.current?.click() }}
+                        onKeyDown={(e) => handlePhotoMenuLabelKeyDown(e, fileInputRef)}
                       >
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0" aria-hidden>
                           <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                         </svg>
                         Choose Files
-                      </button>
+                      </label>
                     </div>
                   </>
                 )

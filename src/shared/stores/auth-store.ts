@@ -119,9 +119,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // by the time onAuthStateChange fires null the param is already gone and a
     // post-hoc URL check always misses it (root cause of the desktop redirect bug).
     let oauthExchangeInProgress = false
+    let isAuthCallbackRoute = false
     try {
       const url = new URL(window.location.href)
       oauthExchangeInProgress = url.searchParams.has('code')
+      isAuthCallbackRoute = url.pathname === '/auth/callback'
     } catch { /* non-browser environment */ }
 
     const applySession = async (nextSession: Session | null) => {
@@ -175,6 +177,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     try {
+      // On the dedicated callback route, AuthCallbackScreen performs the PKCE
+      // exchange explicitly via exchangeCodeForSession(). Calling getSession()
+      // here can race and strip ?code= before that screen reads it.
+      if (isAuthCallbackRoute && oauthExchangeInProgress) return
+
       // getSession() triggers the PKCE exchange and strips ?code= from the URL.
       // URL cleanup runs only inside applySession once a valid session is confirmed.
       const { data } = await supabase.auth.getSession()

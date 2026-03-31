@@ -143,14 +143,6 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
 
   const openHiddenFileInput = (input: HTMLInputElement | null) => {
     if (!input) return
-    try {
-      if (typeof input.showPicker === 'function') {
-        input.showPicker()
-        return
-      }
-    } catch {
-      // Fall back to click for browsers that gate or lack showPicker.
-    }
     input.click()
   }
 

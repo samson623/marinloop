@@ -283,13 +283,6 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
     }
   }
 
-  const handlePhotoMenuLabelKeyDown = (e: React.KeyboardEvent<HTMLElement>, inputRef: React.RefObject<HTMLInputElement | null>) => {
-    if (e.key !== 'Enter' && e.key !== ' ') return
-    e.preventDefault()
-    setShowPhotoMenu(false)
-    openHiddenFileInput(inputRef.current)
-  }
-
   const removeLabelPhoto = (index: number) => {
     URL.revokeObjectURL(photoThumbs[index])
     setLabelPhotos((prev) => prev.filter((_, i) => i !== index))
@@ -400,7 +393,7 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
             accept="image/*"
             multiple
             aria-label="Choose photos from library"
-            style={{ position: 'fixed', top: 0, left: 0, opacity: 0, width: 1, height: 1 }}
+            style={{ position: 'fixed', top: '-9999px', left: '-9999px', width: '1px', height: '1px' }}
             onChange={handlePhotoInputChange}
           />
           <input
@@ -410,7 +403,7 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
             accept="image/*"
             capture="environment"
             aria-label="Take a photo with camera"
-            style={{ position: 'fixed', top: 0, left: 0, opacity: 0, width: 1, height: 1 }}
+            style={{ position: 'fixed', top: '-9999px', left: '-9999px', width: '1px', height: '1px' }}
             onChange={handlePhotoInputChange}
           />
           <input
@@ -420,7 +413,7 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
             accept="image/*"
             multiple
             aria-label="Choose files"
-            style={{ position: 'fixed', top: 0, left: 0, opacity: 0, width: 1, height: 1 }}
+            style={{ position: 'fixed', top: '-9999px', left: '-9999px', width: '1px', height: '1px' }}
             onChange={handlePhotoInputChange}
           />
         </>,

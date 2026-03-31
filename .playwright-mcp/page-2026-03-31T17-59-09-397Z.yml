@@ -1,0 +1,106 @@
+- generic [ref=e4]:
+  - link "Skip to main content" [ref=e5] [cursor=pointer]:
+    - /url: "#main-content"
+  - banner [ref=e6]:
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - img [ref=e10]
+        - generic [ref=e12]: MarinLoop
+        - generic [ref=e13]: BETA
+      - generic [ref=e14]:
+        - button "Open reminders" [ref=e15] [cursor=pointer]:
+          - img [ref=e16]
+        - button "Open notifications" [ref=e20] [cursor=pointer]:
+          - img [ref=e21]
+        - button "Toggle theme" [ref=e24] [cursor=pointer]:
+          - img [ref=e25]
+        - button "Send feedback" [ref=e31] [cursor=pointer]:
+          - img [ref=e32]
+        - generic "Care Giver Mode — Coming Soon" [ref=e34]:
+          - generic [ref=e35]: Care Giver Mode
+          - generic [ref=e36]: Soon
+        - button "Open profile" [ref=e37] [cursor=pointer]:
+          - img "Dee Moe" [ref=e38]
+  - tabpanel "Timeline" [ref=e40]:
+    - generic [ref=e41]:
+      - generic [ref=e42]:
+        - button "Previous day" [ref=e43] [cursor=pointer]:
+          - img [ref=e44]
+        - generic [ref=e46]: Today
+        - button "Next day" [disabled] [ref=e47]:
+          - img [ref=e48]
+      - generic [ref=e50]:
+        - generic [ref=e51]:
+          - generic [ref=e52]: Mar 31
+          - generic [ref=e53]: Tuesday
+          - generic [ref=e54]: 12:58 PM
+        - generic [ref=e56]:
+          - generic [ref=e57]: 0 Done
+          - generic [ref=e59]: 0 Late
+          - generic [ref=e61]: 0 Missed
+        - generic [ref=e63]:
+          - 'img "Adherence: 0% — Needs attention" [ref=e64]'
+          - generic [ref=e67]: 0%
+          - generic [ref=e68]: Adherence
+      - feed "Today's medication schedule" [ref=e69]:
+        - generic [ref=e71]:
+          - 'article "Ciprofloxacin HCl 500 mg tablet, 500 mg, scheduled at 8:00 AM, status: pending" [ref=e72] [cursor=pointer]':
+            - generic [ref=e74]:
+              - generic [ref=e75]: 8:00 AM
+              - generic [ref=e76]:
+                - generic [ref=e77]: Ciprofloxacin HCl 500 mg tablet
+                - generic [ref=e78]: Take 1 tablet by mouth in the morning and in the evening for 5 days. Take this medication with plenty of water. Take this medication 2 hrs before or 6 hrs after antacids, iron, vitamins/minerals. Do not take with milk, calcium fortified beverages or yogurt. This medication may cause dizziness.
+          - 'article "Ciprofloxacin HCl 500 mg tablet, 500 mg, scheduled at 8:00 PM, status: next dose" [ref=e79] [cursor=pointer]':
+            - generic [ref=e81]:
+              - generic [ref=e82]: 8:00 PM
+              - generic [ref=e83]:
+                - generic [ref=e84]: Ciprofloxacin HCl 500 mg tablet
+                - generic [ref=e85]: Take 1 tablet by mouth in the morning and in the evening for 5 days. Take this medication with plenty of water. Take this medication 2 hrs before or 6 hrs after antacids, iron, vitamins/minerals. Do not take with milk, calcium fortified beverages or yogurt. This medication may cause dizziness.
+              - generic [ref=e86]: Next
+          - 'article "GABAPENTIN, 100 MG, scheduled at 9:11 PM, status: pending" [ref=e87] [cursor=pointer]':
+            - generic [ref=e89]:
+              - generic [ref=e90]: 9:11 PM
+              - generic [ref=e91]:
+                - generic [ref=e92]: GABAPENTIN
+                - generic [ref=e93]: Take 1 capsule by mouth everyday at bedtime.
+  - tablist "Main navigation" [ref=e94]:
+    - generic [ref=e95]:
+      - tab "Timeline" [selected] [ref=e96] [cursor=pointer]:
+        - img [ref=e98]
+        - generic [ref=e101]: Timeline
+      - tab "Meds" [ref=e102] [cursor=pointer]:
+        - img [ref=e103]
+        - generic [ref=e106]: Meds
+      - tab "Appts" [ref=e107] [cursor=pointer]:
+        - img [ref=e108]
+        - generic [ref=e110]: Appts
+      - tab "Health" [ref=e111] [cursor=pointer]:
+        - img [ref=e112]
+        - generic [ref=e113]: Health
+      - tab "Care" [ref=e114] [cursor=pointer]:
+        - img [ref=e115]
+        - generic [ref=e120]: Care
+  - button "Open assistant":
+    - img
+  - dialog "MarinLoop Assistant" [ref=e125]:
+    - generic [ref=e126]:
+      - generic [ref=e128]: MarinLoop Assistant
+      - button "New Chat" [ref=e129] [cursor=pointer]
+      - button "Close assistant" [ref=e130] [cursor=pointer]:
+        - img [ref=e131]
+    - generic [ref=e135]:
+      - generic [ref=e136]:
+        - generic [ref=e137]: AI
+        - generic [ref=e138]: Hi! You can type or speak — I can help with your medications, doses, reminders, and more.
+      - generic [ref=e139]:
+        - button "When is my next dose?" [ref=e140] [cursor=pointer]
+        - button "What's my adherence this week?" [ref=e141] [cursor=pointer]
+        - button "Log my medication" [ref=e142] [cursor=pointer]
+        - button "When is my next appointment?" [ref=e143] [cursor=pointer]
+    - generic [ref=e144]:
+      - button "Voice input" [ref=e145] [cursor=pointer]:
+        - img [ref=e146]
+      - textbox "Message" [active] [ref=e149]:
+        - /placeholder: Ask me anything…
+      - button "Send" [disabled] [ref=e150]:
+        - img [ref=e151]

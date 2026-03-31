@@ -1,0 +1,134 @@
+- generic:
+  - generic:
+    - generic:
+      - link:
+        - /url: "#main-content"
+        - text: Skip to main content
+      - banner:
+        - generic:
+          - generic:
+            - generic:
+              - img
+            - generic: MarinLoop
+            - generic: BETA
+          - generic:
+            - button:
+              - img
+            - button:
+              - img
+            - button:
+              - img
+            - button:
+              - img
+            - generic:
+              - generic: Care Giver Mode
+              - generic: Soon
+            - button:
+              - img
+      - generic:
+        - tabpanel:
+          - generic:
+            - generic:
+              - heading [level=2]: Medications
+            - tablist:
+              - tab [selected]: Active
+              - tab: Archived
+            - list:
+              - listitem:
+                - generic:
+                  - generic: Ciprofloxacin HCl 500 mg tablet
+                  - generic: 500 mg
+                - generic:
+                  - generic:
+                    - img
+                    - text: 8:00 AM, 8:00 PM
+                  - generic:
+                    - img
+                    - text: 2x daily
+                - generic:
+                  - generic: 10 pills left
+                  - generic: 5 days — Refill soon
+              - listitem:
+                - generic:
+                  - generic: GABAPENTIN
+                  - generic: 100 MG
+                - generic:
+                  - generic:
+                    - img
+                    - text: 9:11 PM
+                  - generic:
+                    - img
+                    - text: 1x daily
+                - generic:
+                  - generic: 30 pills left
+                  - generic: 30 days
+            - button:
+              - img
+              - text: Add Medication
+      - tablist:
+        - generic:
+          - tab:
+            - img
+            - generic: Timeline
+          - tab [selected]:
+            - img
+            - generic: Meds
+          - tab:
+            - img
+            - generic: Appts
+          - tab:
+            - img
+            - generic: Health
+          - tab:
+            - img
+            - generic: Care
+      - button:
+        - img
+  - dialog "Add Medication" [ref=e114]:
+    - generic [ref=e115]:
+      - heading "Add Medication" [level=2] [ref=e116]
+      - button "Close" [active] [ref=e117] [cursor=pointer]:
+        - img [ref=e118]
+    - generic [ref=e121]:
+      - button "Choose photos from library"
+      - button "Take a photo with camera"
+      - button "Choose files"
+      - button "Take or upload photos of prescription label" [ref=e123] [cursor=pointer]:
+        - img [ref=e124]
+        - generic [ref=e128]: 📸 Label photo
+      - paragraph [ref=e129]: Photograph all sides of your pill bottle for best results. You can add up to 5 photos.
+      - generic [ref=e132]: Or enter manually
+      - generic [ref=e134]:
+        - generic [ref=e135]:
+          - generic [ref=e136]: Name
+          - textbox "Name" [ref=e137]:
+            - /placeholder: e.g. Amoxicillin
+        - generic [ref=e138]:
+          - generic [ref=e139]:
+            - generic [ref=e140]: Dosage
+            - textbox "Dosage" [ref=e141]:
+              - /placeholder: e.g. 500mg
+          - generic [ref=e142]:
+            - generic [ref=e143]: Frequency
+            - combobox "Frequency" [ref=e144]:
+              - option "Once daily" [selected]
+              - option "Twice daily"
+              - option "Three times"
+        - generic [ref=e145]:
+          - generic [ref=e147]: Schedule & Supply
+          - generic [ref=e149]:
+            - generic [ref=e150]:
+              - generic [ref=e151]: Time
+              - textbox "Time" [ref=e152]: 08:00
+            - generic [ref=e153]:
+              - generic [ref=e154]: Pills in Bottle
+              - spinbutton "Pills in Bottle" [ref=e155]: "30"
+        - generic [ref=e156]:
+          - generic [ref=e157]: Instructions
+          - textbox "Instructions" [ref=e158]:
+            - /placeholder: e.g. Take with food
+        - generic [ref=e159]:
+          - generic [ref=e160]: Warnings
+          - textbox "Warnings" [ref=e161]:
+            - /placeholder: e.g. May cause drowsiness
+        - button "Add Medication" [ref=e162] [cursor=pointer]

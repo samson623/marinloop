@@ -1,0 +1,84 @@
+- generic [ref=e3]:
+  - link "Skip to main content" [ref=e4] [cursor=pointer]:
+    - /url: "#main-content"
+  - banner [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - img [ref=e9]
+        - generic [ref=e11]: MarinLoop
+        - generic [ref=e12]: BETA
+      - generic [ref=e13]:
+        - button "Open reminders" [ref=e14] [cursor=pointer]:
+          - img [ref=e15]
+        - button "Open notifications" [ref=e19] [cursor=pointer]:
+          - img [ref=e20]
+        - button "Toggle theme" [ref=e23] [cursor=pointer]:
+          - img [ref=e24]
+        - button "Send feedback" [ref=e30] [cursor=pointer]:
+          - img [ref=e31]
+        - generic "Care Giver Mode — Coming Soon" [ref=e33]:
+          - generic [ref=e34]: Care Giver Mode
+          - generic [ref=e35]: Soon
+        - button "Open profile" [ref=e36] [cursor=pointer]:
+          - img "Dee Moe" [ref=e37]
+  - tabpanel "Timeline" [ref=e39]:
+    - generic [ref=e40]:
+      - generic [ref=e41]:
+        - button "Previous day" [ref=e42] [cursor=pointer]:
+          - img [ref=e43]
+        - generic [ref=e45]: Today
+        - button "Next day" [disabled] [ref=e46]:
+          - img [ref=e47]
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - generic [ref=e51]: Mar 31
+          - generic [ref=e52]: Tuesday
+          - generic [ref=e53]: 8:50 AM
+        - generic [ref=e55]:
+          - generic [ref=e56]: 0 Done
+          - generic [ref=e58]: 0 Late
+          - generic [ref=e60]: 0 Missed
+        - generic [ref=e62]:
+          - 'img "Adherence: 0% — Needs attention" [ref=e63]'
+          - generic [ref=e66]: 0%
+          - generic [ref=e67]: Adherence
+      - feed "Today's medication schedule" [ref=e68]:
+        - generic [ref=e70]:
+          - 'article "Ciprofloxacin HCl 500 mg tablet, 500 mg, scheduled at 8:00 AM, status: next dose" [ref=e71] [cursor=pointer]':
+            - generic [ref=e73]:
+              - generic [ref=e74]: 8:00 AM
+              - generic [ref=e75]:
+                - generic [ref=e76]: Ciprofloxacin HCl 500 mg tablet
+                - generic [ref=e77]: Take 1 tablet by mouth in the morning and in the evening for 5 days. Take this medication with plenty of water. Take this medication 2 hrs before or 6 hrs after antacids, iron, vitamins/minerals. Do not take with milk, calcium fortified beverages or yogurt. This medication may cause dizziness.
+              - generic [ref=e78]: Next
+          - 'article "Ciprofloxacin HCl 500 mg tablet, 500 mg, scheduled at 8:00 PM, status: pending" [ref=e79] [cursor=pointer]':
+            - generic [ref=e81]:
+              - generic [ref=e82]: 8:00 PM
+              - generic [ref=e83]:
+                - generic [ref=e84]: Ciprofloxacin HCl 500 mg tablet
+                - generic [ref=e85]: Take 1 tablet by mouth in the morning and in the evening for 5 days. Take this medication with plenty of water. Take this medication 2 hrs before or 6 hrs after antacids, iron, vitamins/minerals. Do not take with milk, calcium fortified beverages or yogurt. This medication may cause dizziness.
+          - 'article "GABAPENTIN, 100 MG, scheduled at 9:11 PM, status: pending" [ref=e86] [cursor=pointer]':
+            - generic [ref=e88]:
+              - generic [ref=e89]: 9:11 PM
+              - generic [ref=e90]:
+                - generic [ref=e91]: GABAPENTIN
+                - generic [ref=e92]: Take 1 capsule by mouth everyday at bedtime.
+  - tablist "Main navigation" [ref=e93]:
+    - generic [ref=e94]:
+      - tab "Timeline" [selected] [ref=e95] [cursor=pointer]:
+        - img [ref=e97]
+        - generic [ref=e100]: Timeline
+      - tab "Meds" [ref=e101] [cursor=pointer]:
+        - img [ref=e102]
+        - generic [ref=e105]: Meds
+      - tab "Appts" [ref=e106] [cursor=pointer]:
+        - img [ref=e107]
+        - generic [ref=e109]: Appts
+      - tab "Health" [ref=e110] [cursor=pointer]:
+        - img [ref=e111]
+        - generic [ref=e112]: Health
+      - tab "Care" [ref=e113] [cursor=pointer]:
+        - img [ref=e114]
+        - generic [ref=e119]: Care
+  - button "Voice commands" [ref=e120] [cursor=pointer]:
+    - img [ref=e121]

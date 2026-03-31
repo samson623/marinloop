@@ -1,0 +1,30 @@
+- generic [ref=e266]:
+  - button "Toggle theme" [ref=e267] [cursor=pointer]:
+    - img [ref=e268]
+  - generic [ref=e270]:
+    - button "Back" [ref=e271] [cursor=pointer]:
+      - img [ref=e272]
+      - text: Back
+    - generic [ref=e274]:
+      - heading "MarinLoop" [level=1] [ref=e275]
+      - generic [ref=e277]: BETA
+    - paragraph [ref=e278]: Sign in to your medication and care routine workspace.
+    - generic [ref=e279]:
+      - generic [ref=e280]:
+        - generic [ref=e281]: Email
+        - textbox "Email" [ref=e282]:
+          - /placeholder: you@domain.com
+      - generic [ref=e283]:
+        - generic [ref=e284]: Password
+        - textbox "Password" [ref=e285]:
+          - /placeholder: Enter password
+      - button "Sign In" [ref=e286] [cursor=pointer]
+      - generic [ref=e289]: Or
+      - button "Continue with Google" [ref=e291] [cursor=pointer]
+      - button "Don't have an account? Sign Up" [ref=e293] [cursor=pointer]
+    - generic [ref=e294]:
+      - paragraph [ref=e295]: MarinLoop provides reminders and tracking tools. Not medical advice. Always follow your healthcare provider's instructions. This beta is not offered for covered-entity workflows requiring HIPAA business associate agreements.
+      - generic [ref=e296]:
+        - button "Terms" [ref=e297] [cursor=pointer]
+        - button "Privacy" [ref=e298] [cursor=pointer]
+        - button "Trust Center" [ref=e299] [cursor=pointer]

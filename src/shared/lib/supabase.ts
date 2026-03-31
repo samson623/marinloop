@@ -17,11 +17,12 @@ export const supabase = createClient<Database>(
   supabaseAnonKey,
   {
     auth: {
-      flowType: 'pkce',
-      // Disabled: auto-detection races with initialize() and silently consumes
-      // the ?code= param. If the async exchange fails, the code is gone and
-      // nothing can retry. AuthCallbackScreen handles the exchange explicitly.
-      detectSessionInUrl: false,
+      // Implicit flow returns tokens directly in the URL hash — no PKCE
+      // code_verifier in localStorage needed. PKCE was failing on mobile
+      // because the verifier was lost between the OAuth redirect out and
+      // the callback back (iOS Safari ITP, PWA context switches, etc.).
+      flowType: 'implicit',
+      detectSessionInUrl: true,
     },
   },
 )

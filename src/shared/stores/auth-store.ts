@@ -114,15 +114,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: true,
 
   initialize: async () => {
-    // Detect OAuth callback BEFORE calling getSession(). The Supabase SDK strips
-    // ?code= from the URL via history.replaceState early inside getSession(), so
-    // by the time onAuthStateChange fires null the param is already gone and a
-    // post-hoc URL check always misses it (root cause of the desktop redirect bug).
+    // Detect OAuth callback BEFORE calling getSession(). With implicit flow the
+    // tokens are in the hash fragment; with PKCE they'd be in ?code=. Check both
+    // so we keep isLoading=true while the session is being established.
     let oauthExchangeInProgress = false
     let isAuthCallbackRoute = false
     try {
       const url = new URL(window.location.href)
-      oauthExchangeInProgress = url.searchParams.has('code')
+      oauthExchangeInProgress = url.searchParams.has('code') || url.hash.includes('access_token')
       isAuthCallbackRoute = url.pathname === '/auth/callback'
     } catch { /* non-browser environment */ }
 

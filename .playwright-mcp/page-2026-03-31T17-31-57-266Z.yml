@@ -1,0 +1,138 @@
+- generic:
+  - generic:
+    - generic:
+      - link:
+        - /url: "#main-content"
+        - text: Skip to main content
+      - banner:
+        - generic:
+          - generic:
+            - generic:
+              - img
+            - generic: MarinLoop
+            - generic: BETA
+          - generic:
+            - button:
+              - img
+            - button:
+              - img
+            - button:
+              - img
+            - button:
+              - img
+            - generic:
+              - generic: Care Giver Mode
+              - generic: Soon
+            - button:
+              - img
+      - generic:
+        - tabpanel:
+          - generic:
+            - generic:
+              - button:
+                - img
+              - generic: Today
+              - button [disabled]:
+                - img
+            - generic:
+              - generic:
+                - generic: Mar 31
+                - generic: Tuesday
+                - generic: 12:31 PM
+              - generic:
+                - generic:
+                  - generic: 0 Done
+                  - generic: 0 Late
+                  - generic: 0 Missed
+              - generic:
+                - img
+                - generic: 0%
+                - generic: Adherence
+            - feed:
+              - generic:
+                - article:
+                  - generic:
+                    - generic: 8:00 AM
+                    - generic:
+                      - generic: Ciprofloxacin HCl 500 mg tablet
+                      - generic: Take 1 tablet by mouth in the morning and in the evening for 5 days. Take this medication with plenty of water. Take this medication 2 hrs before or 6 hrs after antacids, iron, vitamins/minerals. Do not take with milk, calcium fortified beverages or yogurt. This medication may cause dizziness.
+                - article:
+                  - generic:
+                    - generic: 8:00 PM
+                    - generic:
+                      - generic: Ciprofloxacin HCl 500 mg tablet
+                      - generic: Take 1 tablet by mouth in the morning and in the evening for 5 days. Take this medication with plenty of water. Take this medication 2 hrs before or 6 hrs after antacids, iron, vitamins/minerals. Do not take with milk, calcium fortified beverages or yogurt. This medication may cause dizziness.
+                    - generic: Next
+                - article:
+                  - generic:
+                    - generic: 9:11 PM
+                    - generic:
+                      - generic: GABAPENTIN
+                      - generic: Take 1 capsule by mouth everyday at bedtime.
+      - tablist:
+        - generic:
+          - tab [selected]:
+            - img
+            - generic: Timeline
+          - tab:
+            - img
+            - generic: Meds
+          - tab:
+            - img
+            - generic: Appts
+          - tab:
+            - img
+            - generic: Health
+          - tab:
+            - img
+            - generic: Care
+      - button:
+        - img
+      - dialog:
+        - generic:
+          - generic: MarinLoop Assistant
+          - button: New Chat
+          - button:
+            - img
+        - generic:
+          - generic:
+            - generic:
+              - generic: AI
+              - generic: Hi! You can type or speak — I can help with your medications, doses, reminders, and more.
+            - generic:
+              - button: When is my next dose?
+              - button: What's my adherence this week?
+              - button: Log my medication
+              - button: When is my next appointment?
+        - generic:
+          - button:
+            - img
+          - textbox:
+            - /placeholder: Ask me anything…
+          - button [disabled]:
+            - img
+  - dialog "AI Features — Data Disclosure" [active] [ref=e28]:
+    - heading "AI Features — Data Disclosure" [level=2] [ref=e29]
+    - paragraph [ref=e30]: Please review how AI features process your medication data before enabling them.
+    - generic [ref=e31]:
+      - paragraph [ref=e32]: MarinLoop uses AI to power insights, label scanning, and voice commands.
+      - list [ref=e33]:
+        - listitem [ref=e34]:
+          - strong [ref=e35]: "What is sent:"
+          - text: Medication names, dosages, schedules, notes, and images of prescription labels may be sent to OpenAI's API servers for processing.
+        - listitem [ref=e36]:
+          - strong [ref=e37]: "Third-party processing:"
+          - text: Data is processed per OpenAI's privacy policy (openai.com/privacy). MarinLoop beta is not offering these AI features under HIPAA business associate agreements.
+        - listitem [ref=e38]:
+          - strong [ref=e39]: "What not to include:"
+          - text: Do not enter real patient names, MRN numbers, Social Security numbers, or other sensitive personal identifiers.
+        - listitem [ref=e40]:
+          - strong [ref=e41]: "Optional:"
+          - text: AI features are optional. Core medication tracking, scheduling, and reminders work without AI.
+        - listitem [ref=e42]:
+          - strong [ref=e43]: "Revoke anytime:"
+          - text: You can withdraw consent at any time in Profile → Data & Privacy.
+      - paragraph [ref=e44]: This consent applies to adherence insights, medication label extraction, and AI-powered voice commands.
+    - generic [ref=e45]:
+      - button "I agree — enable AI features" [ref=e46] [cursor=pointer]
+      - button "No thanks — skip AI features" [ref=e47] [cursor=pointer]

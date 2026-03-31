@@ -1,0 +1,111 @@
+- generic:
+  - generic:
+    - generic:
+      - link:
+        - /url: "#main-content"
+        - text: Skip to main content
+      - banner:
+        - generic:
+          - generic:
+            - generic:
+              - img
+            - generic: MarinLoop
+            - generic: BETA
+          - generic:
+            - button:
+              - img
+            - button:
+              - img
+            - button:
+              - img
+            - button:
+              - img
+            - generic:
+              - generic: Care Giver Mode
+              - generic: Soon
+            - button:
+              - img
+      - generic:
+        - tabpanel:
+          - generic:
+            - generic:
+              - heading [level=2]: Medications
+            - tablist:
+              - tab [selected]: Active
+              - tab: Archived
+            - list:
+              - listitem:
+                - generic:
+                  - generic: Ciprofloxacin HCl 500 mg tablet
+                  - generic: 500 mg
+                - generic:
+                  - generic:
+                    - img
+                    - text: 8:00 AM, 8:00 PM
+                  - generic:
+                    - img
+                    - text: 2x daily
+                - generic:
+                  - generic: 10 pills left
+                  - generic: 5 days — Refill soon
+              - listitem:
+                - generic:
+                  - generic: GABAPENTIN
+                  - generic: 100 MG
+                - generic:
+                  - generic:
+                    - img
+                    - text: 9:11 PM
+                  - generic:
+                    - img
+                    - text: 1x daily
+                - generic:
+                  - generic: 30 pills left
+                  - generic: 30 days
+            - button:
+              - img
+              - text: Add Medication
+      - tablist:
+        - generic:
+          - tab:
+            - img
+            - generic: Timeline
+          - tab [selected]:
+            - img
+            - generic: Meds
+          - tab:
+            - img
+            - generic: Appts
+          - tab:
+            - img
+            - generic: Health
+          - tab:
+            - img
+            - generic: Care
+      - button:
+        - img
+  - dialog "AI Features — Data Disclosure" [ref=e28]:
+    - heading "AI Features — Data Disclosure" [level=2] [ref=e29]
+    - paragraph [ref=e30]: Please review how AI features process your medication data before enabling them.
+    - generic [ref=e31]:
+      - paragraph [ref=e32]: MarinLoop uses AI to power insights, label scanning, and voice commands.
+      - list [ref=e33]:
+        - listitem [ref=e34]:
+          - strong [ref=e35]: "What is sent:"
+          - text: Medication names, dosages, schedules, notes, and images of prescription labels may be sent to OpenAI's API servers for processing.
+        - listitem [ref=e36]:
+          - strong [ref=e37]: "Third-party processing:"
+          - text: Data is processed per OpenAI's privacy policy (openai.com/privacy). MarinLoop beta is not offering these AI features under HIPAA business associate agreements.
+        - listitem [ref=e38]:
+          - strong [ref=e39]: "What not to include:"
+          - text: Do not enter real patient names, MRN numbers, Social Security numbers, or other sensitive personal identifiers.
+        - listitem [ref=e40]:
+          - strong [ref=e41]: "Optional:"
+          - text: AI features are optional. Core medication tracking, scheduling, and reminders work without AI.
+        - listitem [ref=e42]:
+          - strong [ref=e43]: "Revoke anytime:"
+          - text: You can withdraw consent at any time in Profile → Data & Privacy.
+      - paragraph [ref=e44]: This consent applies to adherence insights, medication label extraction, and AI-powered voice commands.
+    - generic [ref=e45]:
+      - button "I agree — enable AI features" [active] [ref=e46] [cursor=pointer]
+      - button "No thanks — skip AI features" [ref=e47] [cursor=pointer]

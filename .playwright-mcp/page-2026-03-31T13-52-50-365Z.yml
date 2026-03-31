@@ -1,0 +1,82 @@
+- generic [ref=e48]:
+  - link "Skip to main content" [ref=e49] [cursor=pointer]:
+    - /url: "#main-content"
+  - banner [ref=e50]:
+    - generic [ref=e51]:
+      - generic [ref=e52]:
+        - img [ref=e54]
+        - generic [ref=e56]: MarinLoop
+        - generic [ref=e57]: BETA
+      - generic [ref=e58]:
+        - button "Open reminders" [ref=e59] [cursor=pointer]:
+          - img [ref=e60]
+        - button "Open notifications" [ref=e64] [cursor=pointer]:
+          - img [ref=e65]
+        - button "Toggle theme" [ref=e68] [cursor=pointer]:
+          - img [ref=e69]
+        - button "Send feedback" [ref=e71] [cursor=pointer]:
+          - img [ref=e72]
+        - generic "Care Giver Mode — Coming Soon" [ref=e74]:
+          - generic [ref=e75]: Care Giver Mode
+          - generic [ref=e76]: Soon
+        - button "Open profile" [ref=e77] [cursor=pointer]:
+          - img "Dee Moe" [ref=e78]
+  - tabpanel "Meds" [ref=e80]:
+    - generic [ref=e81]:
+      - heading "Medications" [level=2] [ref=e83]
+      - tablist [ref=e84]:
+        - tab "Active" [selected] [ref=e85] [cursor=pointer]
+        - tab "Archived" [ref=e86] [cursor=pointer]
+      - list [ref=e87]:
+        - listitem "Ciprofloxacin HCl 500 mg tablet, 500 mg, 2x daily" [ref=e88] [cursor=pointer]:
+          - generic [ref=e89]:
+            - generic [ref=e90]: Ciprofloxacin HCl 500 mg tablet
+            - generic [ref=e91]: 500 mg
+          - generic [ref=e92]:
+            - generic [ref=e93]:
+              - img [ref=e94]
+              - text: 8:00 AM, 8:00 PM
+            - generic [ref=e97]:
+              - img [ref=e98]
+              - text: 2x daily
+          - generic "10 of 10 pills remaining" [ref=e99]
+          - generic [ref=e101]:
+            - generic [ref=e102]: 10 pills left
+            - generic [ref=e103]: 5 days — Refill soon
+        - listitem "GABAPENTIN, 100 MG, 1x daily" [ref=e104] [cursor=pointer]:
+          - generic [ref=e105]:
+            - generic [ref=e106]: GABAPENTIN
+            - generic [ref=e107]: 100 MG
+          - generic [ref=e108]:
+            - generic [ref=e109]:
+              - img [ref=e110]
+              - text: 9:11 PM
+            - generic [ref=e113]:
+              - img [ref=e114]
+              - text: 1x daily
+          - generic "30 of 30 pills remaining" [ref=e115]
+          - generic [ref=e117]:
+            - generic [ref=e118]: 30 pills left
+            - generic [ref=e119]: 30 days
+      - button "Add Medication" [ref=e120] [cursor=pointer]:
+        - img [ref=e121]
+        - text: Add Medication
+  - tablist "Main navigation" [ref=e122]:
+    - generic [ref=e123]:
+      - tab "Timeline" [ref=e124] [cursor=pointer]:
+        - img [ref=e125]
+        - generic [ref=e128]: Timeline
+      - tab "Meds" [selected] [ref=e129] [cursor=pointer]:
+        - img [ref=e131]
+        - generic [ref=e134]: Meds
+      - tab "Appts" [ref=e135] [cursor=pointer]:
+        - img [ref=e136]
+        - generic [ref=e138]: Appts
+      - tab "Health" [ref=e139] [cursor=pointer]:
+        - img [ref=e140]
+        - generic [ref=e141]: Health
+      - tab "Care" [ref=e142] [cursor=pointer]:
+        - img [ref=e143]
+        - generic [ref=e148]: Care
+  - button "Voice commands" [ref=e149] [cursor=pointer]:
+    - img [ref=e150]

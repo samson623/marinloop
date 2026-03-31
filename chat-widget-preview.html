@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MarinLoop Chat Widget — Preview</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f0f2f5;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── Fake app background ── */
+  .app-bg {
+    width: 390px;
+    height: 844px;
+    background: #fff;
+    border-radius: 48px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.22);
+    position: relative;
+    overflow: hidden;
+    border: 10px solid #1a1a1a;
+  }
+
+  .app-screen {
+    width: 100%;
+    height: 100%;
+    background: #f7f8fa;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .fake-header {
+    background: #fff;
+    border-bottom: 1px solid #eee;
+    padding: 54px 20px 16px;
+    font-size: 22px;
+    font-weight: 700;
+    color: #111;
+  }
+
+  .fake-content {
+    flex: 1;
+    padding: 20px;
+    overflow: hidden;
+  }
+
+  .fake-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+
+  .fake-card-title { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; }
+  .fake-card-value { font-size: 28px; font-weight: 700; color: #111; }
+  .fake-card-sub { font-size: 12px; color: #888; margin-top: 4px; }
+
+  .fake-med-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .fake-med-row:last-child { border-bottom: none; }
+  .fake-dot { width: 10px; height: 10px; border-radius: 50%; background: #6366f1; flex-shrink: 0; }
+  .fake-dot.green { background: #22c55e; }
+  .fake-dot.orange { background: #f97316; }
+  .fake-med-name { font-size: 14px; font-weight: 500; color: #222; flex: 1; }
+  .fake-med-time { font-size: 12px; color: #999; }
+
+  .fake-bottom-nav {
+    background: #fff;
+    border-top: 1px solid #eee;
+    display: flex;
+    padding: 10px 0 24px;
+  }
+
+  .fake-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: #aaa;
+  }
+  .fake-nav-item.active { color: #6366f1; }
+  .fake-nav-icon { font-size: 20px; }
+
+  /* ── Chat FAB ── */
+  .chat-fab {
+    position: absolute;
+    bottom: calc(80px + 16px);
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #6366f1;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(99,102,241,0.45);
+    transition: transform 0.15s, box-shadow 0.15s;
+    z-index: 10;
+  }
+  .chat-fab:hover { transform: scale(1.07); box-shadow: 0 6px 24px rgba(99,102,241,0.55); }
+  .chat-fab:active { transform: scale(0.95); }
+  .chat-fab svg { width: 26px; height: 26px; fill: #fff; }
+
+  /* ── Chat Panel ── */
+  .chat-panel {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 72%;
+    background: #fff;
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.14);
+    display: flex;
+    flex-direction: column;
+    z-index: 20;
+    transform: translateY(100%);
+    transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .chat-panel.open { transform: translateY(0); }
+
+  /* drag handle */
+  .panel-handle {
+    width: 40px; height: 4px;
+    background: #ddd;
+    border-radius: 2px;
+    margin: 12px auto 0;
+    flex-shrink: 0;
+  }
+
+  /* header */
+  .panel-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid #f0f0f0;
+    flex-shrink: 0;
+  }
+  .panel-title {
+    flex: 1;
+    font-size: 16px;
+    font-weight: 700;
+    color: #111;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-title-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+  }
+  .panel-title-dot.thinking { background: #f97316; animation: pulse 1s infinite; }
+
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .new-chat-btn {
+    background: #f3f4f6;
+    border: none;
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #555;
+    cursor: pointer;
+    margin-right: 8px;
+    transition: background 0.15s;
+  }
+  .new-chat-btn:hover { background: #e5e7eb; }
+
+  .close-btn {
+    background: #f3f4f6;
+    border: none;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    color: #888;
+    transition: background 0.15s;
+  }
+  .close-btn:hover { background: #e5e7eb; }
+
+  /* messages */
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    scroll-behavior: smooth;
+  }
+
+  .messages::-webkit-scrollbar { width: 4px; }
+  .messages::-webkit-scrollbar-track { background: transparent; }
+  .messages::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+
+  /* message bubbles */
+  .msg-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    animation: msgIn 0.2s ease-out;
+  }
+  .msg-row.user { flex-direction: row-reverse; }
+
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: #6366f1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .bubble {
+    max-width: 72%;
+    padding: 10px 13px;
+    border-radius: 18px;
+    font-size: 14px;
+    line-height: 1.45;
+    color: #111;
+  }
+  .msg-row.ai .bubble {
+    background: #f3f4f6;
+    border-bottom-left-radius: 4px;
+  }
+  .msg-row.user .bubble {
+    background: #6366f1;
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+
+  /* action chips inside AI messages */
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip {
+    background: #fff;
+    border: 1.5px solid #6366f1;
+    color: #6366f1;
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+  }
+  .chip:hover { background: #6366f1; color: #fff; }
+
+  /* typing indicator */
+  .typing-indicator {
+    display: flex; align-items: center; gap: 4px;
+    padding: 10px 14px;
+    background: #f3f4f6;
+    border-radius: 18px;
+    border-bottom-left-radius: 4px;
+    width: fit-content;
+  }
+  .typing-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #aaa;
+    animation: typingBounce 1.2s infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes typingBounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-5px); }
+  }
+
+  /* timestamp */
+  .timestamp {
+    text-align: center;
+    font-size: 11px;
+    color: #bbb;
+    margin: 4px 0;
+  }
+
+  /* input bar */
+  .input-bar {
+    padding: 10px 12px 20px;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .mic-btn {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: #f3f4f6;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s, transform 0.15s;
+  }
+  .mic-btn:hover { background: #e5e7eb; }
+  .mic-btn.recording { background: #fee2e2; animation: pulse 0.8s infinite; }
+  .mic-btn svg { width: 18px; height: 18px; }
+
+  .text-input {
+    flex: 1;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 22px;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+    resize: none;
+    height: 40px;
+    line-height: 1.2;
+  }
+  .text-input:focus { border-color: #6366f1; }
+  .text-input::placeholder { color: #bbb; }
+
+  .send-btn {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: #6366f1;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s, transform 0.15s, opacity 0.15s;
+    opacity: 0.4;
+  }
+  .send-btn.active { opacity: 1; }
+  .send-btn:hover.active { background: #4f46e5; transform: scale(1.05); }
+  .send-btn svg { width: 18px; height: 18px; fill: #fff; }
+
+  /* mic recording overlay */
+  .mic-overlay {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(255,255,255,0.96);
+    backdrop-filter: blur(4px);
+    border-radius: 24px 24px 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 40px 24px;
+    z-index: 30;
+    transform: translateY(100%);
+    transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .mic-overlay.visible { transform: translateY(0); }
+
+  .mic-ring {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: #fee2e2;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .mic-ring::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    border: 2px solid #fca5a5;
+    animation: ringPulse 1.2s infinite;
+  }
+  @keyframes ringPulse {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(1.3); opacity: 0; }
+  }
+  .mic-ring svg { width: 36px; height: 36px; fill: #ef4444; }
+
+  .mic-label { font-size: 16px; font-weight: 600; color: #111; }
+  .mic-sublabel { font-size: 13px; color: #888; }
+  .mic-transcript {
+    font-size: 14px;
+    color: #6366f1;
+    font-style: italic;
+    text-align: center;
+    min-height: 20px;
+  }
+  .mic-cancel {
+    background: none;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 20px;
+    padding: 8px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #888;
+    cursor: pointer;
+  }
+
+  /* Suggested prompts (welcome state) */
+  .suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .suggestion {
+    background: #fff;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 10px 13px;
+    font-size: 13px;
+    color: #444;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.15s, background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .suggestion:hover { border-color: #6366f1; background: #f5f3ff; }
+  .suggestion-icon { font-size: 16px; }
+
+  /* overlay backdrop */
+  .backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.25);
+    z-index: 15;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .backdrop.visible { opacity: 1; pointer-events: all; }
+
+  /* desktop note */
+  .desktop-note {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    font-size: 12px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<div class="app-bg">
+  <div class="app-screen">
+
+    <!-- Fake app header -->
+    <div class="fake-header">Good morning, Samson 👋</div>
+
+    <!-- Fake app content -->
+    <div class="fake-content">
+      <div class="fake-card">
+        <div class="fake-card-title">TODAY'S ADHERENCE</div>
+        <div class="fake-card-value">75%</div>
+        <div class="fake-card-sub">3 of 4 doses taken</div>
+      </div>
+      <div class="fake-card">
+        <div class="fake-card-title">UPCOMING MEDICATIONS</div>
+        <div class="fake-med-row">
+          <div class="fake-dot"></div>
+          <div class="fake-med-name">Metformin 500mg</div>
+          <div class="fake-med-time">8:00 PM</div>
+        </div>
+        <div class="fake-med-row">
+          <div class="fake-dot green"></div>
+          <div class="fake-med-name">Lisinopril 10mg</div>
+          <div class="fake-med-time">Taken</div>
+        </div>
+        <div class="fake-med-row">
+          <div class="fake-dot orange"></div>
+          <div class="fake-med-name">Atorvastatin 20mg</div>
+          <div class="fake-med-time">9:00 PM</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fake bottom nav -->
+    <div class="fake-bottom-nav">
+      <div class="fake-nav-item active">
+        <div class="fake-nav-icon">🏠</div>
+        <span>Home</span>
+      </div>
+      <div class="fake-nav-item">
+        <div class="fake-nav-icon">💊</div>
+        <span>Meds</span>
+      </div>
+      <div class="fake-nav-item">
+        <div class="fake-nav-icon">📅</div>
+        <span>Timeline</span>
+      </div>
+      <div class="fake-nav-item">
+        <div class="fake-nav-icon">👤</div>
+        <span>Profile</span>
+      </div>
+    </div>
+
+    <!-- Backdrop -->
+    <div class="backdrop" id="backdrop" onclick="closePanel()"></div>
+
+    <!-- Chat FAB -->
+    <button class="chat-fab" id="chatFab" onclick="openPanel()" title="Open assistant">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+      </svg>
+    </button>
+
+    <!-- Chat Panel -->
+    <div class="chat-panel" id="chatPanel">
+      <div class="panel-handle"></div>
+
+      <div class="panel-header">
+        <div class="panel-title">
+          <div class="panel-title-dot" id="statusDot"></div>
+          MarinLoop Assistant
+        </div>
+        <button class="new-chat-btn" onclick="newChat()">+ New Chat</button>
+        <button class="close-btn" onclick="closePanel()">✕</button>
+      </div>
+
+      <div class="messages" id="messages"></div>
+
+      <div class="input-bar">
+        <button class="mic-btn" id="micBtn" onclick="toggleMic()" title="Voice input">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+          </svg>
+        </button>
+        <input
+          class="text-input"
+          id="textInput"
+          placeholder="Ask me anything..."
+          oninput="onInputChange()"
+          onkeydown="onKeyDown(event)"
+        />
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">
+          <svg viewBox="0 0 24 24">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mic recording overlay (inside panel) -->
+    <div class="mic-overlay" id="micOverlay">
+      <div class="mic-ring">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+        </svg>
+      </div>
+      <div class="mic-label">Listening…</div>
+      <div class="mic-transcript" id="micTranscript">Speak now</div>
+      <button class="mic-cancel" onclick="cancelMic()">Cancel</button>
+    </div>
+
+  </div>
+</div>
+
+<div class="desktop-note">Preview only — responses are simulated</div>
+
+<script>
+  // ── State ──
+  let isOpen = false;
+  let isRecording = false;
+  let typingTimer = null;
+  let micTimer = null;
+  let messageCount = 0;
+
+  // ── Simulated AI responses ──
+  const responses = {
+    greetings: [
+      "Hi! I'm your MarinLoop assistant. You can ask me about your medications, log a dose, set reminders, or navigate the app. What do you need?",
+    ],
+    dose: [
+      "Your next Metformin 500mg dose is today at **8:00 PM** — about 3 hours from now. Want me to set a reminder?",
+      "You have Atorvastatin 20mg scheduled for **9:00 PM** tonight. You last took it yesterday at 9:02 PM.",
+    ],
+    adherence: [
+      "This week you've taken **18 out of 21** scheduled doses — an **86% adherence rate**. Your best streak is 5 days in a row. Keep it up!",
+    ],
+    log: [
+      "Got it! I've logged your Metformin 500mg dose for right now. ✓",
+      "Dose logged. You've now taken 3 of 4 scheduled doses today.",
+    ],
+    reminder: [
+      "Done! I've set a reminder for Metformin at 8:00 PM tonight. You'll get a notification 5 minutes before.",
+    ],
+    navigate: [
+      "Taking you to the Timeline now.",
+      "Opening your Medications list.",
+    ],
+    appointments: [
+      "Your next appointment is with **Dr. Patel** on **April 4th at 2:30 PM** — 4 days from now.",
+    ],
+    default: [
+      "I found that in your records. Your Lisinopril 10mg was last taken today at 7:45 AM.",
+      "Based on your data, you've been most consistent with morning medications. Evening doses are missed about 20% of the time.",
+      "I don't have enough data to answer that specifically, but I can check your medication history if you give me more details.",
+    ],
+  };
+
+  const suggestions = [
+    { icon: "💊", text: "When is my next dose?" },
+    { icon: "📊", text: "What's my adherence this week?" },
+    { icon: "📅", text: "When is my next appointment?" },
+    { icon: "✅", text: "Log my Metformin dose" },
+  ];
+
+  // ── Helpers ──
+  function getResponse(text) {
+    const t = text.toLowerCase();
+    if (t.match(/next dose|when.*dose|dose.*when/)) return pick(responses.dose);
+    if (t.match(/adhere|streak|how.*doing|progress/)) return pick(responses.adherence);
+    if (t.match(/log|took|taken|mark/)) return pick(responses.log);
+    if (t.match(/remind/)) return pick(responses.reminder);
+    if (t.match(/timeline|appointment|appt|calendar/)) return pick(responses.appointments);
+    if (t.match(/go to|open|navigate|show/)) return pick(responses.navigate);
+    return pick(responses.default);
+  }
+
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  function formatTime() {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // ── Panel open/close ──
+  function openPanel() {
+    isOpen = true;
+    document.getElementById('chatPanel').classList.add('open');
+    document.getElementById('backdrop').classList.add('visible');
+    document.getElementById('chatFab').style.display = 'none';
+    if (document.getElementById('messages').children.length === 0) {
+      showWelcome();
+    }
+    setTimeout(() => document.getElementById('textInput').focus(), 350);
+  }
+
+  function closePanel() {
+    isOpen = false;
+    document.getElementById('chatPanel').classList.remove('open');
+    document.getElementById('backdrop').classList.remove('visible');
+    document.getElementById('chatFab').style.display = '';
+    cancelMic();
+  }
+
+  function newChat() {
+    document.getElementById('messages').innerHTML = '';
+    messageCount = 0;
+    showWelcome();
+  }
+
+  // ── Welcome state ──
+  function showWelcome() {
+    const msgs = document.getElementById('messages');
+
+    const ts = document.createElement('div');
+    ts.className = 'timestamp';
+    ts.textContent = formatTime();
+    msgs.appendChild(ts);
+
+    addAIMessage(
+      "Hi Samson! I'm your MarinLoop assistant. You can type or speak — I can help with your medications, doses, reminders, and more.",
+      suggestions.map(s => s)
+    );
+  }
+
+  // ── Message rendering ──
+  function addUserMessage(text) {
+    const msgs = document.getElementById('messages');
+    const row = document.createElement('div');
+    row.className = 'msg-row user';
+    row.innerHTML = `<div class="bubble">${escHtml(text)}</div>`;
+    msgs.appendChild(row);
+    scrollBottom();
+  }
+
+  function addAIMessage(text, chips) {
+    const msgs = document.getElementById('messages');
+    const row = document.createElement('div');
+    row.className = 'msg-row ai';
+
+    let chipsHtml = '';
+    if (chips && chips.length) {
+      chipsHtml = `<div class="chips">${chips.map(c =>
+        `<button class="chip" onclick="useSuggestion('${escAttr(c.text)}')">${c.icon ? c.icon + ' ' : ''}${escHtml(c.text)}</button>`
+      ).join('')}</div>`;
+    }
+
+    // Simple markdown: **bold**
+    const rendered = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+    row.innerHTML = `
+      <div class="avatar">🤖</div>
+      <div class="bubble">${rendered}${chipsHtml}</div>
+    `;
+    msgs.appendChild(row);
+    scrollBottom();
+  }
+
+  function showTyping() {
+    const msgs = document.getElementById('messages');
+    const row = document.createElement('div');
+    row.className = 'msg-row ai';
+    row.id = 'typingRow';
+    row.innerHTML = `
+      <div class="avatar">🤖</div>
+      <div class="typing-indicator">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    `;
+    msgs.appendChild(row);
+    scrollBottom();
+    setStatusThinking(true);
+  }
+
+  function removeTyping() {
+    const el = document.getElementById('typingRow');
+    if (el) el.remove();
+    setStatusThinking(false);
+  }
+
+  function setStatusThinking(on) {
+    const dot = document.getElementById('statusDot');
+    if (on) dot.classList.add('thinking');
+    else dot.classList.remove('thinking');
+  }
+
+  function scrollBottom() {
+    const msgs = document.getElementById('messages');
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function escAttr(s) { return s.replace(/'/g, "\\'"); }
+
+  // ── Send message ──
+  function sendMessage() {
+    const input = document.getElementById('textInput');
+    const text = input.value.trim();
+    if (!text) return;
+
+    input.value = '';
+    onInputChange();
+
+    addUserMessage(text);
+    messageCount++;
+
+    const delay = 800 + Math.random() * 600;
+    showTyping();
+    setTimeout(() => {
+      removeTyping();
+      const reply = getResponse(text);
+      addAIMessage(reply);
+    }, delay);
+  }
+
+  function useSuggestion(text) {
+    document.getElementById('textInput').value = text;
+    onInputChange();
+    sendMessage();
+  }
+
+  // ── Input state ──
+  function onInputChange() {
+    const val = document.getElementById('textInput').value;
+    const btn = document.getElementById('sendBtn');
+    btn.classList.toggle('active', val.trim().length > 0);
+  }
+
+  function onKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  // ── Mic simulation ──
+  const micPhrases = [
+    "When is my next dose?",
+    "Log my Metformin",
+    "What's my adherence?",
+    "Set a reminder for 8 PM",
+    "When is my next appointment?",
+  ];
+
+  let micPhaseIndex = 0;
+
+  function toggleMic() {
+    if (isRecording) {
+      cancelMic();
+    } else {
+      startMic();
+    }
+  }
+
+  function startMic() {
+    isRecording = true;
+    document.getElementById('micBtn').classList.add('recording');
+    document.getElementById('micOverlay').classList.add('visible');
+    document.getElementById('micTranscript').textContent = 'Speak now…';
+
+    // Simulate transcript appearing
+    const phrase = micPhrases[micPhaseIndex % micPhrases.length];
+    micPhaseIndex++;
+    let chars = 0;
+
+    micTimer = setInterval(() => {
+      chars += 2;
+      document.getElementById('micTranscript').textContent = phrase.slice(0, chars);
+      if (chars >= phrase.length) {
+        clearInterval(micTimer);
+        setTimeout(() => finishMic(phrase), 600);
+      }
+    }, 60);
+  }
+
+  function finishMic(phrase) {
+    isRecording = false;
+    document.getElementById('micBtn').classList.remove('recording');
+    document.getElementById('micOverlay').classList.remove('visible');
+    document.getElementById('textInput').value = phrase;
+    onInputChange();
+    setTimeout(sendMessage, 200);
+  }
+
+  function cancelMic() {
+    if (!isRecording) return;
+    isRecording = false;
+    clearInterval(micTimer);
+    document.getElementById('micBtn').classList.remove('recording');
+    document.getElementById('micOverlay').classList.remove('visible');
+    document.getElementById('micTranscript').textContent = 'Speak now';
+  }
+</script>
+</body>
+</html>

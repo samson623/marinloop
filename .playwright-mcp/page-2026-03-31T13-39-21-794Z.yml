@@ -1,0 +1,195 @@
+- generic [ref=e3]:
+  - link "Skip to main content" [ref=e4] [cursor=pointer]:
+    - /url: "#main-content"
+  - navigation "Main navigation" [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - img [ref=e9]
+        - generic [ref=e11]: MarinLoop
+        - generic [ref=e12]: BETA
+      - list [ref=e13]:
+        - listitem [ref=e14]:
+          - link "Features" [ref=e15] [cursor=pointer]:
+            - /url: "#features"
+        - listitem [ref=e16]:
+          - link "How It Works" [ref=e17] [cursor=pointer]:
+            - /url: "#how-it-works"
+        - listitem [ref=e18]:
+          - link "Trust" [ref=e19] [cursor=pointer]:
+            - /url: "#trust"
+      - generic [ref=e20]:
+        - button "Switch to dark theme" [ref=e21] [cursor=pointer]:
+          - img [ref=e22]
+        - button "Sign In" [ref=e25] [cursor=pointer]
+  - main [ref=e26]:
+    - region "Medication routines, reminders, and care coordination with a clear safety boundary." [ref=e27]:
+      - heading "Medication routines, reminders, and care coordination with a clear safety boundary." [level=1] [ref=e28]
+      - paragraph [ref=e29]: Built for patients and caregivers who need an installable daily workflow for medications, adherence, vitals, notes, and care-network coordination.
+      - paragraph [ref=e30]: MarinLoop is a personal tracking and reminder product. It is not a medical device, not for emergency use, and not offered in this beta for covered-entity workflows requiring HIPAA business associate agreements.
+      - generic [ref=e31]:
+        - button "Open beta sign-in" [ref=e33] [cursor=pointer]
+        - button "Review trust center" [ref=e35] [cursor=pointer]
+    - region "See It in Action" [ref=e36]:
+      - heading "See It in Action" [level=2] [ref=e37]
+      - paragraph [ref=e38]: Click play to watch a guided tour of the app
+      - generic [ref=e39]:
+        - generic [ref=e40]:
+          - img "MarinLoop app preview showing a daily medication timeline with adherence tracking, five sample medications in various statuses, and bottom navigation tabs" [ref=e41]:
+            - generic [ref=e42]:
+              - img [ref=e44]
+              - generic [ref=e46]: MarinLoop
+              - generic [ref=e47]: BETA
+            - generic [ref=e49]:
+              - generic [ref=e50]:
+                - generic [ref=e51]:
+                  - generic [ref=e52]: Today
+                  - generic [ref=e53]: Tuesday
+                - generic [ref=e54]:
+                  - 'img "Adherence: 20%" [ref=e55]'
+                  - generic [ref=e58]: 20%
+                  - generic [ref=e59]: Adherence
+              - generic [ref=e60]:
+                - generic [ref=e61]: 1 Done
+                - generic [ref=e63]: 2 Late
+                - generic [ref=e65]: 1 Missed
+              - generic [ref=e67]:
+                - generic [ref=e71]:
+                  - generic [ref=e72]:
+                    - generic [ref=e73]: Ciprofloxacin
+                    - generic [ref=e74]: Done
+                  - generic [ref=e75]: 12:07 AM
+                - generic [ref=e78]:
+                  - generic [ref=e79]:
+                    - generic [ref=e80]: Gabapentin
+                    - generic [ref=e81]: Late
+                  - generic [ref=e82]: 9:11 PM
+                - generic [ref=e85]:
+                  - generic [ref=e86]:
+                    - generic [ref=e87]: Vitamin D3
+                    - generic [ref=e88]: Next
+                  - generic [ref=e89]: 6:00 PM
+                - generic [ref=e92]:
+                  - generic [ref=e93]:
+                    - generic [ref=e94]: Aspirin
+                    - generic [ref=e95]: Pending
+                  - generic [ref=e96]: 9:00 PM
+                - generic [ref=e99]:
+                  - generic [ref=e100]:
+                    - generic [ref=e101]: Metformin
+                    - generic [ref=e102]: Missed
+                  - generic [ref=e103]: 8:00 AM
+            - img [ref=e105]
+            - tablist "App sections" [ref=e109]:
+              - tab "Timeline" [selected] [ref=e110] [cursor=pointer]:
+                - img [ref=e112]
+                - generic [ref=e115]: Timeline
+              - tab "Meds" [ref=e116] [cursor=pointer]:
+                - img [ref=e117]
+                - generic [ref=e120]: Meds
+              - tab "Appts" [ref=e121] [cursor=pointer]:
+                - img [ref=e122]
+                - generic [ref=e125]: Appts
+              - tab "Health" [ref=e126] [cursor=pointer]:
+                - img [ref=e127]
+                - generic [ref=e128]: Health
+              - tab "Care" [ref=e129] [cursor=pointer]:
+                - img [ref=e130]
+                - generic [ref=e135]: Care
+          - button "Play demo" [ref=e136] [cursor=pointer]:
+            - img [ref=e138]
+            - generic [ref=e140]: See It in Action
+        - paragraph
+    - region "What MarinLoop Does" [ref=e141]:
+      - heading "What MarinLoop Does" [level=2] [ref=e142]
+      - generic [ref=e143]:
+        - generic [ref=e144]:
+          - img [ref=e146]
+          - heading "Daily Timeline" [level=3] [ref=e149]
+          - paragraph [ref=e150]: Visual schedule of every dose — past, present, and upcoming — color-coded by status.
+        - generic [ref=e151]:
+          - img [ref=e153]
+          - heading "Push Reminders" [level=3] [ref=e156]
+          - paragraph [ref=e157]: Native push notifications that fire at the exact scheduled time, even when the app is closed.
+        - generic [ref=e158]:
+          - img [ref=e160]
+          - heading "Medication Management" [level=3] [ref=e163]
+          - paragraph [ref=e164]: Add medications by name or barcode. Track dosage, frequency, supply, and refill dates.
+        - generic [ref=e165]:
+          - img [ref=e167]
+          - heading "Health Tracking" [level=3] [ref=e168]
+          - paragraph [ref=e169]: Log vitals, journal entries, and view adherence trends over time in one place.
+        - generic [ref=e170]:
+          - img [ref=e172]
+          - heading "Care Network" [level=3] [ref=e177]
+          - paragraph [ref=e178]: Share your care plan with providers, caregivers, and emergency contacts.
+        - generic [ref=e179]:
+          - img [ref=e181]
+          - heading "AI Assistant" [level=3] [ref=e184]
+          - paragraph [ref=e185]: Optional, informational tools only. Voice commands and label extraction — opt-in, revocable.
+    - region "How It Works" [ref=e186]:
+      - heading "How It Works" [level=2] [ref=e187]
+      - generic [ref=e188]:
+        - generic [ref=e189]:
+          - generic [ref=e190]: "1"
+          - heading "Add Medications" [level=3] [ref=e191]
+          - paragraph [ref=e192]: Search by name, scan a barcode, or enter manually. Set dosage, frequency, and times.
+        - generic [ref=e193]:
+          - generic [ref=e194]: "2"
+          - heading "Set Reminders" [level=3] [ref=e195]
+          - paragraph [ref=e196]: Enable push notifications for each dose. MarinLoop fires them on schedule — even offline.
+        - generic [ref=e197]:
+          - generic [ref=e198]: "3"
+          - heading "Track Adherence" [level=3] [ref=e199]
+          - paragraph [ref=e200]: Mark doses done, late, or missed. View daily rings and weekly trends at a glance.
+    - region "Built on Trust" [ref=e201]:
+      - heading "Built on Trust" [level=2] [ref=e202]
+      - generic [ref=e203]:
+        - generic [ref=e204]:
+          - img [ref=e206]
+          - heading "What MarinLoop Is" [level=3] [ref=e208]
+          - paragraph [ref=e209]: A personal medication-management workflow for reminders, adherence tracking, and caregiver coordination.
+        - generic [ref=e210]:
+          - img [ref=e212]
+          - heading "What It Is Not" [level=3] [ref=e215]
+          - paragraph [ref=e216]: Not a diagnostic tool, not a clinician substitute, not an emergency alerting system, and not a HIPAA deployment for covered-entity workflows in this beta.
+        - generic [ref=e217]:
+          - img [ref=e219]
+          - heading "Optional AI" [level=3] [ref=e222]
+          - paragraph [ref=e223]: AI features are opt-in and revocable. Core medication tracking works without AI.
+    - region "Under the Hood" [ref=e224]:
+      - heading "Under the Hood" [level=2] [ref=e225]
+      - generic [ref=e226]:
+        - generic [ref=e227]:
+          - img [ref=e228]
+          - generic [ref=e230]: Row-Level Security on all tables
+        - generic [ref=e231]:
+          - img [ref=e232]
+          - generic [ref=e234]: AI consent gating (opt-in, revocable)
+        - generic [ref=e235]:
+          - img [ref=e236]
+          - generic [ref=e238]: End-to-end encrypted auth
+        - generic [ref=e239]:
+          - img [ref=e240]
+          - generic [ref=e242]: Full data export and account deletion
+        - generic [ref=e243]:
+          - img [ref=e244]
+          - generic [ref=e246]: Installable PWA on any device
+        - generic [ref=e247]:
+          - img [ref=e248]
+          - generic [ref=e250]: No third-party ad tracking
+    - region "Ready to Simplify Your Medication Routine?" [ref=e251]:
+      - heading "Ready to Simplify Your Medication Routine?" [level=2] [ref=e252]
+      - paragraph [ref=e253]: Join the open beta. Free for personal use.
+      - generic [ref=e254]:
+        - button "Get started free" [ref=e256] [cursor=pointer]
+        - button "Learn more" [ref=e258] [cursor=pointer]
+  - contentinfo [ref=e259]:
+    - generic [ref=e260]:
+      - link "Terms" [ref=e261] [cursor=pointer]:
+        - /url: /terms
+      - link "Privacy" [ref=e262] [cursor=pointer]:
+        - /url: /privacy
+      - link "Trust Center" [ref=e263] [cursor=pointer]:
+        - /url: /trust
+    - paragraph [ref=e264]: MarinLoop is a personal tracking and reminder product. It is not a medical device, not for emergency use, and not offered in this beta for covered-entity workflows requiring HIPAA business associate agreements.
+    - paragraph [ref=e265]: © 2026 MarinLoop. All rights reserved.

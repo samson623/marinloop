@@ -37,9 +37,10 @@ import { RemindersPanel } from '@/app/components/RemindersPanel'
 import { NotificationsPanel } from '@/app/components/NotificationsPanel'
 import { NotificationsService } from '@/shared/services/notifications'
 import {
-  LogoIcon, BellAlarmIcon, BellIcon, SunIcon, MoonIcon, MicIcon,
+  LogoIcon, BellAlarmIcon, BellIcon, SunIcon, MoonIcon,
   ClockIcon, PillIcon, CalendarIcon, BarChartIcon, UsersIcon,
 } from '@/shared/components/icons'
+import { ChatWidget } from '@/shared/components/ChatWidget'
 
 const tabs: { id: Tab; label: string; icon: (active: boolean) => React.ReactNode }[] = [
   { id: 'timeline', label: 'Timeline', icon: (a) => <ClockIcon    size={22} strokeWidth={a ? 2.2 : 1.6} /> },
@@ -427,23 +428,12 @@ export function AppShell() {
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={voice.handleVoice}
-        aria-label={voice.voiceActive ? 'Stop voice input' : 'Voice commands'}
-        className={`fixed bottom-[calc(88px+env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] w-14 h-14 rounded-full flex items-center justify-center border-none text-[var(--color-text-inverse)] cursor-pointer z-[95] shadow-[0_8px_20px_-4px_var(--color-accent-translucent)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] hover:opacity-95 active:scale-95 transition-transform ${voice.voiceActive ? 'animate-pulse-ring bg-[var(--color-red)]' : 'bg-[var(--color-accent)]'}`}
-      >
-        <MicIcon size={24} strokeWidth={2.5} />
-      </button>
-
-      {voice.voiceBubble && (
-        <div
-          className="animate-view-in fixed bottom-44 p-3 px-4 rounded-2xl rounded-br-md bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)] shadow-[0_4px_12px_rgba(0,0,0,0.1)] max-w-[min(220px,calc(100vw-2rem))] z-[94] font-medium text-[var(--color-text-primary)]"
-          style={{ right: 'max(1rem, env(safe-area-inset-right))', fontSize: 'var(--text-body)' }}
-        >
-          {voice.voiceBubble}
-        </div>
-      )}
+      <ChatWidget
+        voiceBubble={voice.voiceBubble}
+        voiceActive={voice.voiceActive}
+        handleVoice={voice.handleVoice}
+        processVoice={voice.processVoice}
+      />
 
       {voice.voiceConfirmation && (
         <Modal

@@ -161,6 +161,19 @@ describe('useAuthStore', () => {
 
       expect(useAuthStore.getState().profile?.allergies).toEqual(['penicillin', 'sulfa'])
     })
+
+    it('does not call getSession on /auth/callback when a PKCE code is present', async () => {
+      const { mockAuth } = mockDeps({
+        session: null,
+        windowHref: 'http://localhost:5173/auth/callback?code=abc123',
+      })
+
+      const { useAuthStore } = await import('@/shared/stores/auth-store')
+      await useAuthStore.getState().initialize()
+
+      expect(mockAuth.getSession).not.toHaveBeenCalled()
+      expect(useAuthStore.getState().isLoading).toBe(true)
+    })
   })
 
   describe('signOut()', () => {

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback, useId } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/shared/stores/app-store'
@@ -39,7 +39,6 @@ type AddMedModalProps = {
 
 export default function AddMedModal({ onClose, createBundleAsync, isSaving, initialDraft, openPhoto: openPhotoProp, allMeds = [], upcomingAppts = [], userAllergies = [] }: AddMedModalProps) {
   const navigate = useNavigate()
-  const inputIdBase = useId().replace(/:/g, '')
   const { toast } = useAppStore()
   const { consented } = useAIConsent()
   const { canUseOcr } = useSubscription()
@@ -78,9 +77,6 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
-  const labelPhotoInputId = `label-photo-input-${inputIdBase}`
-  const cameraInputId = `camera-input-${inputIdBase}`
-  const fileInputId = `file-input-${inputIdBase}`
 
   // Drug interaction check (background, non-blocking)
   const { interactions } = useInteractions(allMeds, name)
@@ -382,45 +378,36 @@ export default function AddMedModal({ onClose, createBundleAsync, isSaving, init
 
   return (
     <>
-      {/* File inputs portalled to body — must be outside Modal's CSS transform context
-         so that programmatic .click() reliably opens the file picker across all browsers */}
-      {createPortal(
+      <Modal open onOpenChange={(o) => !o && onClose()} title="Add Medication" variant="responsive" onInteractOutside={(e) => { if (showPhotoMenu) e.preventDefault() }}>
         <>
+          {/* Hidden file inputs — must live inside the Modal so Radix's focus trap allows .click() */}
           <input
-            id={labelPhotoInputId}
             ref={labelPhotoInputRef}
             type="file"
             accept="image/*"
             multiple
             aria-label="Choose photos from library"
-            style={{ position: 'fixed', top: 0, left: 0, width: '1px', height: '1px', overflow: 'hidden' }}
+            className="sr-only"
             onChange={handlePhotoInputChange}
           />
           <input
-            id={cameraInputId}
             ref={cameraInputRef}
             type="file"
             accept="image/*"
             capture="environment"
             aria-label="Take a photo with camera"
-            style={{ position: 'fixed', top: 0, left: 0, width: '1px', height: '1px', overflow: 'hidden' }}
+            className="sr-only"
             onChange={handlePhotoInputChange}
           />
           <input
-            id={fileInputId}
             ref={fileInputRef}
             type="file"
             accept="image/*"
             multiple
             aria-label="Choose files"
-            style={{ position: 'fixed', top: 0, left: 0, width: '1px', height: '1px', overflow: 'hidden' }}
+            className="sr-only"
             onChange={handlePhotoInputChange}
           />
-        </>,
-        document.body
-      )}
-      <Modal open onOpenChange={(o) => !o && onClose()} title="Add Medication" variant="responsive" onInteractOutside={(e) => { if (showPhotoMenu) e.preventDefault() }}>
-        <>
 
             {/* Shared photo source menu — portalled to body to escape modal's CSS transform stacking context */}
             {showPhotoMenu && menuRect && createPortal(

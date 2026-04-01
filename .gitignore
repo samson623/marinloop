@@ -35,6 +35,10 @@ coverage
 # Vercel
 .vercel/
 
+# Playwright
+/test-results/
+/playwright-report/
+
 # Build info
 tsconfig.tsbuildinfo
 vitest.config.ts.timestamp-*.mjs

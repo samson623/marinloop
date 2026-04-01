@@ -47,13 +47,20 @@ export const PushService = {
 
         if (DEBUG) console.log('[Push] Starting subscription flow...')
 
-        await this.registerSW()
-        const reg = await navigator.serviceWorker.ready
-        if (DEBUG) console.log('[Push] Service worker ready')
-
-        const permission = await Notification.requestPermission()
+        // Request permission while we're still inside the original click gesture.
+        const permission = Notification.permission === 'granted'
+            ? 'granted'
+            : await Notification.requestPermission()
         if (DEBUG) console.log('[Push] Permission result:', permission)
         if (permission !== 'granted') return { ok: false }
+
+        const registration = await this.registerSW()
+        if (!registration) {
+            return { ok: false, error: 'Could not register notifications on this device' }
+        }
+
+        const reg = await navigator.serviceWorker.ready
+        if (DEBUG) console.log('[Push] Service worker ready')
 
         const vapidKey = env.vapidPublicKey
         if (!vapidKey) {

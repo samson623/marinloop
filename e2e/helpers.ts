@@ -17,12 +17,26 @@ export async function waitForAppReady(page: Page) {
 
 /** Log in with the shared E2E credentials.  Assumes user already exists. */
 export async function loginAs(page: Page, email = TEST_EMAIL, password = TEST_PASSWORD) {
-  await page.goto('/login')
-  await page.fill('input[type="email"]', email)
-  await page.fill('input[type="password"]', password)
+  await page.goto('/login', { waitUntil: 'domcontentloaded' })
+
+  const emailInput = page.locator('#login-email')
+  try {
+    await emailInput.waitFor({ state: 'visible', timeout: 60_000 })
+  } catch {
+    throw new Error(
+      'Login form did not appear. Ensure the dev server has VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY ' +
+        '(e.g. copy .env.example to .env.local), then restart `npm run dev`.'
+    )
+  }
+
+  await emailInput.fill(email)
+  await page.locator('#login-password').fill(password)
   await page.getByRole('button', { name: /sign in/i }).click()
   // Wait until we leave the login route
-  await page.waitForURL(/\/(timeline|summary|meds|appointments|profile)/, { timeout: 20_000 })
+  await page.waitForURL(
+    /\/(timeline|summary|meds|appointments|appts|care|profile)/,
+    { timeout: 30_000 },
+  )
 }
 
 /** Navigate to a named tab via the bottom nav. */

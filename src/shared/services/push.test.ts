@@ -157,17 +157,35 @@ describe('PushService', () => {
       expect(mocks.upsert).toHaveBeenCalledOnce()
     })
 
-    it('returns an error when service worker registration fails after permission is granted', async () => {
+    it('falls through to serviceWorker.ready when registerSW fails (e.g. Chrome aborts)', async () => {
       setPushSupport()
       setNotificationMock('granted')
 
-      const registerSpy = vi.spyOn(PushService, 'registerSW').mockResolvedValue({ reg: null })
+      const swError = 'Failed to register a ServiceWorker: Operation has been aborted'
+      vi.spyOn(PushService, 'registerSW').mockResolvedValue({ reg: null, swError })
+
+      const subscription = {
+        endpoint: 'https://example.com/push/subscription',
+        toJSON: () => ({
+          endpoint: 'https://example.com/push/subscription',
+          keys: { p256dh: 'p256dh-key', auth: 'auth-key' },
+        }),
+      }
+
+      const pushManager = {
+        getSubscription: vi.fn(async () => null),
+        subscribe: vi.fn(async () => subscription),
+      }
+
+      Object.defineProperty(navigator, 'serviceWorker', {
+        value: { ready: Promise.resolve({ pushManager }) },
+        configurable: true,
+      })
 
       const result = await PushService.subscribe()
 
-      expect(result).toEqual({ ok: false, error: 'Could not register notifications on this device' })
-      expect(registerSpy).toHaveBeenCalledOnce()
-      expect(mocks.getUser).not.toHaveBeenCalled()
+      expect(result).toEqual({ ok: true })
+      expect(pushManager.subscribe).toHaveBeenCalledOnce()
     })
   })
 })

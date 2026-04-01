@@ -39,10 +39,10 @@ export const PushService = {
         return reg.pushManager.getSubscription()
     },
 
-    async subscribe(): Promise<boolean> {
+    async subscribe(): Promise<{ ok: boolean; error?: string }> {
         if (!this.isSupported()) {
             if (DEBUG) console.warn('[Push] Push not supported in this browser')
-            return false
+            return { ok: false, error: 'Push notifications are not supported in this browser' }
         }
 
         if (DEBUG) console.log('[Push] Starting subscription flow...')
@@ -53,12 +53,12 @@ export const PushService = {
 
         const permission = await Notification.requestPermission()
         if (DEBUG) console.log('[Push] Permission result:', permission)
-        if (permission !== 'granted') return false
+        if (permission !== 'granted') return { ok: false }
 
         const vapidKey = env.vapidPublicKey
         if (!vapidKey) {
-            if (DEBUG) console.error('[Push] ❌ VAPID public key not configured! Check VITE_VAPID_PUBLIC_KEY env var.')
-            return false
+            console.error('[Push] ❌ VAPID public key not configured!')
+            return { ok: false, error: 'Push not configured — missing VAPID key' }
         }
         if (DEBUG) console.log('[Push] VAPID key present:', vapidKey.slice(0, 10) + '...')
 
@@ -70,8 +70,8 @@ export const PushService = {
 
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) {
-            if (DEBUG) console.error('[Push] ❌ No authenticated user')
-            return false
+            console.error('[Push] ❌ No authenticated user')
+            return { ok: false, error: 'Not signed in' }
         }
 
         let subscription: PushSubscription
@@ -82,8 +82,9 @@ export const PushService = {
             })
             if (DEBUG) console.log('[Push] Browser subscription created:', subscription.endpoint.slice(0, 50) + '...')
         } catch (subErr) {
-            if (DEBUG) console.error('[Push] ❌ Browser subscription failed:', subErr)
-            return false
+            const msg = subErr instanceof Error ? subErr.message : String(subErr)
+            console.error('[Push] ❌ Browser subscription failed:', msg)
+            return { ok: false, error: `Subscription failed: ${msg}` }
         }
 
         const json = subscription.toJSON()
@@ -101,13 +102,13 @@ export const PushService = {
         )
 
         if (error) {
-            if (DEBUG) console.error('[Push] ❌ Failed to save subscription to DB:', error)
+            console.error('[Push] ❌ Failed to save subscription to DB:', error.message)
             await subscription.unsubscribe()
-            return false
+            return { ok: false, error: `Could not save subscription: ${error.message}` }
         }
 
         if (DEBUG) console.log('[Push] ✅ Subscription saved successfully!')
-        return true
+        return { ok: true }
     },
 
     async unsubscribe(): Promise<boolean> {

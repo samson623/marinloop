@@ -102,8 +102,8 @@ describe('usePushNotifications', () => {
 
   it('subscribe() handles a missing service worker gracefully (returns false without throwing)', async () => {
     mockPushService.isSupported.mockReturnValue(true)
-    // subscribe returns false to simulate missing SW / permission denied
-    mockPushService.subscribe.mockResolvedValue(false)
+    // subscribe returns { ok: false } to simulate missing SW / permission denied
+    mockPushService.subscribe.mockResolvedValue({ ok: false })
     mockPushService.getExistingSubscription.mockResolvedValue(null)
 
     const { result } = renderHook(() => usePushNotifications())

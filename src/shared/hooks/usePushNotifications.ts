@@ -40,8 +40,8 @@ export function usePushNotifications() {
         setIsLoading(true)
 
         try {
-            const ok = await PushService.subscribe()
-            if (ok) {
+            const result = await PushService.subscribe()
+            if (result.ok) {
                 setIsSubscribed(true)
                 setPermission(Notification.permission)
                 toast('Push notifications enabled', 'ts')
@@ -52,6 +52,8 @@ export function usePushNotifications() {
                 } else if (needsAddToHomeScreenForPush()) {
                     setShowAddToHomeScreenHelp(true)
                     toast('Add MarinLoop to your home screen first', 'tw')
+                } else if (result.error) {
+                    toast(result.error, 'te')
                 } else {
                     toast('Could not enable push notifications', 'te')
                 }
@@ -59,8 +61,9 @@ export function usePushNotifications() {
                 const sub = await PushService.getExistingSubscription().catch(() => null)
                 setIsSubscribed(!!sub)
             }
-        } catch {
-            toast('Could not enable push notifications', 'te')
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : 'Could not enable push notifications'
+            toast(msg, 'te')
             const sub = await PushService.getExistingSubscription().catch(() => null)
             setIsSubscribed(!!sub)
             setPermission(typeof Notification !== 'undefined' ? Notification.permission : 'default')

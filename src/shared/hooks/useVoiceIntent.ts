@@ -23,7 +23,7 @@ import type {
 } from '@/shared/types/voice'
 
 export type VoiceIntentServiceLike = {
-  parseTranscript: (transcript: string, isConsented?: boolean) => Promise<VoiceIntentResult>
+  parseTranscript: (transcript: string, isConsented?: boolean, userContext?: string) => Promise<VoiceIntentResult>
 }
 
 export type NotificationsServiceLike = {
@@ -103,6 +103,7 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
   const [voiceConfirmation, setVoiceConfirmation] = useState<VoiceConfirmation | null>(null)
   const [voiceTestInput, setVoiceTestInput] = useState('')
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
+  const processingRef = useRef(false)
 
   const fallbackKeywordRoute = (text: string) => {
     const store = useAppStore.getState()
@@ -171,6 +172,59 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
     useAppStore.getState().toast(`Reminder set for ${timeStr}`, 'ts')
   }
 
+  const buildUserContext = () => {
+    const timelineStr = timeline
+      .map((i) => {
+        const statusLabel = i.status === 'done' ? '✓' : i.status === 'missed' ? 'missed' : i.status === 'late' ? 'late' : 'pending'
+        return `- ${i.type === 'med' ? 'Med' : 'Appt'}: ${i.name}${i.dose ? ` ${i.dose}` : ''} at ${i.time} (${statusLabel})`
+      })
+      .join('\n')
+    const medsStr = medsForContext
+      .map((m) => {
+        const t = (m as { times?: string[] }).times ?? []
+        const times = t.length ? t.map(fT).join(', ') : ''
+        return `- ${m.name}${m.dose ? ` ${m.dose}` : ''}${times ? ` at ${times}` : ''} (${m.freq ?? 1}x daily)`
+      })
+      .join('\n')
+    const apptsStr = apptsForContext
+      .map((a) => `- ${a.title} on ${fD(a.date)} at ${fT(a.time)}${a.loc ? ` — ${a.loc}` : ''}`)
+      .join('\n')
+    const notesStr = notesForContext
+      .map((n) => `- ${n.text}${n.medicationId ? ` (med link)` : ''}`)
+      .join('\n')
+    const adherenceStr = Object.entries(adherenceHistory)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, val]) => {
+        const rec = val as { t?: number; d?: number }
+        const pct = rec.t ? Math.round(((rec.d ?? 0) / rec.t) * 100) : 0
+        return `- ${date}: ${pct}%`
+      })
+      .join('\n')
+    const refillStr = refillPredictions
+      .filter((p) => p.severity !== 'ok')
+      .map((p) => `- ${p.medName}: ${p.daysLeft} day${p.daysLeft !== 1 ? 's' : ''} left (${p.severity})`)
+      .join('\n')
+    return `Today is ${todayLocal()}.
+
+## Today's schedule (timeline)
+${timelineStr || 'No items for today.'}
+
+## Medications
+${medsStr || 'No medications.'}
+
+## Appointments
+${apptsStr || 'No appointments.'}
+
+## Notes
+${notesStr || 'No notes.'}
+
+## 7-day adherence (date: %)
+${adherenceStr || 'No adherence data.'}
+
+## Refill alerts
+${refillStr || 'No urgent refills.'}`
+  }
+
   const processVoice = async (text: string) => {
     const store = useAppStore.getState()
     const transcript = text.trim()
@@ -181,7 +235,8 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
     const contextualTranscript = assistantState.pendingIntent
       ? `Pending intent: ${assistantState.pendingIntent}. Missing: ${assistantState.missing.join(', ')}. User follow-up: ${transcript}`
       : transcript
-    const intent = await voiceIntentService.parseTranscript(contextualTranscript, consented)
+    const userContext = buildUserContext()
+    const intent = await voiceIntentService.parseTranscript(contextualTranscript, consented, userContext)
 
     if (intent.missing.length > 0) {
       const prompt = intent.assistant_message || `I need ${intent.missing.join(', ')} to continue.`
@@ -318,56 +373,6 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
         return
       case 'query': {
         const question = intent.entities.query?.question ?? transcript
-        const timelineStr = timeline
-          .map((i) => {
-            const statusLabel = i.status === 'done' ? '✓' : i.status === 'missed' ? 'missed' : i.status === 'late' ? 'late' : 'pending'
-            return `- ${i.type === 'med' ? 'Med' : 'Appt'}: ${i.name}${i.dose ? ` ${i.dose}` : ''} at ${i.time} (${statusLabel})`
-          })
-          .join('\n')
-        const medsStr = medsForContext
-          .map((m) => {
-            const t = (m as { times?: string[] }).times ?? []
-            const times = t.length ? t.map(fT).join(', ') : ''
-            return `- ${m.name}${m.dose ? ` ${m.dose}` : ''}${times ? ` at ${times}` : ''} (${m.freq ?? 1}x daily)`
-          })
-          .join('\n')
-        const apptsStr = apptsForContext
-          .map((a) => `- ${a.title} on ${fD(a.date)} at ${fT(a.time)}${a.loc ? ` — ${a.loc}` : ''}`)
-          .join('\n')
-        const notesStr = notesForContext
-          .map((n) => `- ${n.text}${n.medicationId ? ` (med link)` : ''}`)
-          .join('\n')
-        const adherenceStr = Object.entries(adherenceHistory)
-          .sort(([a], [b]) => a.localeCompare(b))
-          .map(([date, val]) => {
-            const rec = val as { t?: number; d?: number }
-            const pct = rec.t ? Math.round(((rec.d ?? 0) / rec.t) * 100) : 0
-            return `- ${date}: ${pct}%`
-          })
-          .join('\n')
-        const refillStr = refillPredictions
-          .filter((p) => p.severity !== 'ok')
-          .map((p) => `- ${p.medName}: ${p.daysLeft} day${p.daysLeft !== 1 ? 's' : ''} left (${p.severity})`)
-          .join('\n')
-        const context = `Today is ${todayLocal()}.
-
-## Today's schedule (timeline)
-${timelineStr || 'No items for today.'}
-
-## Medications
-${medsStr || 'No medications.'}
-
-## Appointments
-${apptsStr || 'No appointments.'}
-
-## Notes
-${notesStr || 'No notes.'}
-
-## 7-day adherence (date: %)
-${adherenceStr || 'No adherence data.'}
-
-## Refill alerts
-${refillStr || 'No urgent refills.'}`
 
         if (!canUseAi) {
           const msg = 'AI features require Basic or Pro. Upgrade in Profile \u2192 Subscription.'
@@ -382,15 +387,16 @@ ${refillStr || 'No urgent refills.'}`
           return
         }
         if (!AIService.isConfigured()) {
+          const lq = question.toLowerCase()
           const fallback =
-            question.toLowerCase().includes('schedule') || question.toLowerCase().includes('agenda')
-              ? timelineStr || 'Nothing on your schedule for today.'
-              : question.toLowerCase().includes('med')
-                ? medsStr || 'You have no medications listed.'
-                : question.toLowerCase().includes('appointment') || question.toLowerCase().includes('appt')
-                  ? apptsStr || 'No appointments.'
-                  : question.toLowerCase().includes('note')
-                    ? notesStr || 'No notes.'
+            lq.includes('schedule') || lq.includes('agenda')
+              ? userContext || 'Nothing on your schedule for today.'
+              : lq.includes('med')
+                ? 'Check your medications tab.'
+                : lq.includes('appointment') || lq.includes('appt')
+                  ? 'Check your appointments tab.'
+                  : lq.includes('note')
+                    ? 'Check your notes.'
                     : `I can answer questions about your schedule, medications, appointments, and notes. Try: "What's on my schedule?" or "What meds do I have?"`
           setVoiceBubble(fallback)
           store.toast(fallback, 'ts')
@@ -398,13 +404,26 @@ ${refillStr || 'No urgent refills.'}`
         }
         setVoiceBubble('Thinking...')
         try {
-          const response = await AIService.chat([
-            {
-              role: 'system',
-              content: `You are MarinLoop's medication tracking assistant. Answer the user's question using ONLY the data below. Be concise (1-3 sentences). Cite specifics. Do not make up data. If the data doesn't contain the answer, say so clearly. Do not give medical advice. Do not provide clinical recommendations or interpret health data.`,
-            },
-            { role: 'user', content: `Data:\n${context}\n\nUser question: ${question}\n\nAnswer briefly:` },
-          ])
+          // Use pre-computed answer from intent parser if available (saves a round-trip)
+          const preAnswer = intent.entities.query?.answer
+          let response: string
+          if (preAnswer && preAnswer.trim().length > 10) {
+            response = preAnswer
+          } else {
+            // Stream tokens so the user sees the answer build up in real time
+            response = await AIService.chatStream(
+              [
+                {
+                  role: 'system',
+                  content: `You are MarinLoop's medication tracking assistant. Answer the user's question using ONLY the data below. Be concise (1-3 sentences). Cite specifics. Do not make up data. If the data doesn't contain the answer, say so clearly. Do not give medical advice. Do not provide clinical recommendations or interpret health data.`,
+                },
+                { role: 'user', content: `Data:\n${userContext}\n\nUser question: ${question}\n\nAnswer briefly:` },
+              ],
+              (token) => {
+                setVoiceBubble((prev) => (prev === 'Thinking...' ? token : prev + token))
+              },
+            )
+          }
           setVoiceBubble(response)
           store.toast(response, 'ts')
         } catch (e) {
@@ -449,20 +468,24 @@ ${refillStr || 'No urgent refills.'}`
       setVoiceBubble(transcript || 'Listening...')
       const lastResult = results[results.length - 1]
       if (lastResult?.isFinal && transcript) {
-        void processVoice(transcript)
-        setTimeout(() => {
+        processingRef.current = true
+        processVoice(transcript).finally(() => {
+          processingRef.current = false
           setVoiceActive(false)
-          setVoiceBubble('')
-        }, 1500)
+        })
       }
     }
     rec.onerror = () => {
-      setVoiceActive(false)
-      setVoiceBubble('')
+      if (!processingRef.current) {
+        setVoiceActive(false)
+        setVoiceBubble('')
+      }
     }
     rec.onend = () => {
-      setVoiceActive(false)
-      setVoiceBubble('')
+      // Don't clear state while AI is still processing
+      if (!processingRef.current) {
+        setVoiceActive(false)
+      }
     }
     rec.start()
   }

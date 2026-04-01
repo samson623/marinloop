@@ -102,6 +102,7 @@ export interface VoiceNoteDraft {
 
 export interface VoiceQueryDraft {
   question?: string
+  answer?: string
 }
 
 export interface VoiceIntentEntities {

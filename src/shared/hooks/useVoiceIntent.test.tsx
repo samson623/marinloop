@@ -33,6 +33,7 @@ vi.mock('@/shared/hooks/useAIConsent', () => ({
 vi.mock('@/shared/services/ai', () => ({
   AIService: {
     chat: vi.fn(),
+    chatStream: vi.fn(),
     isConfigured: vi.fn(),
   },
 }))
@@ -176,6 +177,7 @@ describe('useVoiceIntent — AI consent enforcement', () => {
       expect(mockParseTranscript).toHaveBeenCalledWith(
         expect.any(String),
         false, // consented flag forwarded
+        expect.any(String), // userContext
       )
     })
 
@@ -202,6 +204,7 @@ describe('useVoiceIntent — AI consent enforcement', () => {
       expect(mockParseTranscript).toHaveBeenCalledWith(
         expect.any(String),
         true,
+        expect.any(String), // userContext
       )
     })
   })
@@ -240,10 +243,10 @@ describe('useVoiceIntent — AI consent enforcement', () => {
       )
     })
 
-    it('calls AIService.chat when consented=true and AIService is configured', async () => {
+    it('calls AIService.chatStream when consented=true and AIService is configured', async () => {
       setupStoreMocks({ consented: true })
       vi.mocked(AIService.isConfigured).mockReturnValue(true)
-      vi.mocked(AIService.chat).mockResolvedValue('You have Aspirin scheduled at 9am.')
+      vi.mocked(AIService.chatStream).mockResolvedValue('You have Aspirin scheduled at 9am.')
 
       const mockParseTranscript = vi.fn().mockResolvedValue({
         intent: 'query',
@@ -262,7 +265,7 @@ describe('useVoiceIntent — AI consent enforcement', () => {
         await result.current.processVoice("what's on my schedule?")
       })
 
-      expect(AIService.chat).toHaveBeenCalledOnce()
+      expect(AIService.chatStream).toHaveBeenCalledOnce()
       expect(mockToast).toHaveBeenCalledWith('You have Aspirin scheduled at 9am.', 'ts')
     })
 

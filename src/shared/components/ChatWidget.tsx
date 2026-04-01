@@ -93,7 +93,7 @@ export function ChatWidget({ voiceBubble, voiceActive, handleVoice, processVoice
     }
 
     // Received a non-status response while waiting for a reply (typed or voice)
-    if (!isStatus(curr) && !voiceActive && awaitingReply.current) {
+    if (!isStatus(curr) && awaitingReply.current) {
       setIsThinking(false)
       awaitingReply.current = false
       addMessage('ai', curr)

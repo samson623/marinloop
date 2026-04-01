@@ -49,7 +49,8 @@ For navigate: entities.navigate = { target: "timeline"|"meds"|"appts"|"summary" 
 - confidence: 0-1. Use 0.9+ for clear commands, 0.6-0.8 for ambiguous.
 - missing: array of required field names if intent needs more info.
 - requires_confirmation: true for create_reminder, log_dose.
-- Questions about user data (schedule, meds, agenda, notes, adherence) → intent: "query", entities.query.question.`
+- Questions about user data (schedule, meds, agenda, notes, adherence) → intent: "query", entities.query.question.
+- For "query" intents: also include entities.query.answer with a concise 1-3 sentence answer if you have enough context from the user's message. If context is missing, leave answer empty.`
 
 const NAV_TARGETS: Array<{ needles: string[]; target: VoiceNavigateTarget }> = [
   { needles: ['timeline', 'schedule'], target: 'timeline' },
@@ -335,7 +336,7 @@ export function heuristicParse(text: string): VoiceIntentResult {
 }
 
 export const VoiceIntentService = {
-  async parseTranscript(transcript: string, isConsented?: boolean): Promise<VoiceIntentResult> {
+  async parseTranscript(transcript: string, isConsented?: boolean, userContext?: string): Promise<VoiceIntentResult> {
     const clean = transcript.trim()
     if (!clean) return { ...DEFAULT_RESULT }
 
@@ -345,8 +346,12 @@ export const VoiceIntentService = {
     try {
       if (!AIService.isConfigured()) return heuristicParse(clean)
 
+      const systemPrompt = userContext
+        ? `${VOICE_INTENT_SYSTEM_PROMPT}\n\n## User Context (for answering queries)\n${userContext}`
+        : VOICE_INTENT_SYSTEM_PROMPT
+
       const response = await AIService.chat([
-        { role: 'system', content: VOICE_INTENT_SYSTEM_PROMPT },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: clean },
       ])
 

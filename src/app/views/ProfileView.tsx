@@ -259,7 +259,11 @@ export function ProfileView() {
             )}
             {push.permission === 'denied' && (
               <p className="mb-2">
-                To re-enable: open your browser or device Settings, find MarinLoop (or this site), and turn on Notifications.
+                {getPlatformLabel() === 'Desktop'
+                  ? 'To re-enable in Chrome: click the lock icon in the address bar → Site settings → Notifications → Allow, then refresh the page.'
+                  : getPlatformLabel() === 'Android'
+                    ? 'To re-enable: tap the lock icon in Chrome\'s address bar → Site settings → Notifications → Allow.'
+                    : 'To re-enable: open Settings on your device, find this site under Safari or Notifications, and turn on Allow Notifications.'}
               </p>
             )}
             {(push.isSubscribed || (push.isSupported && push.permission === 'granted')) && (

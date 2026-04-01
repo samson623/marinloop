@@ -79,7 +79,12 @@ export const PushService = {
             return { ok: false, error: 'Could not register notifications on this device' }
         }
 
-        const reg = await navigator.serviceWorker.ready
+        const reg = await Promise.race([
+            navigator.serviceWorker.ready,
+            new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('Service worker timed out — try refreshing the page')), 10000)
+            ),
+        ])
         if (DEBUG) console.log('[Push] Service worker ready')
 
         const vapidKey = env.vapidPublicKey

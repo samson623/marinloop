@@ -1,5 +1,6 @@
 import { supabase } from '@/shared/lib/supabase'
 import { env } from '@/shared/lib/env'
+import { needsAddToHomeScreenForPush } from '@/shared/lib/device'
 
 const DEBUG = import.meta.env.DEV
 
@@ -25,11 +26,25 @@ export const PushService = {
     async registerSW(): Promise<ServiceWorkerRegistration | null> {
         if (!('serviceWorker' in navigator)) return null
         try {
+            const existing = await navigator.serviceWorker.getRegistration('/')
+            if (existing) {
+                if (DEBUG) console.log('[Push] Reusing existing service worker registration:', existing.scope)
+                return existing
+            }
             const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' })
             if (DEBUG) console.log('[Push] Service worker registered:', reg.scope)
             return reg
         } catch (err) {
             if (DEBUG) console.error('[Push] Service worker registration failed:', err)
+            try {
+                const existing = await navigator.serviceWorker.getRegistration('/')
+                if (existing) {
+                    if (DEBUG) console.log('[Push] Recovered existing service worker registration after failure:', existing.scope)
+                    return existing
+                }
+            } catch {
+                // no-op
+            }
             return null
         }
     },
@@ -43,6 +58,11 @@ export const PushService = {
         if (!this.isSupported()) {
             if (DEBUG) console.warn('[Push] Push not supported in this browser')
             return { ok: false, error: 'Push notifications are not supported in this browser' }
+        }
+
+        if (needsAddToHomeScreenForPush()) {
+            if (DEBUG) console.warn('[Push] iOS push attempted before Add to Home Screen')
+            return { ok: false, error: 'On iOS, add MarinLoop to your home screen to enable push notifications' }
         }
 
         if (DEBUG) console.log('[Push] Starting subscription flow...')

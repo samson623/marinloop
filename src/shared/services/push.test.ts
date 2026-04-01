@@ -143,7 +143,7 @@ describe('PushService', () => {
 
       const registerSpy = vi.spyOn(PushService, 'registerSW').mockImplementation(async () => {
         events.push('register')
-        return { scope: '/' } as ServiceWorkerRegistration
+        return { reg: { scope: '/' } as ServiceWorkerRegistration }
       })
 
       const result = await PushService.subscribe()
@@ -161,7 +161,7 @@ describe('PushService', () => {
       setPushSupport()
       setNotificationMock('granted')
 
-      const registerSpy = vi.spyOn(PushService, 'registerSW').mockResolvedValue(null)
+      const registerSpy = vi.spyOn(PushService, 'registerSW').mockResolvedValue({ reg: null })
 
       const result = await PushService.subscribe()
 

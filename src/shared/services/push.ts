@@ -23,29 +23,30 @@ export const PushService = {
         return Notification.permission
     },
 
-    async registerSW(): Promise<ServiceWorkerRegistration | null> {
-        if (!('serviceWorker' in navigator)) return null
+    async registerSW(): Promise<{ reg: ServiceWorkerRegistration | null; swError?: string }> {
+        if (!('serviceWorker' in navigator)) return { reg: null, swError: 'Service workers not supported in this browser' }
         try {
             const existing = await navigator.serviceWorker.getRegistration('/')
             if (existing) {
                 if (DEBUG) console.log('[Push] Reusing existing service worker registration:', existing.scope)
-                return existing
+                return { reg: existing }
             }
             const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' })
             if (DEBUG) console.log('[Push] Service worker registered:', reg.scope)
-            return reg
+            return { reg }
         } catch (err) {
-            if (DEBUG) console.error('[Push] Service worker registration failed:', err)
+            const msg = err instanceof Error ? err.message : String(err)
+            console.error('[Push] ❌ Service worker registration failed:', msg)
             try {
                 const existing = await navigator.serviceWorker.getRegistration('/')
                 if (existing) {
-                    if (DEBUG) console.log('[Push] Recovered existing service worker registration after failure:', existing.scope)
-                    return existing
+                    if (DEBUG) console.log('[Push] Recovered existing SW after failure:', existing.scope)
+                    return { reg: existing }
                 }
             } catch {
                 // no-op
             }
-            return null
+            return { reg: null, swError: msg }
         }
     },
 
@@ -74,9 +75,9 @@ export const PushService = {
         if (DEBUG) console.log('[Push] Permission result:', permission)
         if (permission !== 'granted') return { ok: false }
 
-        const registration = await this.registerSW()
+        const { reg: registration, swError } = await this.registerSW()
         if (!registration) {
-            return { ok: false, error: 'Could not register notifications on this device' }
+            return { ok: false, error: swError ?? 'Could not register notifications on this device' }
         }
 
         const reg = await Promise.race([

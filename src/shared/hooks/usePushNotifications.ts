@@ -12,6 +12,7 @@ export function usePushNotifications() {
     )
     const [isSubscribed, setIsSubscribed] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
+    const [lastError, setLastError] = useState<string | null>(null)
     const [showAddToHomeScreenHelp, setShowAddToHomeScreenHelp] = useState(false)
 
     const refreshState = useCallback(() => {
@@ -43,18 +44,23 @@ export function usePushNotifications() {
             const result = await PushService.subscribe()
             if (result.ok) {
                 setIsSubscribed(true)
+                setLastError(null)
                 setPermission(Notification.permission)
                 toast('Push notifications enabled', 'ts')
             } else {
                 setPermission(Notification.permission)
                 if (Notification.permission === 'denied') {
+                    setLastError(null) // shown in subtitle already
                     toast('Notifications blocked — check browser settings', 'tw')
                 } else if (needsAddToHomeScreenForPush()) {
                     setShowAddToHomeScreenHelp(true)
+                    setLastError(null)
                     toast('Add MarinLoop to your home screen first', 'tw')
                 } else if (result.error) {
+                    setLastError(result.error)
                     toast(result.error, 'te')
                 } else {
+                    setLastError('Permission not granted — check your browser notification settings')
                     toast('Could not enable push notifications', 'te')
                 }
                 // Re-check subscription so UI matches reality (e.g. partial failure)
@@ -63,6 +69,7 @@ export function usePushNotifications() {
             }
         } catch (err) {
             const msg = err instanceof Error ? err.message : 'Could not enable push notifications'
+            setLastError(msg)
             toast(msg, 'te')
             const sub = await PushService.getExistingSubscription().catch(() => null)
             setIsSubscribed(!!sub)
@@ -111,6 +118,7 @@ export function usePushNotifications() {
         permission,
         isSubscribed,
         isLoading,
+        lastError,
         subscribe,
         unsubscribe,
         testPush,

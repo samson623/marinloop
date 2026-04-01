@@ -227,6 +227,11 @@ export function ProfileView() {
               />
             </button>
           </div>
+          {push.lastError && (
+            <p className="[font-size:var(--text-caption)] text-[var(--color-red)] mb-2 mt-1">
+              {push.lastError}
+            </p>
+          )}
           {push.isSubscribed && (
             <Button
               type="button"

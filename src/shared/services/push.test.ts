@@ -10,7 +10,8 @@ const mocks = vi.hoisted(() => {
   const getUser = vi.fn(async () => ({ data: { user: { id: 'user-123' } } }))
   const upsert = vi.fn(async () => ({ error: null }))
   const from = vi.fn(() => ({ upsert }))
-  return { getUser, upsert, from }
+  const needsAddToHomeScreenForPush = vi.fn(() => false)
+  return { getUser, upsert, from, needsAddToHomeScreenForPush }
 })
 
 vi.mock('@/shared/lib/supabase', () => ({
@@ -18,6 +19,10 @@ vi.mock('@/shared/lib/supabase', () => ({
     auth: { getUser: mocks.getUser },
     from: mocks.from,
   },
+}))
+
+vi.mock('@/shared/lib/device', () => ({
+  needsAddToHomeScreenForPush: mocks.needsAddToHomeScreenForPush,
 }))
 
 import { PushService } from '@/shared/services/push'
@@ -47,6 +52,7 @@ function setPushSupport() {
 describe('PushService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.needsAddToHomeScreenForPush.mockReturnValue(false)
     mocks.getUser.mockResolvedValue({ data: { user: { id: 'user-123' } } })
     mocks.upsert.mockResolvedValue({ error: null })
     mocks.from.mockImplementation(() => ({ upsert: mocks.upsert }))
@@ -86,6 +92,23 @@ describe('PushService', () => {
   })
 
   describe('subscribe', () => {
+    it('returns an Add to Home Screen error when iOS push preconditions are not met', async () => {
+      setPushSupport()
+      setNotificationMock('default')
+      mocks.needsAddToHomeScreenForPush.mockReturnValue(true)
+
+      const requestPermissionSpy = vi.spyOn(Notification, 'requestPermission')
+      const registerSpy = vi.spyOn(PushService, 'registerSW')
+      const isSupportedSpy = vi.spyOn(PushService, 'isSupported').mockReturnValue(true)
+
+      const result = await PushService.subscribe()
+
+      expect(result).toEqual({ ok: false, error: 'On iOS, add MarinLoop to your home screen to enable push notifications' })
+      expect(requestPermissionSpy).not.toHaveBeenCalled()
+      expect(registerSpy).not.toHaveBeenCalled()
+      expect(isSupportedSpy).toHaveBeenCalledOnce()
+    })
+
     it('requests notification permission before awaiting service worker registration', async () => {
       setPushSupport()
 

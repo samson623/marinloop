@@ -1,4 +1,4 @@
-=// MarinLoop — Push Notification Service Worker
+// MarinLoop — Push Notification Service Worker
 // Handles: push notifications, notification clicks, action buttons,
 //          offline caching (app shell), and SW lifecycle.
 

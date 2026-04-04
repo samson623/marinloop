@@ -22,6 +22,7 @@ export function useDoseLogs(date?: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['dose_logs'] })
       void queryClient.invalidateQueries({ queryKey: ['adherence'] })
+      void queryClient.invalidateQueries({ queryKey: ['refills'] })
       toast('Dose logged', 'ts')
     },
     onError: (err: unknown) => handleMutationError(err, 'useDoseLogs', 'Could not log dose', toast),

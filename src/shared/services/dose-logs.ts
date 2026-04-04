@@ -115,6 +115,29 @@ export const DoseLogsService = {
       .single()
 
     if (error) throw error
+
+    if (log.status === 'taken' || log.status === 'late') {
+      const { data: refill, error: refillError } = await supabase
+        .from('refills')
+        .select('*')
+        .eq('medication_id', log.medication_id)
+        .maybeSingle()
+
+      if (refillError) throw refillError
+
+      if (refill) {
+        const nextQuantity = Math.max(0, refill.current_quantity - 1)
+        if (nextQuantity !== refill.current_quantity) {
+          const { error: updateError } = await supabase
+            .from('refills')
+            .update({ current_quantity: nextQuantity })
+            .eq('id', refill.id)
+
+          if (updateError) throw updateError
+        }
+      }
+    }
+
     return data
   },
 }

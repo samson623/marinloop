@@ -1,14 +1,11 @@
 import { supabase } from '@/shared/lib/supabase'
+import type { Database } from '@/shared/types/database.types'
 
-export interface Reminder {
-  id: string
-  user_id: string
-  title: string
-  body: string
-  fire_at: string
-  fired: boolean
-  fired_at: string | null
-  created_at: string
+type ReminderRow = Database['public']['Tables']['reminders']['Row']
+
+export interface Reminder extends ReminderRow {
+  appointment_id?: string | null
+  profile_id?: string | null
 }
 
 export interface ReminderCreateInput {
@@ -16,6 +13,8 @@ export interface ReminderCreateInput {
   title: string
   body: string
   fire_at: string // ISO UTC timestamp
+  appointment_id?: string | null
+  profile_id?: string | null
 }
 
 export const RemindersService = {
@@ -30,10 +29,21 @@ export const RemindersService = {
     return data as Reminder[]
   },
 
+  async getByAppointment(appointmentId: string): Promise<Reminder | null> {
+    const { data, error } = await supabase
+      .from('reminders')
+      .select('*')
+      .eq('appointment_id', appointmentId)
+      .maybeSingle()
+
+    if (error) throw error
+    return data as Reminder | null
+  },
+
   async create(input: ReminderCreateInput): Promise<Reminder> {
     const { data, error } = await supabase
       .from('reminders')
-      .insert(input)
+      .insert(input as never)
       .select('*')
       .single()
 

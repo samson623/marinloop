@@ -294,5 +294,41 @@ describe('useVoiceIntent — AI consent enforcement', () => {
       // Should emit some kind of toast (fallback text, not consent error)
       expect(mockToast).toHaveBeenCalledOnce()
     })
+
+    it('answers next appointment locally without calling AIService.chatStream', async () => {
+      setupStoreMocks({ consented: true })
+      vi.mocked(useAppointments).mockReturnValue({
+        appts: [
+          {
+            id: 'appt-1',
+            title: 'Dr. Patel',
+            start_time: '2099-04-04T14:30:00.000Z',
+            location: 'Clinic A',
+            notes: null,
+          },
+        ],
+      } as unknown as ReturnType<typeof useAppointments>)
+      vi.mocked(AIService.isConfigured).mockReturnValue(true)
+
+      const mockParseTranscript = vi.fn().mockResolvedValue({
+        intent: 'query',
+        entities: { query: { question: 'when is my next appointment?' } },
+        confidence: 0.9,
+        missing: [],
+        requires_confirmation: false,
+      } as VoiceIntentResult)
+
+      const { result } = renderHook(
+        () => useVoiceIntent({ ...makeOptions(), voiceIntentService: { parseTranscript: mockParseTranscript } }),
+        { wrapper: wrapper() },
+      )
+
+      await act(async () => {
+        await result.current.processVoice('when is my next appointment?')
+      })
+
+      expect(AIService.chatStream).not.toHaveBeenCalled()
+      expect(mockToast).toHaveBeenCalledWith(expect.stringMatching(/next appointment is dr\. patel/i), 'ts')
+    })
   })
 })

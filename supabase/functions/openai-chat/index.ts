@@ -9,10 +9,11 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { buildRateLimitHeaders, runQuotaTrackedRequest } from '../_shared/quota-tracker.ts'
+import { buildRateLimitHeaders } from '../_shared/quota-tracker.ts'
 import { getUserTierLimits } from '../_shared/tier-limits.ts'
 
-const ALLOWED_MODEL = 'gpt-5-nano'
+const PRIMARY_MODEL = 'gpt-5-nano'
+const FALLBACK_MODEL = 'gpt-4o-mini'
 const MAX_MESSAGES = 20
 const MAX_CONTENT_LENGTH = 8000
 
@@ -72,6 +73,95 @@ function scrubError(err: unknown): string {
     return 'Request failed'
   }
   return msg
+}
+
+type OpenAIErrorBody = {
+  error?: {
+    message?: string
+    code?: string
+    type?: string
+  }
+}
+
+async function readProviderError(response: Response): Promise<{ safeMessage: string; rawMessage: string }> {
+  let rawMessage = ''
+
+  try {
+    const body = await response.json() as OpenAIErrorBody
+    rawMessage = body.error?.message?.trim() ?? ''
+  } catch {
+    try {
+      rawMessage = (await response.text()).trim()
+    } catch {
+      rawMessage = ''
+    }
+  }
+
+  const normalized = rawMessage.toLowerCase()
+  if (response.status === 429) {
+    return { safeMessage: 'Too many requests; try again later', rawMessage }
+  }
+  if (
+    response.status === 401
+    || normalized.includes('incorrect api key')
+    || normalized.includes('invalid api key')
+    || normalized.includes('organization')
+  ) {
+    return { safeMessage: 'AI service configuration error', rawMessage }
+  }
+  if (response.status === 403 || normalized.includes('permission')) {
+    return { safeMessage: 'AI provider rejected the request', rawMessage }
+  }
+  if (response.status === 400 || response.status === 404) {
+    if (normalized.includes('model') || normalized.includes('does not exist') || normalized.includes('not found')) {
+      return { safeMessage: 'AI model unavailable', rawMessage }
+    }
+    return { safeMessage: 'AI request was rejected', rawMessage }
+  }
+
+  return { safeMessage: 'Request failed', rawMessage }
+}
+
+function shouldRetryWithFallbackModel(response: Response, rawMessage: string): boolean {
+  if (![400, 404].includes(response.status)) return false
+  const normalized = rawMessage.toLowerCase()
+  return normalized.includes('model') || normalized.includes('does not exist') || normalized.includes('not found')
+}
+
+async function callOpenAIChat(
+  apiKey: string,
+  messages: ChatMessage[],
+  stream: boolean,
+): Promise<Response> {
+  const models = [PRIMARY_MODEL, FALLBACK_MODEL]
+
+  for (let i = 0; i < models.length; i++) {
+    const model = models[i]
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: messages.map((m) => ({ role: m.role, content: m.content })),
+        max_completion_tokens: 1024,
+        stream,
+      }),
+    })
+
+    if (response.ok) return response
+
+    const { rawMessage } = await readProviderError(response.clone())
+    if (i < models.length - 1 && shouldRetryWithFallbackModel(response, rawMessage)) {
+      await response.text()
+      continue
+    }
+    return response
+  }
+
+  throw new Error('OpenAI request did not return a response')
 }
 
 async function fetchWithRetry(url: string, options: RequestInit, retries = 1): Promise<Response> {
@@ -268,30 +358,17 @@ serve(async (req) => {
 
     // ── Streaming path ─────────────────────────────────────────────────
     if (wantStream) {
-      await incrementUsage()
-
-      const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: ALLOWED_MODEL,
-          messages: validatedMessages.map((m) => ({ role: m.role, content: m.content })),
-          max_completion_tokens: 1024,
-          stream: true,
-        }),
-      })
+      const openaiRes = await callOpenAIChat(apiKey, validatedMessages, true)
 
       if (!openaiRes.ok) {
-        await openaiRes.text()
-        const safeMessage = openaiRes.status === 429 ? 'Too many requests; try again later' : 'Request failed'
+        const { safeMessage } = await readProviderError(openaiRes)
         return new Response(
           JSON.stringify({ error: safeMessage }),
           { status: openaiRes.status, headers: corsHeaders },
         )
       }
+
+      await incrementUsage()
 
       return new Response(openaiRes.body, {
         headers: {
@@ -311,17 +388,49 @@ serve(async (req) => {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: ALLOWED_MODEL,
+        model: PRIMARY_MODEL,
         messages: validatedMessages.map((m) => ({ role: m.role, content: m.content })),
         max_completion_tokens: 1024,
       }),
     })
 
     if (!response.ok) {
-      await response.text()
-      const safeMessage = response.status === 429
-        ? 'Too many requests; try again later'
-        : 'Request failed'
+      const { rawMessage } = await readProviderError(response.clone())
+      if (shouldRetryWithFallbackModel(response, rawMessage)) {
+        await response.text()
+        const fallbackResponse = await fetchWithRetry('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: FALLBACK_MODEL,
+            messages: validatedMessages.map((m) => ({ role: m.role, content: m.content })),
+            max_completion_tokens: 1024,
+          }),
+        })
+        if (!fallbackResponse.ok) {
+          const { safeMessage } = await readProviderError(fallbackResponse)
+          return new Response(
+            JSON.stringify({ error: safeMessage }),
+            { status: fallbackResponse.status, headers: corsHeaders },
+          )
+        }
+
+        const fallbackData = await fallbackResponse.json()
+        const newUsage = await incrementUsage()
+
+        const successHeaders = {
+          ...corsHeaders,
+          ...buildRateLimitHeaders(limit, newUsage, getMidnightUtcNext()),
+        }
+        return new Response(JSON.stringify(fallbackData), {
+          headers: successHeaders,
+        })
+      }
+
+      const { safeMessage } = await readProviderError(response)
       return new Response(
         JSON.stringify({ error: safeMessage }),
         { status: response.status, headers: corsHeaders },

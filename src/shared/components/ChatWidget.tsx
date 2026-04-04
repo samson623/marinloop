@@ -156,6 +156,13 @@ export function ChatWidget({ voiceBubble, voiceActive, handleVoice, processVoice
 
   const isListening = voiceActive || LISTENING.has(voiceBubble)
 
+  const handleMicClick = useCallback(() => {
+    if (!isListening) {
+      awaitingReply.current = true
+    }
+    handleVoice()
+  }, [handleVoice, isListening])
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
@@ -268,7 +275,7 @@ export function ChatWidget({ voiceBubble, voiceActive, handleVoice, processVoice
           <button
             type="button"
             aria-label={isListening ? 'Stop voice input' : 'Voice input'}
-            onClick={handleVoice}
+            onClick={handleMicClick}
             className={`w-11 h-11 rounded-full flex items-center justify-center border-none cursor-pointer shrink-0 outline-none focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] transition-colors ${
               isListening
                 ? 'bg-red-100 text-red-500 animate-pulse'

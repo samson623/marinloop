@@ -157,7 +157,7 @@ serve(async (req) => {
             )
         }
 
-        const { user_id, medication_name, medication_dosage, schedule_time } = payload
+        const { schedule_id, user_id, medication_name, medication_dosage, schedule_time } = payload
         log(`PAYLOAD: user_id=${user_id}, med=${medication_name}, dosage=${medication_dosage || '(none)'}, time=${schedule_time}`)
 
         if (!user_id || !medication_name) {
@@ -176,6 +176,17 @@ serve(async (req) => {
 
         // ── Step 5: Fetch push subscriptions ──
         const supabase = createClient(supabaseUrl, serviceRoleKey)
+
+        // Look up medication_id for the schedule so the app can log the dose from the action button
+        let medication_id: string | null = null
+        if (schedule_id) {
+            const { data: schedRow } = await supabase
+                .from('schedules')
+                .select('medication_id')
+                .eq('id', schedule_id)
+                .maybeSingle()
+            medication_id = schedRow?.medication_id ?? null
+        }
         const { data: subscriptions, error } = await supabase
             .from('push_subscriptions')
             .select('*')
@@ -196,11 +207,17 @@ serve(async (req) => {
 
         log(`SUBSCRIPTIONS: Found ${subscriptions.length} device(s) for user=${user_id}`)
 
+        // Include action-button data only when we have enough info to log the dose
         const pushPayload = JSON.stringify({
             title,
             body,
-            url: '/meds',
+            url: '/timeline',
             tag: `med-reminder-${schedule_time}`,
+            ...(schedule_id && medication_id ? {
+                notificationType: 'dose',
+                scheduleId: schedule_id,
+                medicationId: medication_id,
+            } : {}),
         })
 
         // ── Step 6: Send to each device ──

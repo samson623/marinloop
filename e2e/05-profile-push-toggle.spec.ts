@@ -12,7 +12,7 @@ test.describe('Profile push toggle', () => {
   test.describe.configure({ timeout: 120_000 })
 
   test.beforeEach(async ({ page, baseURL }) => {
-    const origin = baseURL ?? 'http://localhost:5173'
+    const origin = new URL(baseURL ?? 'http://localhost:5173').origin
     await page.context().grantPermissions(['notifications'], { origin })
     await loginAs(page)
   })

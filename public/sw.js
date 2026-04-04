@@ -213,17 +213,27 @@ self.addEventListener('notificationclick', (event) => {
             self.clients
                 .matchAll({ type: 'window', includeUncontrolled: true })
                 .then((clientList) => {
-                    // Broadcast to ALL matching clients (not navigating, just signalling)
                     const origin = self.location.origin
-                    clientList
-                        .filter((c) => c.url && c.url.startsWith(origin))
-                        .forEach((c) => {
+                    const matching = clientList.filter((c) => c.url && c.url.startsWith(origin))
+                    if (matching.length > 0) {
+                        // App is open — send message so it logs the dose directly
+                        matching.forEach((c) => {
                             c.postMessage({
                                 type: 'DOSE_TAKEN',
                                 scheduleId: notificationData.scheduleId,
+                                medicationId: notificationData.medicationId,
                             })
                         })
-                    if (DEBUG) console.log('[MarinLoop SW] Sent DOSE_TAKEN to', clientList.length, 'client(s)')
+                        if (DEBUG) console.log('[MarinLoop SW] Sent DOSE_TAKEN to', matching.length, 'client(s)')
+                    } else {
+                        // App is not open — open it with query params so it logs the dose on load
+                        const params = new URLSearchParams()
+                        params.set('sw_taken', '1')
+                        if (notificationData.scheduleId) params.set('sw_scheduleId', notificationData.scheduleId)
+                        if (notificationData.medicationId) params.set('sw_medicationId', notificationData.medicationId)
+                        if (DEBUG) console.log('[MarinLoop SW] No open window — opening /timeline with params')
+                        return self.clients.openWindow(`${origin}/timeline?${params.toString()}`)
+                    }
                 })
                 .catch((err) => {
                     if (DEBUG) console.warn('[MarinLoop SW] DOSE_TAKEN postMessage failed:', err)

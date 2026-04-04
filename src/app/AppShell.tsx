@@ -146,6 +146,28 @@ export function AppShell() {
     }
   }, [searchParams, openRemindersPanel, setSearchParams])
 
+  // Handle ?sw_taken=1&sw_scheduleId=X&sw_medicationId=Y — emitted by the SW when the user
+  // taps "Mark Taken" on a notification while the app was not open (background dose logging).
+  useEffect(() => {
+    const scheduleId = searchParams.get('sw_scheduleId')
+    const medicationId = searchParams.get('sw_medicationId')
+    if (searchParams.get('sw_taken') === '1' && scheduleId && medicationId) {
+      logDose({
+        medication_id: medicationId,
+        schedule_id: scheduleId,
+        taken_at: new Date().toISOString(),
+        status: 'taken',
+        notes: null,
+      })
+      setSearchParams((prev) => {
+        prev.delete('sw_taken')
+        prev.delete('sw_scheduleId')
+        prev.delete('sw_medicationId')
+        return prev
+      }, { replace: true })
+    }
+  }, [searchParams, logDose, setSearchParams])
+
   const queryClient = useQueryClient()
 
   // iOS Safari: client.navigate() is unsupported in SW, so the SW sends postMessages instead.
@@ -165,10 +187,23 @@ export function AppShell() {
             } catch { /* ignore malformed urls */ }
           }
           break
-        case 'DOSE_TAKEN':
-          void queryClient.invalidateQueries({ queryKey: ['dose_logs'] })
-          void queryClient.invalidateQueries({ queryKey: ['dose_logs', 'today'] })
+        case 'DOSE_TAKEN': {
+          const { scheduleId, medicationId } = event.data ?? {}
+          if (scheduleId && medicationId) {
+            // Log the dose — logDose handles cache invalidation on success
+            logDose({
+              medication_id: medicationId,
+              schedule_id: scheduleId,
+              taken_at: new Date().toISOString(),
+              status: 'taken',
+              notes: null,
+            })
+          } else {
+            // Fallback: no IDs, just refresh
+            void queryClient.invalidateQueries({ queryKey: ['dose_logs'] })
+          }
           break
+        }
         case 'SNOOZE_REMINDER':
           void queryClient.invalidateQueries({ queryKey: ['reminders'] })
           break
@@ -176,7 +211,7 @@ export function AppShell() {
     }
     navigator.serviceWorker.addEventListener('message', handler)
     return () => navigator.serviceWorker.removeEventListener('message', handler)
-  }, [navigate, queryClient])
+  }, [navigate, queryClient, logDose])
 
   useEffect(() => {
     // Only clean up the hash if it's just an empty '#' (cosmetic)

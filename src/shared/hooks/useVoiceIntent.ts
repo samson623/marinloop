@@ -110,21 +110,25 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
     const normalized = text.toLowerCase()
     if (normalized.includes('medication') || normalized.includes('meds')) {
       navigate('/meds')
+      setVoiceBubble('Showing medications')
       store.toast('Showing medications', 'ts')
       return true
     }
     if (normalized.includes('appointment') || normalized.includes('appt')) {
       navigate('/appts')
+      setVoiceBubble('Showing appointments')
       store.toast('Showing appointments', 'ts')
       return true
     }
     if (normalized.includes('summary')) {
       navigate('/summary')
+      setVoiceBubble('Showing summary')
       store.toast('Showing summary', 'ts')
       return true
     }
     if (normalized.includes('timeline') || normalized.includes('schedule')) {
       navigate('/timeline')
+      setVoiceBubble('Showing timeline')
       store.toast('Showing timeline', 'ts')
       return true
     }
@@ -134,8 +138,10 @@ export function useVoiceIntent(options: UseVoiceIntentOptions) {
   const applyNavigation = (target?: string) => {
     const store = useAppStore.getState()
     if (target === 'meds' || target === 'appts' || target === 'summary' || target === 'timeline') {
+      const message = `Showing ${target === 'appts' ? 'appointments' : target}`
       navigate('/' + target)
-      store.toast(`Showing ${target === 'appts' ? 'appointments' : target}`, 'ts')
+      setVoiceBubble(message)
+      store.toast(message, 'ts')
       return true
     }
     return false
@@ -225,11 +231,53 @@ ${adherenceStr || 'No adherence data.'}
 ${refillStr || 'No urgent refills.'}`
   }
 
+  const respond = (message: string, tone: 'ts' | 'tw' | 'te' = 'ts') => {
+    setVoiceBubble(message)
+    useAppStore.getState().toast(message, tone)
+  }
+
+  const answerLocalQuery = (question: string) => {
+    const normalized = question.toLowerCase()
+
+    if (
+      normalized.includes('next dose')
+      || normalized.includes('next dosage')
+      || /\bwhen\s+is\s+my\s+next\s+med(?:ication)?\b/.test(normalized)
+    ) {
+      const nextDose = timeline.find((item) => item.type === 'med' && item.status === 'pending')
+      return nextDose ? `Your next dose is ${nextDose.name} at ${nextDose.time}.` : 'No upcoming doses found.'
+    }
+
+    if (normalized.includes('next appointment') || normalized.includes('next appt')) {
+      const now = Date.now()
+      const nextAppointment = [...(realAppts ?? [])]
+        .filter((appt) => {
+          const startTime = new Date(appt.start_time).getTime()
+          return Number.isFinite(startTime) && startTime >= now
+        })
+        .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())[0]
+
+      if (!nextAppointment) return 'No upcoming appointments found.'
+
+      const date = fD(isoToLocalDate(nextAppointment.start_time))
+      const time = fT(toLocalTimeString(nextAppointment.start_time))
+      const location = nextAppointment.location ? ` at ${nextAppointment.location}` : ''
+      return `Your next appointment is ${nextAppointment.title} on ${date} at ${time}${location}.`
+    }
+
+    return null
+  }
+
   const processVoice = async (text: string) => {
     const store = useAppStore.getState()
     const transcript = text.trim()
     if (!transcript) {
-      store.toast('I did not catch that.', 'tw')
+      respond('I did not catch that.', 'tw')
+      return
+    }
+    const directLocalAnswer = answerLocalQuery(transcript)
+    if (directLocalAnswer) {
+      respond(directLocalAnswer, 'ts')
       return
     }
     const contextualTranscript = assistantState.pendingIntent
@@ -248,14 +296,14 @@ ${refillStr || 'No urgent refills.'}`
     clearAssistantState()
 
     if (intent.confidence < 0.45 && !fallbackKeywordRoute(transcript)) {
-      store.toast(`"${text}" - command not recognized`, 'tw')
+      respond(`"${text}" - command not recognized`, 'tw')
       return
     }
 
     switch (intent.intent) {
       case 'navigate':
         if (!applyNavigation(intent.entities.navigate?.target) && !fallbackKeywordRoute(transcript)) {
-          store.toast(`"${text}" - command not recognized`, 'tw')
+          respond(`"${text}" - command not recognized`, 'tw')
         }
         return
       case 'open_add_med': {
@@ -283,7 +331,7 @@ ${refillStr || 'No urgent refills.'}`
             : entryMethod === 'photo'
               ? 'Take or upload a photo of the label'
               : 'Opening add medication form'
-        store.toast(msg, 'ts')
+        respond(msg, 'ts')
         return
       }
       case 'open_add_appt':
@@ -295,23 +343,22 @@ ${refillStr || 'No urgent refills.'}`
           loc: intent.entities.appointment?.location,
           notes: intent.entities.appointment?.notes,
         })
-        store.toast('Opening add appointment form', 'ts')
+        respond('Opening add appointment form', 'ts')
         return
       case 'query_next_dose': {
         const next = timeline.find((item) => item.type === 'med' && item.status === 'pending')
         if (!next) {
-          store.toast('No upcoming doses found.', 'tw')
+          respond('No upcoming doses found.', 'tw')
           return
         }
         const response = `Your next dose is ${next.name} at ${next.time}.`
-        setVoiceBubble(response)
-        store.toast(response, 'ts')
+        respond(response, 'ts')
         return
       }
       case 'log_dose': {
         const target = findDoseTarget(intent)
         if (!target || !target.medicationId) {
-          store.toast('I could not find a dose to log right now.', 'tw')
+          respond('I could not find a dose to log right now.', 'tw')
           return
         }
         const medicationId = target.medicationId
@@ -332,13 +379,14 @@ ${refillStr || 'No urgent refills.'}`
             setVoiceConfirmation(null)
           },
         })
+        respond(confirmationMessage, 'ts')
         return
       }
       case 'create_reminder': {
         const reminderDraft = intent.entities.reminder
         const reminderMinutes = reminderDraft?.in_minutes
         if (!reminderMinutes || reminderMinutes <= 0) {
-          store.toast('How many minutes? Say "remind me in 10 minutes".', 'tw')
+          respond('How many minutes? Say "remind me in 10 minutes".', 'tw')
           return
         }
         const reminderTitle = reminderDraft?.title || 'Reminder'
@@ -351,39 +399,44 @@ ${refillStr || 'No urgent refills.'}`
             setVoiceConfirmation(null)
           },
         })
+        respond(`"${reminderTitle}" at ${reminderTimeStr}?`, 'ts')
         return
       }
       case 'add_note': {
         const noteText = intent.entities.note?.text?.trim()
         if (!noteText) {
-          store.toast('What should the note say? Say "add note" then your note.', 'tw')
+          respond('What should the note say? Say "add note" then your note.', 'tw')
           return
         }
         const medName = intent.entities.note?.medication_name?.trim()
         const med = medName ? medsForContext.find((m) => m.name.toLowerCase().includes(medName.toLowerCase())) : null
         const medicationId = med?.id ?? null
         addNoteReal({ content: noteText, medication_id: medicationId })
-        setVoiceBubble(med ? `Note added for ${med.name}.` : 'Note saved.')
+        respond(med ? `Note added for ${med.name}.` : 'Note saved.', 'ts')
         return
       }
       case 'adherence_summary':
         navigate('/summary')
-        store.toast('Loading your adherence summary...', 'ts')
+        respond('Loading your adherence summary...', 'ts')
         onAdherenceSummary?.()
         return
       case 'query': {
         const question = intent.entities.query?.question ?? transcript
+        const localAnswer = answerLocalQuery(question)
+
+        if (localAnswer) {
+          respond(localAnswer, 'ts')
+          return
+        }
 
         if (!canUseAi) {
           const msg = 'AI features require Basic or Pro. Upgrade in Profile \u2192 Subscription.'
-          setVoiceBubble(msg)
-          store.toast(msg, 'tw')
+          respond(msg, 'tw')
           return
         }
         if (!consented) {
           const msg = 'AI features require consent. Enable them in Profile \u2192 Data & Privacy.'
-          setVoiceBubble(msg)
-          store.toast(msg, 'tw')
+          respond(msg, 'tw')
           return
         }
         if (!AIService.isConfigured()) {
@@ -398,8 +451,7 @@ ${refillStr || 'No urgent refills.'}`
                   : lq.includes('note')
                     ? 'Check your notes.'
                     : `I can answer questions about your schedule, medications, appointments, and notes. Try: "What's on my schedule?" or "What meds do I have?"`
-          setVoiceBubble(fallback)
-          store.toast(fallback, 'ts')
+          respond(fallback, 'ts')
           return
         }
         setVoiceBubble('Thinking...')
@@ -424,18 +476,16 @@ ${refillStr || 'No urgent refills.'}`
               },
             )
           }
-          setVoiceBubble(response)
-          store.toast(response, 'ts')
+          respond(response, 'ts')
         } catch (e) {
           const errMsg = e instanceof Error ? e.message : 'Could not answer. Please try again.'
-          setVoiceBubble(errMsg)
-          store.toast(errMsg, 'te')
+          respond(errMsg, 'te')
         }
         return
       }
       default:
         if (!fallbackKeywordRoute(transcript)) {
-          store.toast(`"${text}" - command not recognized`, 'tw')
+          respond(`"${text}" - command not recognized`, 'tw')
         }
     }
   }

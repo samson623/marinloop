@@ -157,7 +157,11 @@ function parseTimeFromText(lowered: string): string | undefined {
 export function heuristicParse(text: string): VoiceIntentResult {
   const lowered = text.toLowerCase()
 
-  if (lowered.includes('next dose')) {
+  if (
+    lowered.includes('next dose')
+    || lowered.includes('next dosage')
+    || /\bwhen\s+is\s+my\s+next\s+med(?:ication)?\b/.test(lowered)
+  ) {
     return {
       intent: 'query_next_dose',
       entities: {},

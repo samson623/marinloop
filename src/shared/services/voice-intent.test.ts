@@ -73,6 +73,11 @@ describe('heuristicParse', () => {
     expect(out.confidence).toBe(0.8)
   })
 
+  it('parses "next dosage" as query_next_dose', () => {
+    const out = heuristicParse('when is my next dosage')
+    expect(out.intent).toBe('query_next_dose')
+  })
+
   it('parses "took" as log_dose taken', () => {
     const out = heuristicParse('I took my medicine')
     expect(out.intent).toBe('log_dose')

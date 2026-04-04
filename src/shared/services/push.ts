@@ -75,15 +75,24 @@ export const PushService = {
         if (DEBUG) console.log('[Push] Permission result:', permission)
         if (permission !== 'granted') return { ok: false }
 
-        const { reg: registration, swError } = await this.registerSW()
-        if (!registration) {
-            return { ok: false, error: swError ?? 'Could not register notifications on this device' }
-        }
+        // Attempt explicit registration, but don't bail out if it fails.
+        // The SW is likely already active (registered by useServiceWorkerUpdate on
+        // startup), so serviceWorker.ready will resolve from that even if a fresh
+        // register() call is aborted by the browser (e.g. Chrome privacy settings).
+        const { swError } = await this.registerSW()
+        if (swError) console.error('[Push] registerSW failed:', swError)
 
         const reg = await Promise.race([
             navigator.serviceWorker.ready,
             new Promise<never>((_, reject) =>
-                setTimeout(() => reject(new Error('Service worker timed out — try refreshing the page')), 10000)
+                setTimeout(
+                    () => reject(new Error(
+                        swError
+                            ? `Notifications unavailable: ${swError}`
+                            : 'Service worker timed out — try refreshing the page'
+                    )),
+                    10000
+                )
             ),
         ])
         if (DEBUG) console.log('[Push] Service worker ready')

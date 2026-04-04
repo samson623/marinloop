@@ -33,8 +33,10 @@ export const AIService = {
               if (body && body.error) {
                 throw new Error(body.error)
               }
-            } catch {
-              // ignore
+            } catch (parseError) {
+              if (parseError instanceof Error && parseError.message) {
+                throw parseError
+              }
             }
           }
         }
@@ -56,13 +58,21 @@ export const AIService = {
       throw new Error('Must be logged in to use AI')
     }
 
+    if (!env.supabaseUrl) {
+      throw new Error('Supabase URL not configured')
+    }
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+    }
+    if (env.supabaseAnonKey) {
+      headers.apikey = env.supabaseAnonKey
+    }
+
     const res = await fetch(`${env.supabaseUrl}/functions/v1/openai-chat`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
-        apikey: env.supabaseAnonKey ?? '',
-      },
+      headers,
       body: JSON.stringify({ messages, stream: true }),
     })
 

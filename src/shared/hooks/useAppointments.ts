@@ -24,6 +24,7 @@ export function useAppointments() {
     mutationFn: (input: AppointmentCreateInput) => AppointmentsService.create({ ...input, profile_id: activeProfileId ?? null } as any),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['appointments'] })
+      void queryClient.invalidateQueries({ queryKey: ['reminders'] })
       toast('Appointment added', 'ts')
     },
     onError: (err: unknown) => handleMutationError(err, 'useAppointments', 'Could not add appointment', toast),
@@ -33,6 +34,7 @@ export function useAppointments() {
     mutationFn: ({ id, updates }: { id: string; updates: Partial<Appointment> }) => AppointmentsService.update(id, updates),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['appointments'] })
+      void queryClient.invalidateQueries({ queryKey: ['reminders'] })
       toast('Appointment updated', 'ts')
     },
     onError: (err: unknown) => handleMutationError(err, 'useAppointments', 'Could not update appointment', toast),
@@ -42,6 +44,7 @@ export function useAppointments() {
     mutationFn: AppointmentsService.delete,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['appointments'] })
+      void queryClient.invalidateQueries({ queryKey: ['reminders'] })
       toast('Appointment deleted', 'ts')
     },
     onError: (err: unknown) => handleMutationError(err, 'useAppointments', 'Could not delete appointment', toast),
